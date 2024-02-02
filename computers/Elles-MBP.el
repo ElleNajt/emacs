@@ -1,6 +1,10 @@
 ;;; -*- lexical-binding: t; -*-
 
-(setq initial-frame-alist '((fullscreen . fullboth)))
+
+(setq doom-theme 'doom-feather-dark)
+(setq doom-theme 'doom-outrun-electric)
+;; (setq doom-theme 'doom-shades-of-purple)
+;; (setq initial-frame-alist '((fullscreen . maximize)))
 
 (setq
  org-agenda-files (append

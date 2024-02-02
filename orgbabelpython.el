@@ -104,6 +104,7 @@ except:
          (session (cdr (assoc :session headers))))
     session))
 
+
 (defun interrupt-org-babel-session ()
   (interactive)
   (let* ((current-session (org-babel-get-session))
@@ -114,3 +115,17 @@ except:
         (when proc
           (interrupt-process proc)
           (message "Interrupted session: %s" current-session))))))
+
+(map! (:mode org-mode
+       :n "C-c C-k" #'interrupt-org-babel-session))
+
+;;; Writing a better interrupt function
+(defun org-test ()
+  (interactive)
+  (let ((info (org-babel-get-src-block-info)))
+    (if info
+        (let ((session (cdr (assq :session info))))
+          (if session
+              (message "Session: %s" session)
+            (message "No session found.")))
+      (message "Not in a source block or no source block info found."))))
