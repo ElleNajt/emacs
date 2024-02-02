@@ -117,7 +117,13 @@
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
                                         ;
 ;; (visual-line-mode 1)
-(load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))) nil t)
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 (load! "paxedit")
 (load! "orgmode")
 (load! "orgbabelpython")
+
+(remove-hook 'doom-first-input-hook #'evil-snipe-mode)
+(global-set-key (kbd "C-x <down>") 'shrink-window)
+(global-set-key (kbd "C-x <up>") 'enlarge-window)
+(global-set-key (kbd "C-x <right>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-x <left>") 'enlarge-window-horizontally)
