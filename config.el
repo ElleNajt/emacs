@@ -117,8 +117,7 @@
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
                                         ;
 ;; (visual-line-mode 1)
-
-(load! "computerspecific")
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))) nil t)
 (load! "paxedit")
 (load! "orgmode")
 (load! "orgbabelpython")
