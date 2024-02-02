@@ -1,0 +1,18 @@
+# -*- mode: snippet -*-
+# name: Python Org Header
+# key: pyheader
+# --
+:PROPERTIES:
+:header-args: :results output :python "nix-shell --pure --run python" :async t :session $1
+:END:
+
+#+begin_src nix :tangle /tmp/shell.nix :mkdirp t
+  { pkgs ? import <nixpkgs> { }, pythonPackages ? pkgs.python3Packages }:
+  pkgs.mkShell {
+    buildInputs = [
+      pythonPackages.numpy
+      pythonPackages.pandas
+      pythonPackages.tabulate
+    ];
+  }
+#+end_src
