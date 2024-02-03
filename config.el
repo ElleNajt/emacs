@@ -1,5 +1,7 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
+;; This is because I was getting some weird magic-mode-alist settings
+;; and this was breaking things. Couldn't figure out where it was set.
 (setq magic-mode-alist nil)
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
@@ -119,8 +121,8 @@
 ;; (visual-line-mode 1)
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 (load! "paxedit")
-(load! "orgmode")
 (load! "orgbabelpython")
+(load! "orgmode")
 
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 (global-set-key (kbd "C-x <down>") 'shrink-window)
