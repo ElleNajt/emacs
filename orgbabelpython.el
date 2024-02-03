@@ -39,7 +39,8 @@
 ;;
 (defun run-cell-and-advance () (interactive) (org-babel-execute-src-block) (org-babel-next-src-block) )
 (map! (:mode org-mode
-       :n "<S-return>" #'run-cell-and-advance)
+       :n "<S-return>" #'run-cell-and-advance
+       :n "g SPC" #'org-babel-execute-buffer)
       (:mode org-agenda-mode
              "SPC m A" #'org-archive-subtree))
 

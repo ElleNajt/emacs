@@ -23,6 +23,7 @@
                                 ("J" "Journal entry with link" entry
                                  (file+olp+datetree +org-capture-journal-file)
                                  "* %U %?\n%i\n%a" :prepend t))
-        org-archive-location (concat org-directory "/trash::* from %s")))
-
-(setq org-log-done 't)
+        org-archive-location (concat org-directory "/trash::* from %s")
+        org-todo-keywords '((sequence "TODO(t)" "ACTIVE(a)" "|" "DONE(d)" "RUNNING(r)")
+                            (sequence "NEXT(n)" "WAITING(w)" "LATER(l)" "|" "CANCELLED(c)"))
+        org-log-done 't))
