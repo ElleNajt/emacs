@@ -122,6 +122,7 @@
 (load! "paxedit")
 (load! "orgbabelpython")
 (load! "orgmode")
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname") "-after")))
 
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 (global-set-key (kbd "C-x <down>") 'shrink-window)
