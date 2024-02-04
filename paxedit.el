@@ -3,8 +3,6 @@
 
 
 (after! paxedit
-  (add-hook! emacs-lisp-mode #'paxedit-mode)
-
   (nmap
     ">" (general-key-dispatch 'evil-shift-right
           "e" 'paxedit-transpose-forward
