@@ -4,16 +4,15 @@
   (setq org-hierarchical-todo-statistics nil
         +org-capture-todo-file  (concat org-directory "/inbox.org")
         +org-capture-journal-file (concat org-directory "/journal.org")
-        org-default- (concat org-directory "/inbox.org")
         org-capture-templates '(("a" "Todo" entry
-                                 (file+headline +org-capture-todo-file  "Inbox")
-                                 "* TODO %?\n%i%T" )
+                                 (file +org-capture-todo-file)
+                                 "* TODO %?\n%i%U" )
                                 ("t" "Todo" entry
-                                 (file+headline +org-capture-todo-file  "Inbox")
-                                 "* TODO %?\n%i%T" )
+                                 (file +org-capture-todo-file)
+                                 "* TODO %?\n%i%U" )
                                 ("T" "Todo with link" entry
-                                 (file+headline +org-capture-todo-file  "Inbox")
-                                 "* TODO %?\n%i\n%a%T" )
+                                 (file +org-capture-todo-file)
+                                 "* TODO %?\n%i\n%a%U" )
                                 ;; ("n" "Inbox-Note" entry
                                 ;;  (file+headline +org-capture-todo-file  "Inbox Note")
                                 ;; "* %?\n%i%T" )
