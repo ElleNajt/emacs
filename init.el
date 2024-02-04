@@ -199,3 +199,4 @@
        ;;literate
        (default +bindings +smartparens))
 
+(add-to-list 'org-modules 'org-habit t)

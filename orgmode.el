@@ -26,7 +26,11 @@
         org-todo-keywords '((sequence "TODO(t)" "ACTIVE(a)" "|" "DONE(d)" "RUNNING(r)")
                             (sequence "NEXT(n)" "WAITING(w)" "LATER(l)" "|" "CANCELLED(c)"))
         org-log-done 't
+        org-agenda-hide-tags-regexp "journal\\|tag2\\|tags3"
         org-agenda-custom-commands
         '(("i" "Inbox" tags "inbox")
           ("p" . "Person...")
           ("pa" "Aspen" tags-todo "aspen"))))
+
+;; (with-eval-after-load 'org
+;;   (add-to-list 'org-modules 'org-habit t))
