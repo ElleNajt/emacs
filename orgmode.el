@@ -26,4 +26,8 @@
         org-archive-location (concat org-directory "/trash::* from %s")
         org-todo-keywords '((sequence "TODO(t)" "ACTIVE(a)" "|" "DONE(d)" "RUNNING(r)")
                             (sequence "NEXT(n)" "WAITING(w)" "LATER(l)" "|" "CANCELLED(c)"))
-        org-log-done 't))
+        org-log-done 't
+        org-agenda-custom-commands
+        '(("i" "Inbox" tags "inbox")
+          ("p" . "Person...")
+          ("pa" "Aspen" tags-todo "aspen"))))
