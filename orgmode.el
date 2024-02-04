@@ -36,5 +36,5 @@
           ("p" . "Person...")
           ("pa" "Aspen" tags-todo "aspen"))))
 
-;; (with-eval-after-load 'org
-;;   (add-to-list 'org-modules 'org-habit t))
+(with-eval-after-load 'org
+   (add-to-list 'org-modules 'org-habit t))
