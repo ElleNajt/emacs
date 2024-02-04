@@ -4,7 +4,6 @@
   (setq org-hierarchical-todo-statistics nil
         +org-capture-todo-file  (concat org-directory "/inbox.org")
         +org-capture-journal-file (concat org-directory "/journal.org")
-        ;; (concat org-directory "/foodjournal.org")
         org-capture-templates '(("a" "Todo" entry
                                  (file +org-capture-todo-file)
                                  "* TODO %?\n%i%U" )
@@ -17,9 +16,7 @@
                                 ;; ("n" "Inbox-Note" entry
                                 ;;  (file+headline +org-capture-todo-file  "Inbox Note")
                                 ;; "* %?\n%i%T" )
-                                ("f" "Food journal entry" entry
-                                 (file+olp+datetree  "~/Documents/Notes/foodjournal.org")
-                                 "* %U %?\n%i" :prepend t)
+
                                 ("j" "Journal entry" entry
                                  (file+olp+datetree +org-capture-journal-file)
                                  "* %U %?\n%i" :prepend t)
