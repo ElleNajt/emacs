@@ -22,7 +22,10 @@
   (let* ((current-src-block (org-element-at-point))
          (point-to-insert
           (or (org-src-block-results-end current-src-block)
-              (org-element-end current-src-block)))
+              (save-excursion
+                (goto-char (org-element-end current-src-block))
+                (skip-chars-backward " \t\n")
+                (point))))
          (src-block-head (save-excursion
                            (goto-char (org-element-property
                                        :begin current-src-block))
@@ -134,3 +137,40 @@ except:
               (message "Session: %s" session)
             (message "No session found.")))
       (message "Not in a source block or no source block info found."))))
+
+(defun org-src-block-end-header (&optional element)
+  (let ((element (or element (org-element-at-point))))
+    (save-excursion
+      (goto-char (org-element-end element))
+      (re-search-backward (rx (and bol "#+END_SRC")))
+      (point))))
+
+(defun timer-babel-execute-src-block-wrapper (orig &optional arg info params)
+  "Wrap `org-babel-execute-src-block' to measure and display execution time."
+  (let* ((start-time (current-time))
+         ;; Execute the block and capture the result.
+         (result (funcall orig arg info params))
+         (end-time (current-time))
+         (execution-time (float-time (time-subtract end-time start-time)))
+         (results-end (org-src-block-results-end (org-element-at-point)))
+         (time-string (format "\ntime: %.3fs" execution-time)))
+    (save-excursion
+      ;; Find and remove the existing "time :" line, if present.
+      (goto-char results-end)
+      (let ((next-heading (save-excursion (outline-next-heading) (point))))
+        (while (re-search-forward
+                (rx (and bol "time: "
+                         (zero-or-more any)
+                         eol
+                         "\n"))
+                next-heading
+                t)
+          (replace-match "" nil nil)))
+
+      ;; Insert the new execution time.
+      (goto-char results-end)
+      (end-of-line)
+      (insert time-string))
+    result))
+
+(advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
