@@ -8,17 +8,21 @@
     (funcall orig direction)))
 (advice-add #'+org--insert-item :around #'grfn/+org-insert-item)
 
+(defun org-src-block-results-end (src-block)
+  (save-excursion
+    (goto-char (org-element-begin src-block))
+    (when-let (results-loc (org-babel-where-is-src-block-result))
+      (goto-char results-loc)
+      (goto-char (org-element-end (org-element-at-point)))
+      (skip-chars-backward " \t\n")
+      (point))))
+
 (defun grfn/insert-new-src-block ()
   (interactive)
   (let* ((current-src-block (org-element-at-point))
          (point-to-insert
-          (if-let (results-loc (org-babel-where-is-src-block-result))
-              (save-excursion
-                (goto-char results-loc)
-                (org-element-property
-                 :end
-                 (org-element-at-point)))
-            (org-element-property :end (org-element-at-point))))
+          (or (org-src-block-results-end current-src-block)
+              (org-element-end current-src-block)))
          (src-block-head (save-excursion
                            (goto-char (org-element-property
                                        :begin current-src-block))
