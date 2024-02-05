@@ -32,10 +32,10 @@
                                (forward-line)
                                (thing-at-point 'line t))))))
     (goto-char point-to-insert)
-    (insert "\n")
+    (insert "\n\n")
     (insert src-block-head)
     (let ((contents (point-marker)))
-      (insert "\n#+END_SRC\n")
+      (insert "\n#+end_src\n")
       (goto-char contents))))
 
 ;; (start_time (current-time))
