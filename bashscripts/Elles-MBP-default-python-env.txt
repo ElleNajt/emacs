@@ -1,0 +1,17 @@
+Don't forget to run ~M-x org-babel-tangle~ to create the nix shell!
+
+* Setup python nix shell
+#+begin_src nix :tangle /tmp/shell.nix :mkdirp t
+  { pkgs ? import <nixpkgs> { }, pythonPackages ? pkgs.python3Packages }:
+  pkgs.mkShell {
+    buildInputs = [
+      pythonPackages.numpy
+      pythonPackages.pandas
+    ];
+  }
+#+end_src
+
+* Original notebook
+:PROPERTIES:
+:header-args: :results output :python "nix-shell /tmp/shell.nix --pure --run python" :session SESSION_NAME_PLACEHOLDER
+:END:

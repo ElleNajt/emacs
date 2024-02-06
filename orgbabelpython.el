@@ -180,3 +180,12 @@ except:
     result))
 
 (advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
+
+;;; Pandoc conversion
+;;;
+(defun run-ipynb-to-org-conversion-script ()
+  (interactive)
+  (when (dired-mode-p)
+    (let ((current-dir (dired-current-directory))
+          (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
+      (shell-command (concat "cd " current-dir " && "script-path)))))
