@@ -129,3 +129,20 @@
 (global-set-key (kbd "C-x <up>") 'enlarge-window)
 (global-set-key (kbd "C-x <right>") 'shrink-window-horizontally)
 (global-set-key (kbd "C-x <left>") 'enlarge-window-horizontally)
+
+(after! magit
+  (transient-define-suffix magit-reset-head-back ()
+    (interactive)
+    (magit-reset-mixed "HEAD~"))
+  (transient-define-suffix magit-reset-head-previous ()
+    (interactive)
+    (magit-reset-mixed "HEAD@{1}"))
+  (transient-append-suffix
+    #'magit-reset
+    ["f"]
+    (list "b" "Reset HEAD~"    #'magit-reset-head-back))
+  (transient-append-suffix
+    #'magit-reset
+    ["f"]
+    (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous))
+  )
