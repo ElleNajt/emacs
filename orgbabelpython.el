@@ -145,6 +145,9 @@ except:
       (re-search-backward (rx (and bol "#+END_SRC")))
       (point))))
 
+(defvar min-babel-exec-time-for-alert (* 60 3))
+(defun add-babel-exec-time-alert-to-todo (src-block-element)
+  )
 (defun timer-babel-execute-src-block-wrapper (orig &optional arg info params)
   "Wrap `org-babel-execute-src-block' to measure and display execution time."
   (let* ((start-time (current-time))
@@ -171,6 +174,9 @@ except:
       (goto-char results-end)
       (end-of-line)
       (insert time-string))
+    (when (> execution-time min-babel-exec-time-for-alert)
+      (min-babel-exec-time-alert-to-todo
+       (org-element-at-point)))
     result))
 
 (advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
