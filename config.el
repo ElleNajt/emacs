@@ -86,7 +86,6 @@
       (-> (buffer-file-name)
           (f-dirname)
           (dired)))))
-
 (map!
  :n "-" #'elle/dired-minus
  (:leader
@@ -94,6 +93,25 @@
   "a" #'org-capture)
  (:mode emacs-lisp-mode
   :n   "g SPC" #'eval-buffer ))
+(defun vterm-cd-to-dired-dir-and-switch ()
+  "Change the current directory of the default vterm buffer (as opened with
+`+vterm/toggle') to the directory of the current dired buffer, then switch to
+it."
+  (interactive)
+  (let ((dir (dired-current-directory)))
+    (if-let* ((projectile-vterm-buffer-name
+               (format "*doom:vterm-popup:%s*"
+                       (if (bound-and-true-p persp-mode)
+                           (safe-persp-name (get-current-persp))
+                         "main")))
+              (vterm-buffer (get-buffer projectile-vterm-buffer-name)))
+        (progn
+          (pop-to-buffer vterm-buffer)
+          (vterm-send-string (format "cd \"%s\"\n" dir)))
+      (message "No currently open vterm (press SPC o t)"))))
+(map!
+ (:map dired-mode-map
+       (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
 
 (require 'general)
 (general-evil-setup t)
@@ -122,7 +140,7 @@
 (load! "paxedit")
 (load! "orgbabelpython")
 (load! "orgmode")
-(load! (concat "computers/" (string-trim (shell-command-to-string "hostname") "-after")))
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 (global-set-key (kbd "C-x <down>") 'shrink-window)
@@ -144,5 +162,4 @@
   (transient-append-suffix
     #'magit-reset
     ["f"]
-    (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous))
-  )
+    (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
