@@ -28,9 +28,9 @@
                                 ("T" "Todo with link" entry
                                  (file +org-capture-todo-file)
                                  "* TODO %?\n%i\n%a%U" )
-                                ;; ("n" "Inbox-Note" entry
-                                ;;  (file+headline +org-capture-todo-file  "Inbox Note")
-                                ;; "* %?\n%i%T" )
+                                ("n" "Inbox-Note" entry
+                                 (file+headline +org-capture-todo-file  "Inbox Notes")
+                                 "* %?\n%i%T" )
 
                                 ("j" "Journal entry" entry
                                  (file+olp+datetree +org-capture-journal-file)
