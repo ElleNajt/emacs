@@ -1,6 +1,21 @@
 ;;; -*- lexical-binding: t; -*-
-
+;;;
 (with-eval-after-load 'org
+  (defun org-projects ()
+    (cl-loop for (tag) in
+             (org-global-tags-completion-table
+              (directory-files-recursively org-directory "\\.org$"))
+             when (s-starts-with-p "project__" tag)
+             collect tag))
+
+  (defun org-people ()
+    (cl-loop for (tag) in
+             (org-global-tags-completion-table
+              (directory-files-recursively org-directory  "\\.org$"))
+             when (s-starts-with-p "people__" tag)
+             collect tag))
+
+
   (setq org-hierarchical-todo-statistics nil
         +org-capture-todo-file  (concat org-directory "/inbox.org")
         +org-capture-journal-file (concat org-directory "/journal.org")
@@ -31,7 +46,14 @@
         org-agenda-custom-commands
         '(("i" "Inbox" tags "inbox")
           ("p" . "Person...")
-          ("pa" "Aspen" tags-todo "aspen"))))
+          ))
+  (dolist (person (org-people))
+    (add-to-list 'org-agenda-custom-commands
+                 (list
+                  (concat "p" (substring person 0 1))
+                  (capitalize person)
+                  'tags-todo
+                  person)))
 
-(with-eval-after-load 'org
-   (add-to-list 'org-modules 'org-habit t))
+  )
+(with-eval-after-load 'org (add-to-list 'org-modules 'org-habit t))
