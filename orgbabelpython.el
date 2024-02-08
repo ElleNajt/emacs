@@ -53,26 +53,31 @@
 
 (defun ob-python--eval-python-session-with-exceptions
     (orig session body &rest args)
-  (let* ((exc-file (make-temp-file "session-exception")))
+  (let* ((exc-file (make-temp-file "session-exception"))
+         (exec-file (make-temp-file "execution-code")))
     (unwind-protect
-        (let* ((body (format "\
+        (progn
+          (with-temp-file exec-file (insert body))
+          (let* ((body (format "\
 try:
-%s
+    with open(\"%s\", 'r') as file:
+        exec(file.read())
 except:
     import traceback
     with open(\"%s\", \"w\") as f:
         f.write(traceback.format_exc())
     raise"
-                             (org-babel-python--shift-right body 4)
-                             exc-file))
-               (result (apply orig session body args))
-               (exc-string (with-temp-buffer
-                             (insert-file-contents exc-file)
-                             (buffer-string))))
-          (when (not (string-empty-p exc-string))
-            (org-babel-eval-error-notify nil exc-string))
-          result)
-      (delete-file exc-file))))
+                               exec-file
+                               exc-file))
+                 (result (apply orig session body args))
+                 (exc-string (with-temp-buffer
+                               (insert-file-contents exc-file)
+                               (buffer-string))))
+            (when (not (string-empty-p exc-string))
+              (org-babel-eval-error-notify nil exc-string))
+            result))
+      (progn (delete-file exc-file)
+             (delete-file exec-file)))))
 
 (advice-add
  'org-babel-python-evaluate-session
@@ -80,16 +85,24 @@ except:
  #'ob-python--eval-python-session-with-exceptions)
 
 (defun async--org-babel-execute-python (orig body &rest args)
-  (let* ((body (format "\
+  (let* ( (exec-file (make-temp-file "execution-code")))
+    (with-temp-file exec-file (insert body))
+    (let* ((body (format "\
+exec_file = \"%s\"
 try:
-%s
+    with open(exec_file, 'r') as file:
+        exec(compile(file.read(), '<org babel source block>', 'exec'))
 except:
     import traceback
-    print(traceback.format_exc()) "
-                       (org-babel-python--shift-right body 4)
-                       ))
-         (result (apply orig body args)))
-    result))
+    print(traceback.format_exc())
+finally:
+    import os
+    try:
+        os.remove(exec_file)
+    except:
+        pass" exec-file))
+           (result (apply orig body args)))
+      result)))
 
 (advice-add
  'org-babel-execute:python
