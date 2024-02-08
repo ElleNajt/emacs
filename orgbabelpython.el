@@ -89,6 +89,9 @@ except:
     (with-temp-file exec-file (insert body))
     (let* ((body (format "\
 exec_file = \"%s\"
+import time
+from datetime import datetime
+start = datetime.now()
 try:
     with open(exec_file, 'r') as file:
         exec(compile(file.read(), '<org babel source block>', 'exec'))
@@ -96,6 +99,8 @@ except:
     import traceback
     print(traceback.format_exc())
 finally:
+    print(\"___________________________\")
+    print(\"Cell Timer: \", str(datetime.now() - start), \"\\n\")
     import os
     try:
         os.remove(exec_file)
@@ -192,7 +197,7 @@ finally:
        (org-element-at-point)))
     result))
 
-(advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
+;; (advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
 
 ;;; Pandoc conversion
 ;;;
