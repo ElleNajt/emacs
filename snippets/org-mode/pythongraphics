@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: Graphics source block for python
+# key: graphicspythonsrcblock
+# --
+#+begin_src python :results graphics file output :wrap "org \n#+ATTR_HTML: :width 1000"  :file $1.svg
+#+end_src

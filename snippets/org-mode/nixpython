@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Nix Python in Folder
+# key: nixpython
+# --
+:PROPERTIES:
+:header-args: :results output :python "./python" :async t :session $1
+:END:
