@@ -55,6 +55,9 @@
   :recipe (:host github :repo "noctuid/general.el"))
 (package! ob-async)
 (package! pyvenv)
-(package! ob-ipython)
+
+;;; This could be creating problems https://github.com/astahlman/ob-async/pull/35
+;; (package! ob-ipython)
+
 (package! python-black)
 (package! paxedit)
