@@ -79,12 +79,12 @@ except:
       (progn (delete-file exc-file)
              (delete-file exec-file)))))
 
-(advice-add
- 'org-babel-python-evaluate-session
- :around
- #'ob-python--eval-python-session-with-exceptions)
+;; (advice-add
+;;  'org-babel-python-evaluate-session
+;;  :around
+;;  #'ob-python--eval-python-session-with-exceptions)
 
-(defun async--org-babel-execute-python (orig body &rest args)
+(defun elle/wrap-org-babel-execute-python (orig body &rest args)
   (let* ( (exec-file (make-temp-file "execution-code")))
     (with-temp-file exec-file (insert body))
     (let* ((body (format "\
@@ -112,7 +112,7 @@ finally:
 (advice-add
  'org-babel-execute:python
  :around
- #'async--org-babel-execute-python)
+ #'elle/wrap-org-babel-execute-python)
 
 (defun python-org-header ()
   (interactive)
