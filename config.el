@@ -143,10 +143,13 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
-(global-set-key (kbd "C-x <down>") 'shrink-window)
-(global-set-key (kbd "C-x <up>") 'enlarge-window)
-(global-set-key (kbd "C-x <right>") 'shrink-window-horizontally)
-(global-set-key (kbd "C-x <left>") 'enlarge-window-horizontally)
+
+(map!
+ :leader
+ :desc "Shrink current window vertically" "w <down>" #'shrink-window
+ :desc "Enlarge current window vertically" "w <up>" #'enlarge-window
+ :desc "Shrink current window horizontally" "w <left>" #'shrink-window-horizontally
+ :desc "Enlarge current window horizontally" "w <right>" #'enlarge-window-horizontally)
 
 (after! magit
   (transient-define-suffix magit-reset-head-back ()
