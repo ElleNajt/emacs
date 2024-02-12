@@ -142,10 +142,15 @@ finally:
           (interrupt-process proc)
           (message "Interrupted session: %s" current-session))))))
 
-(map! (:mode org-mode
-       :n "C-c C-k" #'interrupt-org-babel-session))
+;;; C-c C-k alread bound to something in org mode, we add advice to the function that its
+;;; bound to to interrupt the process if the cursor is in a source block
+(define-advice org-kill-note-or-show-branches
+    (:around (orig &rest args) org-C-c-C-k-interrupt-org-babel-session)
+  (if (org-element-type-p (org-element-at-point) 'src-block)
+      (interrupt-org-babel-session)
+    (apply orig args)))
 
-;;; Writing a better interrupt function
+;;; Writing a better interrupt function --- in what way was this supposed to be better?
 (defun org-test ()
   (interactive)
   (let ((info (org-babel-get-src-block-info)))
