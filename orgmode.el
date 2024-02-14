@@ -47,13 +47,14 @@
         '(("i" "Inbox" tags "inbox")
           ("p" . "Person...")
           ))
-  (dolist (person (org-people))
-    (add-to-list 'org-agenda-custom-commands
-                 (list
-                  (concat "p" (substring person 0 1))
-                  (capitalize person)
-                  'tags-todo
-                  person)))
+
+  ;; (dolist (person (org-people))
+  ;;   (add-to-list 'org-agenda-custom-commands
+  ;;                (list
+  ;;                 (concat "p" (substring person 0 1))
+  ;;                 (capitalize person)
+  ;;                 'tags-todo
+  ;;                 person)))
 
   )
 (with-eval-after-load 'org (add-to-list 'org-modules 'org-habit t))
