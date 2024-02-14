@@ -12,3 +12,11 @@
                    (directory-files-recursively "~/Documents/OrgModeJupyter" "\\.org$"))
  org-directory "~/Documents/Notes")
 
+;;;  Put my default python here?
+;; (setq
+;;  python-interpreter ""
+;;  python-shell-interpreter ""
+;;  )
+;; (after! lsp-pyright
+;;   (setq lsp-pyright-python-executable-cmd ""
+;;         ))
