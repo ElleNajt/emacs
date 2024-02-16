@@ -166,3 +166,5 @@ it."
     #'magit-reset
     ["f"]
     (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
+
+(set-popup-rule! "^\\*eww\\*" :ignore t)
