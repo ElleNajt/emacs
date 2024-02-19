@@ -141,7 +141,7 @@ it."
 (load! "orgbabelpython")
 (load! "orgmode")
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
-
+(load! "combobulate-config")
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 
 (map!

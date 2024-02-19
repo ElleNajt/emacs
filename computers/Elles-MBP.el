@@ -20,3 +20,5 @@
 ;; (after! lsp-pyright
 ;;   (setq lsp-pyright-python-executable-cmd ""
 ;;         ))
+
+(setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
