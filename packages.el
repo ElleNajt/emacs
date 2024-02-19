@@ -61,3 +61,6 @@
 
 (package! python-black)
 (package! paxedit)
+;;; Added tree sitter
+(package! tree-sitter)
+(package! tree-sitter-langs)

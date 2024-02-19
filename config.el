@@ -168,3 +168,8 @@ it."
     (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
 
 (set-popup-rule! "^\\*eww\\*" :ignore t)
+(use-package! tree-sitter
+  :config
+  (require 'tree-sitter-langs)
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
