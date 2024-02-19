@@ -26,11 +26,19 @@ without properties"
   (let ((point (or point (point))))
     (buffer-substring-no-properties point (+ 1 point))))
 
+(define-move-and-insert grfn/insert-after-sexp-end
+                        (when (not (equal (get-char) "("))
+                          (backward-up-list))
+                        (forward-sexp))
+
 (define-move-and-insert grfn/insert-at-sexp-end
                         (when (not (equal (get-char) "("))
                           (backward-up-list))
                         (forward-sexp)
                         (backward-char))
+
+(define-move-and-insert grfn/insert-before-sexp-start
+                        (backward-up-list))
 
 (define-move-and-insert grfn/insert-at-sexp-start
                         (backward-up-list)
@@ -52,6 +60,7 @@ without properties"
           ")" 'sp-forward-slurp-sexp
           "(" 'sp-backward-barf-sexp
           "I" 'grfn/insert-at-sexp-end
+          "A" 'grfn/insert-after-sexp-end
           ;; "a" 'grfn/insert-at-form-end
           ))
 
@@ -61,6 +70,7 @@ without properties"
           ")" 'sp-forward-barf-sexp
           "(" 'sp-backward-slurp-sexp
           "I" 'grfn/insert-at-sexp-start
+          "A" 'grfn/insert-before-sexp-start
           ;; "a" 'grfn/insert-at-form-start
           )))
 
