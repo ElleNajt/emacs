@@ -1,3 +1,28 @@
+#+title: Config
+
+* Packages
+
+#+begin_src emacs-lisp :tangle packages.el
+;; -*- no-byte-compile: t; -*-
+;;; $DOOMDIR/packages.el
+(package! predd
+  :recipe (:host github :repo "skeeto/predd"))
+(package! general
+  :recipe (:host github :repo "noctuid/general.el"))
+(package! ob-async)
+(package! pyvenv)
+(package! python-black)
+(package! paxedit)
+(package! w3m)
+(package! oauth2)
+;;; Added tree sitter
+(package! tree-sitter)
+(package! tree-sitter-langs)
+#+end_src
+
+* Config
+
+#+begin_src emacs-lisp
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 (defun dired-mode-p () (eq 'dired-mode major-mode))
 (defun elle/dired-minus ()
@@ -112,3 +137,7 @@ it."
 (advice-add #'flymake-mode :around #'never-flymake-mode)
 
 (auto-save-visited-mode)
+#+end_src
+
+#+RESULTS:
+: t
