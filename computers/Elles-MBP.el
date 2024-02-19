@@ -22,3 +22,4 @@
 ;;         ))
 
 (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
+(setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
