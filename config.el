@@ -177,3 +177,8 @@ it."
 
 (setq major-mode-remap-alist
       '((python-mode . python-ts-mode)))
+(defun never-flymake-mode (orig &rest args)
+  (when (and (bound-and-true-p flymake-mode))
+    (funcall orig 0)
+    (message "disabled flymake-mode")))
+(advice-add #'flymake-mode :around #'never-flymake-mode)
