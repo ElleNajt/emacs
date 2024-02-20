@@ -35,7 +35,10 @@
     (add-to-list 'major-mode-remap-alist mapping))
 
   :config
-  (mp-setup-install-grammars)
+
+  ;; Commenting out for now
+  ;; (mp-setup-install-grammars)
+  ;;
   ;; Do not forget to customize Combobulate to your liking:
   ;;
   ;;  M-x customize-group RET combobulate RET
