@@ -69,4 +69,5 @@
                   (org-agenda-start-on-weekday 1)
                   (org-agenda-start-with-log-mode '(closed))
                   (org-agenda-skip-function
-                   '(org-agenda-skip-entry-if 'notregexp "^\\*\\* DONE "))))))
+                   '(org-agenda-skip-entry-if 'notregexp "^\\*+ DONE "))
+                  ))))
