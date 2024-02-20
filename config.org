@@ -18,14 +18,17 @@
 ;;; Added tree sitter
 (package! tree-sitter)
 (package! tree-sitter-langs)
+
+(package! combobulate
+  :recipe (:host github :repo "mickeynp/combobulate"))
+
+;; (package! ts-fold
+;;   :recipe (:host github :repo "https://github.com/emacs-tree-sitter/ts-fold/ts-fold.el"))
+
 #+end_src
 * External dependencies
-** Things to download directly from git:
-These go in Computers/hostname.el
-*** Combobulate
-*** Ts-fold
 ** Things to install that this uses:
-*** direnv (nix-env -iA direnv)
+*** direnv (nix-env -iA nixpkgs.direnv)
 *** nix-direnv
 ** TODO Manage this with home-manager instead https://github.com/nix-community/home-manager
 * Config
@@ -135,8 +138,8 @@ it."
 (setq major-mode-remap-alist
       '((python-mode . python-ts-mode)))
 
-(use-package ts-fold
-  :load-path tsfold-source-code-path)
+;; (use-package ts-fold
+;;   :load-path tsfold-source-code-path)
 
 (defun never-flymake-mode (orig &rest args)
   (when (and (bound-and-true-p flymake-mode))

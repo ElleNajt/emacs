@@ -40,7 +40,7 @@
   ;;
   ;;  M-x customize-group RET combobulate RET
   ;;
-  (use-package combobulate
+  (use-package! combobulate
     :preface
     ;; You can customize Combobulate's key prefix here.
     ;; Note that you may have to restart Emacs for this to take effect!
@@ -59,4 +59,5 @@
            (tsx-ts-mode . combobulate-mode))
     ;; Amend this to the directory where you keep Combobulate's source
     ;; code.
-    :load-path (combobulate-source-code-path)))
+    ;; :load-path (combobulate-source-code-path)
+    ))

@@ -102,8 +102,8 @@ it."
 (setq major-mode-remap-alist
       '((python-mode . python-ts-mode)))
 
-(use-package ts-fold
-  :load-path tsfold-source-code-path)
+;; (use-package ts-fold
+;;   :load-path tsfold-source-code-path)
 
 (defun never-flymake-mode (orig &rest args)
   (when (and (bound-and-true-p flymake-mode))

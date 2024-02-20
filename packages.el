@@ -13,3 +13,9 @@
 ;;; Added tree sitter
 (package! tree-sitter)
 (package! tree-sitter-langs)
+
+(package! combobulate
+  :recipe (:host github :repo "mickeynp/combobulate"))
+
+;; (package! ts-fold
+;;   :recipe (:host github :repo "https://github.com/emacs-tree-sitter/ts-fold/ts-fold.el"))
