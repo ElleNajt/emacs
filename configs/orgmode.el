@@ -58,3 +58,15 @@
 
   )
 (with-eval-after-load 'org (add-to-list 'org-modules 'org-habit t))
+
+;;;  From https://emacs.stackexchange.com/questions/52994/org-mode-agenda-show-list-of-tasks-done-in-the-past-and-not-those-clocked
+(with-eval-after-load 'org-agenda
+  (add-to-list 'org-agenda-custom-commands
+               '("W" "Weekly review"
+                 agenda ""
+                 ((org-agenda-start-day "-14d")
+                  (org-agenda-span 14)
+                  (org-agenda-start-on-weekday 1)
+                  (org-agenda-start-with-log-mode '(closed))
+                  (org-agenda-skip-function
+                   '(org-agenda-skip-entry-if 'notregexp "^\\*\\* DONE "))))))
