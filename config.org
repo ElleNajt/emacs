@@ -19,7 +19,15 @@
 (package! tree-sitter)
 (package! tree-sitter-langs)
 #+end_src
-
+* External dependencies
+** Things to download directly from git:
+These go in Computers/hostname.el
+*** Combobulate
+*** Ts-fold
+** Things to install that this uses:
+*** direnv (nix-env -iA direnv)
+*** nix-direnv
+** TODO Manage this with home-manager instead https://github.com/nix-community/home-manager
 * Config
 
 #+begin_src emacs-lisp
