@@ -99,7 +99,7 @@ it."
 (load! "configs/orgbabelpython")
 (load! "configs/orgmode")
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
-(load! "configs/combobulate-config")
+
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 
 (map!
@@ -126,20 +126,6 @@ it."
     (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
 
 (set-popup-rule! "^\\*eww\\*" :ignore t)
-
-(use-package! tree-sitter
-  :config
-  (require 'tree-sitter-langs)
-  (global-tree-sitter-mode)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-
-(use-package tree-sitter-langs)
-
-(setq major-mode-remap-alist
-      '((python-mode . python-ts-mode)))
-
-;; (use-package ts-fold
-;;   :load-path tsfold-source-code-path)
 
 (defun never-flymake-mode (orig &rest args)
   (when (and (bound-and-true-p flymake-mode))

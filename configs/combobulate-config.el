@@ -3,6 +3,7 @@
 ;; `M-x combobulate' (default: `C-c o o') to start using Combobulate
 (use-package treesit
   :preface
+
   (defun mp-setup-install-grammars ()
     "Install Tree-sitter grammars if they are absent."
     (interactive)

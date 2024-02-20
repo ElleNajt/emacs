@@ -15,3 +15,16 @@
 ;;;  Links to code downloaded from git
 ;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
 ;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
+
+(load! "../configs/combobulate-config")
+(setq major-mode-remap-alist
+      '((python-mode . python-ts-mode)))
+
+(use-package! tree-sitter
+  :config
+  (require 'tree-sitter-langs)
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+(use-package tree-sitter-langs)
+;; (use-package ts-fold
+;;   :load-path tsfold-source-code-path)
