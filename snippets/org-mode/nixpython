@@ -3,5 +3,5 @@
 # key: nixpython
 # --
 :PROPERTIES:
-:header-args: :results output :python "./python" :async t :session $1
+:header-args: :results output :python "./python" :async t :tangle :session $1
 :END:
