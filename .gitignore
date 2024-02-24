@@ -1,3 +1,4 @@
 **/secret.el
 keep.el
 *.pdf
+.DS_Store
