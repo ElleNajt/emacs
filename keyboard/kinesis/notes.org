@@ -1,0 +1,4 @@
+#+title: Notes
+
+Guide for programming is here:
+https://kinesis-ergo.com/wp-content/uploads/Adv360-SmartSet-Direct-Programming-Guide-v8-26-22.pdf
