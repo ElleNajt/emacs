@@ -13,7 +13,7 @@
 [pgdn]>[lalt]
 <keypad>
 <function1>
-{left}>{s5}{x1}{-lwin}{-lctr}{left}{+lwin}{+lwin}{d050}{lwin}{lwin}
-{rght}>{s5}{x1}{-lwin}{-lctr}{right}{+lwin}{+lwin}{d050}{lwin}{lwin}
+{left}>{s5}{x1}{-lwin}{-lctr}{left}{+lwin}{+lctr}{d050}{lwin}{lwin}
+{right}>{s5}{x1}{-lwin}{-lctr}{right}{+lwin}{+lctr}{d050}{lwin}{lwin}
 <function2>
 <function3>
