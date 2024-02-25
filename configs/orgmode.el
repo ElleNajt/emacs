@@ -71,3 +71,7 @@
                   (org-agenda-skip-function
                    '(org-agenda-skip-entry-if 'notregexp "^\\*+ DONE "))
                   ))))
+
+;;;  per https://docs.doomemacs.org/v21.12/modules/lang/org/#,code-1
+(after! evil-org
+  (remove-hook 'org-tab-first-hook #'+org-cycle-only-current-subtree-h))
