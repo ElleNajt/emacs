@@ -65,7 +65,7 @@
                '("W" "Weekly review"
                  agenda ""
                  ((org-agenda-start-day "-14d")
-                  (org-agenda-span 14)
+                  (org-agenda-span 18)
                   (org-agenda-start-on-weekday 1)
                   (org-agenda-start-with-log-mode '(closed))
                   (org-agenda-skip-function
