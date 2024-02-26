@@ -28,3 +28,6 @@
 (use-package tree-sitter-langs)
 ;; (use-package ts-fold
 ;;   :load-path tsfold-source-code-path)
+
+                                        ; For yabai:
+(menu-bar-mode t)
