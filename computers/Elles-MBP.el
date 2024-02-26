@@ -17,8 +17,9 @@
 ;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
 
 (load! "../configs/combobulate-config")
-(setq major-mode-remap-alist
-      '((python-mode . python-ts-mode)))
+
+;; (setq major-mode-remap-alist
+;;       '((python-mode . python-ts-mode)))
 
 (use-package! tree-sitter
   :config
