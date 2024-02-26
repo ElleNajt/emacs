@@ -29,28 +29,20 @@
                       "[ s" 'org-evil-block-beginning-of-block
                       "] s" 'org-evil-block-end-of-block)
 
+;;;  Per org-evil comment
 ;; Have to loop through as it looks like the text objects
 ;; don't configure correctly when binding multiple states
 ;; at once.
-
 (dolist (mode '(operator visual))
   (org-evil--define-key mode 'org-evil-block-mode
                         "ib" 'org-evil-block-inner-block
                         "ab" 'org-evil-block-a-block))
-
 
 (org-evil--define-key 'motion 'org-evil-motion-mode
                       "[[" 'org-evil-motion-backward-block-begin
                       "]]" 'org-evil-motion-forward-block-begin
                       "gH" 'org-evil-motion-up-heading-top
                       "gh" 'org-evil-motion-up-heading)
-
-
-;; ;; (undefine-key! evil-motion-state-map "<up>" "<down>")
-;; ;; (undefine-key! global-map "<up>" "<down>")
-;; (org-evil--define-key 'motion 'org-mode
-;;                       "g [" 'org-evil-motion-backward-heading
-;;                       "g ]" 'org-evil-motion-forward-heading)
 
 (map! (:mode org-mode
        :n "<up>" 'org-evil-motion-backward-heading
