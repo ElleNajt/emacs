@@ -9,11 +9,7 @@
   (goto-char (org-babel-where-is-src-block-result))
   )
 
-;; ;;; This loads in a modified version of org evil
-;; with the bindings commented out and which is prevented from byte compilation
-;;
-;;
-
+;;;  Loading in org-evil functions with keybindings removed and setting my own
 (load! "org-evil/org-evil-core")
 (load! "org-evil/org-evil-commands")
 (load! "org-evil/org-evil-motion")
