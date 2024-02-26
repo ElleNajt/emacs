@@ -14,6 +14,7 @@
 ;;
 ;;
 
+(load! "org-evil/org-evil-core")
 (load! "org-evil/org-evil-commands")
 (load! "org-evil/org-evil-motion")
 

@@ -24,7 +24,8 @@
 
 (require 'dash)
 (require 'evil)
-(require 'org-evil-core)
+
+;; (require 'org-evil-core)
 
 (org-evil--define-minor-mode org-evil-command-mode
   "Minor-mode for general org-evil commands."
