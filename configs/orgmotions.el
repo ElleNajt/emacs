@@ -22,8 +22,8 @@
 
 (map! (:mode org-mode
        :n "] r" #'org-babel-goto-src-block-results
-       "[ s" 'org-evil-block-beginning-of-block
-       "] s" 'org-evil-block-end-of-block))
+       :n "[ s" 'org-evil-block-beginning-of-block
+       :n "] s" 'org-evil-block-end-of-block))
 
 (org-evil--define-key 'motion 'org-evil-block-mode
                       "[ s" 'org-evil-block-beginning-of-block
