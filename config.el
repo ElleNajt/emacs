@@ -61,6 +61,7 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 (load! "configs/paxedit")
 (load! "configs/orgbabelpython")
+(load! "configs/orgmotions")
 (load! "configs/orgmode")
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 
