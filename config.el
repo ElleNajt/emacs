@@ -99,3 +99,8 @@ it."
 (advice-add #'flymake-mode :around #'never-flymake-mode)
 
 (auto-save-visited-mode)
+
+(global-evil-motion-trainer-mode 1)
+(setq evil-motion-trainer-threshold 6)
+;; (setq evil-motion-trainer-super-annoying-mode t)
+;; (require 'org-evil)

@@ -17,5 +17,27 @@
 (package! combobulate
   :recipe (:host github :repo "mickeynp/combobulate"))
 
+(package! evil-motion-trainer
+           :pin "32472acace6be6d99af1ab16cecaaea4344471ec"
+                :recipe (:host github
+                :repo "martinbaillie/evil-motion-trainer"))
+
+(package! dash
+  :recipe (:host github
+           :repo "magnars/dash.el"))
+
+;; ;; Not working see https://github.com/doomemacs/doomemacs/issues/7235
+;; ;; Going to clone the files into my .doom.d instead
+;; (unpin! org-evil)
+;; (package! org-evil
+;;   :recipe (:host github
+;;            :repo "GuiltyDolphin/org-evil")
+;;            ;; :fork (:host github :repo "ElleNajt/org-evil")
+;;            )
+;; (straight-use-package
+;;  '(org-evil :type git :host github :repo "GuiltyDolphin/org-evil"
+;;       :fork (:host github
+;;                    :repo "ElleNajtorg-evil")))
+
 ;; (package! ts-fold
 ;;   :recipe (:host github :repo "https://github.com/emacs-tree-sitter/ts-fold/ts-fold.el"))
