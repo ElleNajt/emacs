@@ -2,3 +2,7 @@
 keep.el
 *.pdf
 .DS_Store
+
+# Not tracking these as they are managed by config.org
+packages.el
+config.el
