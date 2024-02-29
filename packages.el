@@ -13,7 +13,7 @@
 ;;; Added tree sitter
 (package! tree-sitter)
 (package! tree-sitter-langs)
-
+(package! elpy)
 (package! combobulate
   :recipe (:host github :repo "mickeynp/combobulate"))
 
@@ -22,9 +22,13 @@
                 :recipe (:host github
                 :repo "martinbaillie/evil-motion-trainer"))
 
+(package! cl-lib)
 (package! dash
   :recipe (:host github
            :repo "magnars/dash.el"))
+(package! s)
+
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname-packages"))))
 
 ;; ;; Not working see https://github.com/doomemacs/doomemacs/issues/7235
 ;; ;; Going to clone the files into my .doom.d instead
