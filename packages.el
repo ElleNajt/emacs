@@ -28,7 +28,7 @@
            :repo "magnars/dash.el"))
 (package! s)
 
-(load! (concat "computers/" (string-trim (shell-command-to-string "hostname-packages"))))
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
 
 ;; ;; Not working see https://github.com/doomemacs/doomemacs/issues/7235
 ;; ;; Going to clone the files into my .doom.d instead
