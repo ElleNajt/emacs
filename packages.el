@@ -22,6 +22,10 @@
                 :recipe (:host github
                 :repo "martinbaillie/evil-motion-trainer"))
 
+(package! outli
+  :recipe (:host github :repo "jdtsmith/outli")
+  )
+
 (package! cl-lib)
 (package! dash
   :recipe (:host github

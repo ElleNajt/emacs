@@ -72,7 +72,6 @@ it."
 (load! "configs/magit")
 (load! "configs/orgmode")
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
-(load! "configs/vendored/outli")
 
 
 ;;;; Keybindings
@@ -168,30 +167,3 @@ it."
        :n "g j" 'outline-next-heading
        :n "g k" 'outline-previous-heading
        :n "g h" 'outline-up-heading))
-
-;; (defcustom outli-speed-commands
-;;   '(("Outline Navigation")
-;;     ("n" . outline-next-visible-heading)
-;;     ("p" . outline-previous-visible-heading)
-;;     ("f" . outline-forward-same-level)
-;;     ("b" . outline-backward-same-level)
-;;     ("u" . outline-up-heading)
-;;     ("Outline Visibility")
-;;     ("c" . outline-cycle)
-;;     ("C" . outline-cycle-buffer)
-;;     ("s" . outli-toggle-narrow-to-subtree)
-;;     ("h" . outline-hide-sublevels)
-;;     ("1" . (outline-hide-sublevels 1))
-;;     ("2" . (outline-hide-sublevels 2))
-;;     ("3" . (outline-hide-sublevels 3))
-;;     ("4" . (outline-hide-sublevels 4))
-;;     ("5" . (outline-hide-sublevels 5))
-;;     ("Outline Structure Editing")
-;;     ("U" . outline-move-subtree-up)
-;;     ("D" . outline-move-subtree-down)
-;;     ("r" . outline-demote)
-;;     ("l" . outline-promote)
-;;     ("i" . outli-insert-heading-respect-content)
-;;     ("@" . outline-mark-subtree)
-;;     ("?" . outli-speed-command-help))
-;;     z
