@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t; -*-
 
-
+;;;
 (with-eval-after-load 'org
   (add-to-list 'org-capture-templates
                '("f" "Food journal entry" entry

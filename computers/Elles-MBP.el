@@ -1,22 +1,23 @@
 ;;; -*- lexical-binding: t; -*-
 
-
+;;; Theme
 ;; (setq doom-theme 'doom-feather-dark)
 (setq doom-theme 'doom-outrun-electric)
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq initial-frame-alist '((fullscreen . maximize)))
-
+;;; Org file locations
 (setq
  org-agenda-files (append
                    (directory-files-recursively "~/Documents/Notes" "\\.org$")
                    (directory-files-recursively "~/Documents/OrgModeJupyter" "\\.org$"))
  org-directory "~/Documents/Notes")
 
-;;;  Links to code downloaded from git
+;;; Local only settings
+;;  Links to code downloaded from git
 ;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
 ;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
 
-(load! "../configs/vendored/combobulate-config")
+(load! "../vendored/combobulate-config")
 
 ;; (setq major-mode-remap-alist
 ;;       '((python-mode . python-ts-mode)))
@@ -30,5 +31,5 @@
 ;; (use-package ts-fold
 ;;   :load-path tsfold-source-code-path)
 
-                                        ; For yabai:
+;; Setting for yabai:
 (menu-bar-mode t)
