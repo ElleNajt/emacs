@@ -18,7 +18,11 @@ for notebook in *.ipynb; do
     org_file="${base_name}.org"
 
     # Convert .ipynb to .org using pandoc
-    pandoc "$notebook" -o "$org_file"
+    if ! [ -f "$org_file" ]; then
+        pandoc "$notebook" -o "$org_file"
+    else
+        echo "Error: The file $org_file already exists. Delete it first."
+    fi
 
     python_header="$(cat "${text_block_file}" | sed "s/SESSION_NAME_PLACEHOLDER/${base_name}/")"
 
