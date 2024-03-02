@@ -1,6 +1,6 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-;;;; General stuff
+;;; General stuff
 (require 'general)
 (general-evil-setup t)
 (require 'predd)
@@ -15,7 +15,7 @@
               "p" 'eval-sexp-at-point
               "c" 'eval-last-sexp
               "d" 'eval-defun)))
-;;;; Dired Stuff
+;;; Dired Stuff
 
 (defun dired-mode-p () (eq 'dired-mode major-mode))
 (defun elle/dired-minus ()
@@ -55,7 +55,7 @@ it."
        (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
 
 
-;;;; Python
+;;; Python
 (use-package! python-black
   :demand t
   :after python)
@@ -64,7 +64,7 @@ it."
 ;; (map! :leader :desc "Blacken Region" "m b r" #'python-black-region)
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
 
-;;;; Loading Other files
+;;; Loading Other files
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 (load! "configs/paxedit")
 (load! "configs/orgbabelpython")
@@ -74,7 +74,7 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 
 
-;;;; Keybindings
+;;; Keybindings
 (map!
  :leader
  :desc "Shrink current window vertically" "w <down>" #'shrink-window
@@ -99,9 +99,9 @@ it."
 ;; (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 
 
-;;;; eww
+;;; eww
 (set-popup-rule! "^\\*eww\\*" :ignore t)
-;;;; Flymake
+;;; Flymake
 (defun never-flymake-mode (orig &rest args)
   (when (and (bound-and-true-p flymake-mode))
     (funcall orig 0)
@@ -109,7 +109,7 @@ it."
 (advice-add #'flymake-mode :around #'never-flymake-mode)
 
 
-;;;; evil motion trainer mode configurations
+;;; evil motion trainer mode configurations
 
 (global-evil-motion-trainer-mode 1)
 (setq evil-motion-trainer-threshold 6)
@@ -136,11 +136,11 @@ it."
                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
                 next-line)
 
-;;;; Hot fuzz config
+;;; Hot fuzz config
 (use-package! hotfuzz
   :config (setq completion-styles '(hotfuzz)
                 completion-ignore-case t))
-;;;; Colors
+;;; Colors
 (custom-set-faces!
   ;; `(hl-line :background "#000000")
   ;; `(default :background "#200000")
