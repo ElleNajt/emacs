@@ -16,7 +16,7 @@
 ;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
 ;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
 
-(load! "../configs/combobulate-config")
+(load! "../configs/vendored/combobulate-config")
 
 ;; (setq major-mode-remap-alist
 ;;       '((python-mode . python-ts-mode)))
