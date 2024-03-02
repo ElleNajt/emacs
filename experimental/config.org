@@ -31,6 +31,7 @@
   :recipe (:host github
            :repo "magnars/dash.el"))
 (package! s)
+(package! hotfuzz)
 
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
 
@@ -195,4 +196,13 @@ it."
 (add-emt-advice evil-next-line
                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
                 next-line)
+
+(use-package! hotfuzz
+  :config (setq completion-styles '(hotfuzz)
+                completion-ignore-case t))
+
+(custom-set-faces!
+  `(hl-line :background "#000000"))
+
+
 #+end_src

@@ -27,6 +27,7 @@
   :recipe (:host github
            :repo "magnars/dash.el"))
 (package! s)
+(package! hotfuzz)
 
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
 
