@@ -7,7 +7,7 @@
 ;;; Evil
 (general-evil-setup t)
 ;; (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
-;;;; evil motion trainer
+;;;; Evil motion trainer
 
 (global-evil-motion-trainer-mode 1)
 (setq evil-motion-trainer-threshold 6)
@@ -478,13 +478,16 @@ finally:
 (map!
  (:prefix "z"
   :nv "TAB" #'outline-cycle
-  :nv "h" 'outline-hide-sublevels
+  ;; :nv "h s" 'outline-hide-sublevels
+  ;; bind outline-show-body
+  :nv "s" 'outline-show-all
+  :nv "h" 'outline-show-only-headings
   :nv "f" 'outline-forward-same-level
   :nv "p" 'outline-backward-same-level
   :nv "j" 'outline-next-heading
   :nv "k" 'outline-previous-heading
-  :nv "s" 'outli-toggle-narrow-to-subtree  ; replacing evil-scroll-start-column
-  ;; Leaving z n and z N bound to evil narrow buffer and unnarow
+  :nv "n" 'outli-toggle-narrow-to-subtree  ; replacing evil-scroll-start-column
+  ;; Leaving z N bound to doom/widen-indirectly-narrowed-buffer
   :nv "u" 'outline-up-heading
   ;; make condition using outli-on-heading-p
   :nv "," 'outline-promote
