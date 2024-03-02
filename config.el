@@ -147,23 +147,47 @@ it."
   ;; `(default :background "#200000")
   )
 
-;;;; Outline
-;;;;; Clean code folding via Outline minor mode.
-;; (add-hook 'prog-mode-hook 'outline-minor-mode)
-;; (add-hook 'text-mode-hook 'outline-minor-mode)
-;;;;; Formatting it with outli
+;;; Outline
+;;;;  Clean code folding via Outline minor mode.
+(add-hook 'prog-mode-hook 'outline-minor-mode)
+(add-hook 'text-mode-hook 'outline-minor-mode)
+
+;;;;;  Formatting it with outli
 (add-hook 'prog-mode-hook 'outli-mode)
 (add-hook 'text-mode-hook 'outli-mode)
-;;;;; Keybindings
+;;;;;  Keybindings
 
-;; Tab to "zoom in" on a function, backtab to "zoom out" to the outline.
-;; (evil-global-set-key 'normal (kbd "<tab>") 'outline-show-entry)
-;; (evil-global-set-key 'normal (kbd "<backtab>") 'outline-hide-body)
-;;
-;; outli--on-heading
+(map!
+ ;; (:mode outli-mode
+ (:prefix "z"
+  :n "TAB" #'outline-cycle
+  :nv "f" 'outline-forward-same-level
+  :nv "p" 'outline-backward-same-level
+  :nv "j" 'outline-next-heading
+  :nv "k" 'outline-previous-heading
+  :nv "s" 'outli-toggle-narrow-to-subtree  ; replacing evil-scroll-start-column
+  ;; Leaving z n and z N bound to evil narrow buffer and unnarow
+  :nv "u" 'outline-up-heading
+  ;; make condition using outli-on-heading-p
+  :nv "," 'outline-promote
+  :nv "." 'outline-demote
+  :nv "<up>" 'outline-move-subtree-up
+  :nv "<down>" 'outline-move-subtree-down))
+;; )
 
-(map! (:mode outli-mode
-       :n "TAB" #'outline-cycle
-       :n "g j" 'outline-next-heading
-       :n "g k" 'outline-previous-heading
-       :n "g h" 'outline-up-heading))
+
+;; (map! (:mode org-mode
+;;              (:prefix "z"
+;;               :n "TAB" #'outline-cycle
+;;               :nv "f" 'outline-forward-same-level
+;;               :nv "p" 'outline-backward-same-level
+;;               :nv "j" 'outline-next-heading
+;;               :nv "k" 'outline-previous-heading
+;;               :nv "s" 'outli-toggle-narrow-to-subtree  ; replacing evil-scroll-start-column
+;;               ;; Leaving z n and z N bound to evil narrow buffer and unnarow
+;;               :nv "u" 'org-up-element
+;;               ;; make condition using outli-on-heading-p
+;;               :nv "." 'outline-promote
+;;               :nv "," 'outline-demote
+;;               :nv "<up>" 'outline-move-subtree-up
+;;               :nv "<down>" 'outline-move-subtree-down)))
