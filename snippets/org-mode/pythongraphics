@@ -2,5 +2,5 @@
 # name: Graphics source block for python
 # key: graphicspythonsrcblock
 # --
-#+begin_src python :results graphics file output :wrap "org \n#+ATTR_HTML: :width 1000"  :file $1`(format-time-string "%Y%m%d%H%M%S")`.svg
+#+begin_src python :results graphics file output :wrap "org \n#+ATTR_HTML: :width 500"  :file $1`(format-time-string "%Y%m%d%H%M%S")`.svg
 #+end_src
