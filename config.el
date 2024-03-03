@@ -432,6 +432,8 @@ finally:
 
 ;;;;; For python editing in org files
 ;; (setq-default tab-width 2) -- TODO the version of this that actually works
+;;;; Org-babel Nix
+(add-hook 'org-mode  'org-nix-shell-mode)
 ;;;; Computer specific after org
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 ;;; Outline mode
@@ -442,11 +444,9 @@ finally:
 (add-hook 'prog-mode-hook 'outli-mode)
 (add-hook 'text-mode-hook 'outli-mode)
 ;;; Magit
-
 (evil-set-command-property 'smerge-next :repeat nil)
 (evil-set-command-property 'smerge-prev :repeat nil)
 ;;; Doom Settings
-
 (setq +evil-want-o/O-to-continue-comments nil)
 ;;; Keybindings
 ;;;; Windows
