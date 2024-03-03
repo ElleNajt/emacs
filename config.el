@@ -445,7 +445,9 @@ finally:
 
 (evil-set-command-property 'smerge-next :repeat nil)
 (evil-set-command-property 'smerge-prev :repeat nil)
+;;; Doom Settings
 
+(setq +evil-want-o/O-to-continue-comments nil)
 ;;; Keybindings
 ;;;; Windows
 (map!
