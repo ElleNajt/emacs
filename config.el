@@ -420,7 +420,15 @@ finally:
   (when (dired-mode-p)
     (let ((current-dir (dired-current-directory))
           (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
-      (shell-command (concat "cd " current-dir " && "script-path)))))
+      (compile (concat "cd " current-dir " && "script-path)))))
+
+(defun run-ipynb-to-org-conversion-script-recursively ()
+  (interactive)
+  (when (dired-mode-p)
+    (let ((current-dir (dired-current-directory))
+          (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
+      (compile (concat "cd " current-dir " && "script-path " -r")))))
+
 
 ;;;;; For python editing in org files
 ;; (setq-default tab-width 2) -- TODO the version of this that actually works
