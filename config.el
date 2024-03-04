@@ -459,12 +459,15 @@ finally:
 (setq windmove-wrap-around t)
 ;;; Keybindings
 ;;;; Windows
+
 (map!
  :leader
  :desc "Shrink current window vertically" "w <down>" #'shrink-window
  :desc "Enlarge current window vertically" "w <up>" #'enlarge-window
  :desc "Shrink current window horizontally" "w <left>" #'shrink-window-horizontally
- :desc "Enlarge current window horizontally" "w <right>" #'enlarge-window-horizontally)
+ :desc "Enlarge current window horizontally" "w <right>" #'enlarge-window-horizontally
+ :desc "Pop up minibuffer" "g o" #'+popup/raise
+ )
 
 ;;;; Magit
 (map!
