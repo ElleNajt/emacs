@@ -447,7 +447,16 @@ finally:
 (evil-set-command-property 'smerge-next :repeat nil)
 (evil-set-command-property 'smerge-prev :repeat nil)
 ;;; Doom Settings
+;;;; Editing
 (setq +evil-want-o/O-to-continue-comments nil)
+;;;; Fonts
+
+;; (setq doom-font (font-spec :family "Input Mono Narrow" :size 12 :weight 'semi-light)
+;;       doom-variable-pitch-font (font-spec :family "Fira Sans") ; inherits `doom-font''s :size
+;;       doom-unicode-font (font-spec :family "Input Mono Narrow" :size 12)
+;;       doom-big-font (font-spec :family "Fira Mono" :size 19))
+;;;; Windows
+(setq windmove-wrap-around t)
 ;;; Keybindings
 ;;;; Windows
 (map!
