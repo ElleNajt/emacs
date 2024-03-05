@@ -536,6 +536,7 @@ finally:
  :n "-" #'elle/dired-minus
  :n "g r" #'+lookup/references          ; previously +eval:region
  :n "g R" #'+lookup/references
+ :n "SPC r" #'eglot-rename
  (:leader
   "b b" #'ido-switch-buffer
   "a" #'org-capture)
