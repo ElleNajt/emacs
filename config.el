@@ -466,8 +466,9 @@ finally:
  :desc "Enlarge current window vertically" "w <up>" #'enlarge-window
  :desc "Shrink current window horizontally" "w <left>" #'shrink-window-horizontally
  :desc "Enlarge current window horizontally" "w <right>" #'enlarge-window-horizontally
- :desc "Pop up minibuffer" "g o" #'+popup/raise
- )
+ ( :mode +popup-buffer-mode
+         :desc "Pop up minibuffer" "g o" #'+popup/raise
+         ))
 
 ;;;; Magit
 (map!
@@ -533,6 +534,8 @@ finally:
 ;;;; General
 (map!
  :n "-" #'elle/dired-minus
+ :n "g r" #'+lookup/references          ; previously +eval:region
+ :n "g R" #'+lookup/references
  (:leader
   "b b" #'ido-switch-buffer
   "a" #'org-capture)
