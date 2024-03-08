@@ -306,8 +306,9 @@ except:
     (let* ((body (format "\
 exec_file = \"%s\"
 import time
-from datetime import datetime
-start = datetime.now()
+# since this can cause collisions if something else in the python script gets named datetime
+from datetime import datetime as org_babel_wrapper_datetime
+start = org_babel_wrapper_datetime.now()
 try:
     with open(exec_file, 'r') as file:
         exec(compile(file.read(), '<org babel source block>', 'exec'))
@@ -316,7 +317,7 @@ except:
     print(traceback.format_exc())
 finally:
     print(\"___________________________\")
-    print(\"Cell Timer: \", str(datetime.now() - start), \"\\n\")
+    print(\"Cell Timer: \", str(org_babel_wrapper_datetime.now() - start), \"\\n\")
     import os
     try:
         os.remove(exec_file)
