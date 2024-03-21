@@ -500,10 +500,12 @@ finally:
 
 ;;;; Outline
 (map!
+ :map outline-minor-mode-map
  (:prefix "z"
   :nv "TAB" #'outline-cycle
   ;; :nv "h s" 'outline-hide-sublevels
   ;; bind outline-show-body
+  :nv "r" #'evil-open-folds
   :nv "s" 'outline-show-all
   :nv "h" 'outline-show-only-headings
   :nv "f" 'outline-forward-same-level
@@ -519,11 +521,11 @@ finally:
   :nv "<up>" 'outline-move-subtree-up
   :nv "<down>" 'outline-move-subtree-down
   :nv "i" 'outli-insert-heading-respect-content
-  :nv "1" '(outline-hide-sublevels 1)
-  :nv "2" '(outline-hide-sublevels 2)
-  :nv "3" '(outline-hide-sublevels 3)
-  :nv "4" '(outline-hide-sublevels 4)
-  :nv "5" '(outline-hide-sublevels 5)
+  ;; :nv "1" '(outline-hide-sublevels 1)
+  ;; :nv "2" '(outline-hide-sublevels 2)
+  ;; :nv "3" '(outline-hide-sublevels 3)
+  ;; :nv "4" '(outline-hide-sublevels 4)
+  ;; :nv "5" '(outline-hide-sublevels 5)
   ))
 
 ;;;; Org python
