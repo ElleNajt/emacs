@@ -72,7 +72,8 @@
 `+vterm/toggle') to the directory of the current dired buffer, then switch to
 it."
   (interactive)
-  (let ((dir (dired-current-directory)))
+  (let ((dir (if buffer-file-name  (file-name-directory buffer-file-name) ( dired-current-directory  )
+                 )))
     (if-let* ((projectile-vterm-buffer-name
                (format "*doom:vterm-popup:%s*"
                        (if (bound-and-true-p persp-mode)
