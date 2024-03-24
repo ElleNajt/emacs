@@ -55,6 +55,17 @@
 ;; (map! :leader :desc "Blacken Region" "m b r" #'python-black-region)
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
 
+(defun vterm-run-and-return (command file)
+  (save-selected-window (save-mark-and-excursion
+                          (vterm-other-window)
+                          (vterm-send-string (concat command file))
+                          (vterm-send-return)
+                          )))
+
+(defun run/python ()
+  (interactive)
+  (vterm-run-and-return "python " buffer-file-name))
+
 ;;; Dired
 
 (defun dired-mode-p () (eq 'dired-mode major-mode))

@@ -33,3 +33,6 @@
 
 ;; Setting for yabai:
 (menu-bar-mode t)
+;;; Local keybindings:
+(map! :mode python-mode
+      (:nv "g RET" #'run/python))
