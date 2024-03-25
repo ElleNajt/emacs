@@ -558,6 +558,35 @@ finally:
  (:mode emacs-lisp-mode
   :n   "g SPC" #'eval-buffer ))
 
+;;; Misc
+;;;; eww
+(set-popup-rule! "^\\*eww\\*" :ignore t)
+
+;;;; Flymake
+(defun never-flymake-mode (orig &rest args)
+  (when (and (bound-and-true-p flymake-mode))
+    (funcall orig 0)
+    (message "disabled flymake-mode")))
+(advice-add #'flymake-mode :around #'never-flymake-mode)
+
+
+;;;; Hot fuzz config
+(use-package! hotfuzz
+  :config (setq completion-styles '(hotfuzz)
+                completion-ignore-case t))
+;;;; Colors
+(require 'rainbow-mode)
+(add-hook 'prog-mode-hook 'rainbow-mode)
+(custom-set-faces!
+  `(region
+    ;; :inherit lazy-highlight
+    ;; :inherit nil
+    :foreground "#919ad9"
+    :distantforeground "#131033"
+    :background "#1575b0"
+    )
+  )
+
 ;;; Tree sitter
 ;;  Links to code downloaded from git
 ;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
@@ -595,27 +624,3 @@ finally:
 
 (define-key evil-inner-text-objects-map "a"
             (evil-textobj-tree-sitter-get-textobj ( "assignment.inner")))
-
-
-;;; Misc
-;;;; eww
-(set-popup-rule! "^\\*eww\\*" :ignore t)
-
-;;;; Flymake
-(defun never-flymake-mode (orig &rest args)
-  (when (and (bound-and-true-p flymake-mode))
-    (funcall orig 0)
-    (message "disabled flymake-mode")))
-(advice-add #'flymake-mode :around #'never-flymake-mode)
-
-
-;;;; Hot fuzz config
-(use-package! hotfuzz
-  :config (setq completion-styles '(hotfuzz)
-                completion-ignore-case t))
-;;;; Colors
-(custom-set-faces!
-  ;; `(hl-line :background "#000000")
-  ;; `(default :background "#200000")
-  ;; `(default :background "#200000")
-  )
