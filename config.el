@@ -578,7 +578,10 @@ finally:
   "b b" #'ido-switch-buffer
   "a" #'org-capture)
  (:mode emacs-lisp-mode
-  :n   "g SPC" #'eval-buffer ))
+  :n   "g SPC" #'eval-buffer
+  :n   "g RET" #'eval-buffer
+  ))
+
 
 ;;; Misc
 ;;;; eww
