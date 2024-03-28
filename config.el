@@ -471,6 +471,28 @@ finally:
 ;;;; Windows
 (setq windmove-wrap-around t)
 ;;; Keybindings
+;;;; Python
+(defun positional-to-keyword-regexp (beg end)
+  (save-excursion
+    (goto-char beg)
+    (while (re-search-forward "\\(\\w+\\)\\([,\\)]\\)" (+ 10 end ) t)
+      (replace-match "\\1=\\1\\2" nil nil)))
+  )
+;; TODO This runs into an 'invalid search bound: wrong side of point" error, but works otherwise
+(defun positional-to-keyword (&optional beg end)
+  "Converts positional arguments to keyword arguments within the selected region."
+  (interactive "r")
+  (if (not (use-region-p))
+      (let* ((region (evil-inner-paren))
+             (beg (car region))
+             (end (car  (cdr region)))
+             )
+        (positional-to-keyword-regexp beg end))
+    (positional-to-keyword-regexp beg end)))
+
+(map! :mode python-mode
+      :leader :nv "c =" #'positional-to-keyword)
+
 ;;;; Windows
 
 (map!
