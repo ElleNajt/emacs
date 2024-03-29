@@ -6,7 +6,7 @@
 (require 'predd)
 ;;; Evil
 (general-evil-setup t)
-;; (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
+(remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 ;;;; Evil motion trainer
 
 (global-evil-motion-trainer-mode 1)
@@ -107,6 +107,7 @@ it."
 
 ;;;; General
 (auto-save-visited-mode)
+;; this is actually annoying -- should only make it apply to org mode files
 ;;;; Org Capture
 (with-eval-after-load 'org
   (defun org-projects ()
@@ -470,6 +471,143 @@ finally:
 ;;       doom-big-font (font-spec :family "Fira Mono" :size 19))
 ;;;; Windows
 (setq windmove-wrap-around t)
+;;; Misc
+;;;; eww
+(set-popup-rule! "^\\*eww\\*" :ignore t)
+
+;;;; Flymake
+(defun never-flymake-mode (orig &rest args)
+  (when (and (bound-and-true-p flymake-mode))
+    (funcall orig 0)
+    (message "disabled flymake-mode")))
+(advice-add #'flymake-mode :around #'never-flymake-mode)
+
+
+;;;; Hot fuzz config
+(use-package! hotfuzz
+  :config (setq completion-styles '(hotfuzz)
+                completion-ignore-case t))
+;;;; Colors
+(require 'rainbow-mode)
+(add-hook 'prog-mode-hook 'rainbow-mode)
+(custom-set-faces!
+  `(region
+    ;; :inherit lazy-highlight
+    ;; :inherit nil
+    :foreground "#919ad9"
+    :distantforeground "#131033"
+    :background "#1575b0"
+    )
+  )
+
+;;; Tree sitter
+;;  Links to code downloaded from git
+;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
+;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
+
+;; (load! "../vendored/combobulate-config")
+;; (setq major-mode-remap-alist
+;;       '((python-mode . python-ts-mode)))
+
+(use-package! tree-sitter
+  :config
+  (require 'tree-sitter-langs)
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+(use-package tree-sitter-langs)
+;; (use-package ts-fold
+;;   :load-path tsfold-source-code-path)
+;;;; Evil Object Tree sitter
+;; Just taking these from the evil-textobject-tree-sitter git
+;; bind `function.outer`(entire function block) to `f` for use in things like `vaf`, `yaf`
+
+(define-key evil-outer-text-objects-map "f"
+            (evil-textobj-tree-sitter-get-textobj "function.outer"))
+;; bind `function.inner`(function block without name and args) to `f` for use in things like `vif`, `yif`
+(define-key evil-inner-text-objects-map "f"
+            (evil-textobj-tree-sitter-get-textobj "function.inner"))
+;; You can also bind multiple items and we will match the first one we can find
+
+(define-key evil-outer-text-objects-map "l"
+            (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer")))
+
+(define-key evil-inner-text-objects-map "l"
+            (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner")))
+
+(define-key evil-outer-text-objects-map "a"
+            (evil-textobj-tree-sitter-get-textobj ( "assignment.outer")))
+
+(define-key evil-inner-text-objects-map "a"
+            (evil-textobj-tree-sitter-get-textobj ( "assignment.inner")))
+(defun goto-text-object (group &optional previous end query)
+  (interactive)
+  (evil-textobj-tree-sitter-goto-textobj group previous end query))
+
+(defun goto-next-parameter ()
+  (interactive)
+  (goto-text-object "parameter.inner")
+  )
+
+(defun goto-previous-paramater ()
+  (interactive)
+  (goto-text-object "parameter.inner" t)
+  )
+
+(defun goto-next-if ()
+  (interactive)
+  (goto-text-object "conditional.inner")
+  )
+
+(defun goto-previous-if ()
+  (interactive)
+  (goto-text-object "conditional.inner" t)
+  )
+
+(map!
+ :nv "] v" #'goto-next-parameter
+ :nv "[ v" #'goto-previous-paramater
+ :nv "] i" #'goto-next-if
+ :nv "[ i" #'goto-previous-if
+
+
+ )
+
+
+
+(defun goto-beginning-of-function ()
+  (interactive)
+  (goto-char (car  (evil-textobj-tree-sitter-function--function.inner ))))
+
+(defun goto-end-of-function ()
+  (interactive)
+  (goto-char (cadr (evil-textobj-tree-sitter-function--function.inner ))))
+
+(map!
+ :desc "Begging of function" :nv "SPC f [" #'goto-beginning-of-function
+ :nv "SPC f ]" #'goto-end-of-function
+ )
+
+
+
+
+(define-key evil-normal-state-map (kbd "]r") (lambda () (interactive) (goto-text-object "parameter.inner")))
+(define-key evil-normal-state-map (kbd "[r") (lambda () (interactive) (goto-text-object "parameter.inner" t)))
+(define-key evil-normal-state-map (kbd "]R") (lambda () (interactive) (goto-text-object "parameter.inner" nil t)))
+(define-key evil-normal-state-map (kbd "[R") (lambda () (interactive) (goto-text-object "parameter.inner" t t)))
+(define-key evil-normal-state-map (kbd "]a") (lambda () (interactive) (goto-text-object "conditional.outer")))
+(define-key evil-normal-state-map (kbd "[a") (lambda () (interactive) (goto-text-object "conditional.outer" t)))
+(define-key evil-normal-state-map (kbd "]A") (lambda () (interactive) (goto-text-object "conditional.outer" nil t)))
+(define-key evil-normal-state-map (kbd "[A") (lambda () (interactive) (goto-text-object "conditional.outer" t t)))
+(define-key evil-normal-state-map (kbd "]c") (lambda () (interactive) (goto-text-object "class.outer")))
+(define-key evil-normal-state-map (kbd "[c") (lambda () (interactive) (goto-text-object "class.outer" t)))
+(define-key evil-normal-state-map (kbd "]C") (lambda () (interactive) (goto-text-object "class.outer" nil t)))
+(define-key evil-normal-state-map (kbd "[C") (lambda () (interactive) (goto-text-object "class.outer" t t)))
+(define-key evil-normal-state-map (kbd "]f") (lambda () (interactive) (goto-text-object "function.outer")))
+(define-key evil-normal-state-map (kbd "[f") (lambda () (interactive) (goto-text-object "function.outer" t)))
+(define-key evil-normal-state-map (kbd "]F") (lambda () (interactive) (goto-text-object "function.outer" nil t)))
+(define-key evil-normal-state-map (kbd "[F") (lambda () (interactive) (goto-text-object "function.outer" t t)))
+
+
 ;;; Keybindings
 ;;;; Python
 (defun positional-to-keyword-regexp (beg end)
@@ -491,7 +629,8 @@ finally:
     (positional-to-keyword-regexp beg end)))
 
 (map! :mode python-mode
-      :leader :nv "c =" #'positional-to-keyword)
+      :leader :nv "c =" #'positional-to-keyword
+      )
 
 ;;;; Windows
 
@@ -581,71 +720,3 @@ finally:
   :n   "g SPC" #'eval-buffer
   :n   "g RET" #'eval-buffer
   ))
-
-
-;;; Misc
-;;;; eww
-(set-popup-rule! "^\\*eww\\*" :ignore t)
-
-;;;; Flymake
-(defun never-flymake-mode (orig &rest args)
-  (when (and (bound-and-true-p flymake-mode))
-    (funcall orig 0)
-    (message "disabled flymake-mode")))
-(advice-add #'flymake-mode :around #'never-flymake-mode)
-
-
-;;;; Hot fuzz config
-(use-package! hotfuzz
-  :config (setq completion-styles '(hotfuzz)
-                completion-ignore-case t))
-;;;; Colors
-(require 'rainbow-mode)
-(add-hook 'prog-mode-hook 'rainbow-mode)
-(custom-set-faces!
-  `(region
-    ;; :inherit lazy-highlight
-    ;; :inherit nil
-    :foreground "#919ad9"
-    :distantforeground "#131033"
-    :background "#1575b0"
-    )
-  )
-
-;;; Tree sitter
-;;  Links to code downloaded from git
-;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
-;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
-
-;; (load! "../vendored/combobulate-config")
-;; (setq major-mode-remap-alist
-;;       '((python-mode . python-ts-mode)))
-
-(use-package! tree-sitter
-  :config
-  (require 'tree-sitter-langs)
-  (global-tree-sitter-mode)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-(use-package tree-sitter-langs)
-;; (use-package ts-fold
-;;   :load-path tsfold-source-code-path)
-;;;; Evil Object Tree sitter
-;; Just taking these from the evil-textobject-tree-sitter git
-;; bind `function.outer`(entire function block) to `f` for use in things like `vaf`, `yaf`
-
-(define-key evil-outer-text-objects-map "f"
-            (evil-textobj-tree-sitter-get-textobj "function.outer"))
-;; bind `function.inner`(function block without name and args) to `f` for use in things like `vif`, `yif`
-(define-key evil-inner-text-objects-map "f"
-            (evil-textobj-tree-sitter-get-textobj "function.inner"))
-;; You can also bind multiple items and we will match the first one we can find
-
-(define-key evil-outer-text-objects-map "r"
-            (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer")))
-
-(define-key evil-inner-text-objects-map "r"
-            (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner")))
-
-
-(define-key evil-inner-text-objects-map "a"
-            (evil-textobj-tree-sitter-get-textobj ( "assignment.inner")))
