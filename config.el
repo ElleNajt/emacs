@@ -97,7 +97,7 @@ it."
       (message "No currently open vterm (press SPC o t)"))))
 
 (map!
- (:map dired-mode-map
+ (:map dired-mode-map                   ;; TODO Why does this work?
        (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
 
 
