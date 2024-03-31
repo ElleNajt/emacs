@@ -635,9 +635,27 @@ finally:
         (positional-to-keyword-regexp beg end))
     (positional-to-keyword-regexp beg end)))
 
+(defun python/next-string ()
+  (interactive)
+  (re-search-forward "[\\'\"]"))
+
+(defun python/previous-string ()
+  (interactive)
+  (re-search-backward "[\\'\"]"))
+
 (map! :mode python-mode
       :leader :nv "c =" #'positional-to-keyword
       )
+
+(map!
+ ;;  3 as in # 
+ :desc "Next Comment" :nv "] 3" #'+evil/next-comment
+ :desc "Previous Comment" :nv "[ 3" #'+evil/previous-comment
+
+ :nv "] s" #'python/next-string
+ :nv "[ s" #'python/previous-string
+ )
+
 
 ;;;; Windows
 
