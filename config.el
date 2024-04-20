@@ -35,17 +35,20 @@
                 next-line)
 ;;; Programming Languages
 ;;;; Elisp
-(evil-define-operator fireplace-eval (beg end)
+(evil-define-operator fireplace-eval-elisp (beg end)
   (pp-eval-expression (read (buffer-substring beg end))))
 
 (nmap :keymaps 'emacs-lisp-mode-map
   "c" (general-key-dispatch 'evil-change
-        "p" (general-key-dispatch 'fireplace-eval
+        "p" (general-key-dispatch 'fireplace-eval-elisp
               "p" 'eval-sexp-at-point
               "c" 'eval-last-sexp
               "d" 'eval-defun)))
+
 ;;;;; Paxedit
 (load! "vendored/paxedit")
+;;;; Clojure
+
 ;;;; Python
 (use-package! python-black
   :demand t
@@ -54,7 +57,8 @@
 ;; (map! :leader :desc "Blacken Buffer" "m b b" #'python-black-buffer)
 ;; (map! :leader :desc "Blacken Region" "m b r" #'python-black-region)
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
-
+(require 'py-isort)
+(add-hook 'before-save-hook 'py-isort-before-save)
 (defun vterm-run-and-return (command file)
   (save-selected-window (save-mark-and-excursion
                           (vterm-other-window)
@@ -523,6 +527,9 @@ finally:
 
 (define-key evil-outer-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.outer"))
 (define-key evil-inner-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.inner"))
+(define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.outer"))
+;; (define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-function--class.outer ))
+(define-key evil-inner-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.inner"))
 (define-key evil-outer-text-objects-map "l" (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer")))
 (define-key evil-inner-text-objects-map "l" (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner")))
 (define-key evil-outer-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ( "assignment.outer")))
@@ -547,6 +554,11 @@ finally:
  ;;  Next applicatioN
  :desc "Next Call" :nv "] n" (lambda () (interactive) (goto-text-object "call.outer"))
  :desc "Previous Call" :nv "[ n" (lambda () (interactive) (goto-text-object "call.outer" t))
+
+ :desc "Next loop (Inner)" :nv "] l" (lambda () (interactive) (goto-text-object "loop.inner"))
+ :desc "Previous loop (Inner)" :nv "[ l" (lambda () (interactive) (goto-text-object "loop.inner" t))
+ :desc "Next loop (Outer)" :nv "] l" (lambda () (interactive) (goto-text-object "loop.outer"))
+ :desc "Previous loop (Outer)" :nv "[ l" (lambda () (interactive) (goto-text-object "loop.outer" t))
 
  :desc "Next if (Inner)" :nv "] i" (lambda () (interactive) (goto-text-object "conditional.inner"))
  :desc "Previous if (Inner)" :nv "[ i" (lambda () (interactive) (goto-text-object "conditional.inner" t))
