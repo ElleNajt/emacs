@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: rblock
+# key: rblock
+# condition: t
+# --
+
+#+begin_src R :results output
+#+end_src

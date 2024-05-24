@@ -1,7 +1,8 @@
 # -*- mode: snippet -*-
-# name: Nix Python in Folder
+# name: Nix Python
 # key: nixpython
 # --
+* Notebook
 :PROPERTIES:
-:header-args: :results output :python "./python" :async t :tangle :session $1
+:header-args: :results output :python ./python :async t :tangle :session $1
 :END:

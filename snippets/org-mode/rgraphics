@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: rgraphics
+# key: rgraphics
+# condition: t
+# --
+#+begin_src R :file .orgimage.`(format-time-string "%Y%m%d%H%M%S")`.png :results graphics file
+#+end_src

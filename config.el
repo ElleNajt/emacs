@@ -50,6 +50,7 @@
 ;;;; Clojure
 
 ;;;; Python
+;; (elpy-enable)
 (use-package! python-black
   :demand t
   :after python)
@@ -59,12 +60,24 @@
 ;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
 (require 'py-isort)
 (add-hook 'before-save-hook 'py-isort-before-save)
+
 (defun vterm-run-and-return (command file)
-  (save-selected-window (save-mark-and-excursion
-                          (vterm-other-window)
-                          (vterm-send-string (concat command file))
-                          (vterm-send-return)
-                          )))
+  (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" (concat  command file))))
+         (buffer (get-buffer-create buffer-name)))
+    (save-selected-window
+      (save-mark-and-excursion
+        (display-buffer
+         buffer
+         '((display-buffer-reuse-window
+            display-buffer-in-side-window)
+           (side . bottom)
+           (slot . 0)
+           (window-height . 0.3)))
+        (with-current-buffer buffer
+          (unless (derived-mode-p 'vterm-mode)
+            (vterm-mode))
+          (vterm-send-string (concat command " " file))
+          (vterm-send-return))))))
 
 (defun run/python ()
   (interactive)
@@ -108,6 +121,28 @@ it."
 ;;; Loading computer specific files
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
+
+;;;; Movement around pictures
+
+(defun my-org-backward-paragraph (orig-fun &rest args)
+  "Advice function to move backward by paragraphs, skipping over images."
+  (let ((orig-point (point)))
+    (apply orig-fun args)
+    (while (and (org-in-regexp org-image-inline-re 1)
+                (> (point) orig-point))
+      (apply orig-fun args))))
+
+(advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
+(defun my-org-backward-paragraph (orig-fun &rest args)
+  "Advice function to move backward by paragraphs, skipping over images."
+  (let ((orig-point (point)))
+    (apply orig-fun args)
+    (while (and (org-in-regexp org-image-inline-re 1)
+                (> (point) orig-point))
+      (apply orig-fun args))))
+
+(advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
+
 
 ;;;; General
 (auto-save-visited-mode)
