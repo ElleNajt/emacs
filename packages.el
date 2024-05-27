@@ -6,14 +6,14 @@
   :recipe (:host github :repo "noctuid/general.el"))
 (package! ob-async)
 (package! pyvenv)
-(package! python-black)
+;; (package! python-black)
 (package! paxedit)
 (package! w3m)
 (package! oauth2)
-;;; Added tree sitter
 (package! tree-sitter)
 (package! tree-sitter-langs)
 (package! elpy)
+
 (package! combobulate
   :recipe (:host github :repo "mickeynp/combobulate"))
 

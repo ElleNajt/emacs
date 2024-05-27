@@ -51,13 +51,22 @@
 
 ;;;; Python
 ;; (elpy-enable)
-(use-package! python-black
-  :demand t
-  :after python)
-(add-hook! 'python-mode-hook #'python-black-on-save-mode)
-;; (map! :leader :desc "Blacken Buffer" "m b b" #'python-black-buffer)
-;; (map! :leader :desc "Blacken Region" "m b r" #'python-black-region)
-;; (map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
+
+(setq python-check-command "ruff")
+(add-hook 'python-mode-hook #'flymake-mode)
+(add-hook 'python-ts-mode-hook #'flymake-mode)
+
+(add-hook 'python-mode-hook
+          (lambda ()
+            (add-hook 'after-save-hook 'ruff-fix nil 'local)))
+
+(defun ruff-fix ()
+  "Format the current buffer with ruff."
+  (interactive)
+  (when (eq major-mode 'python-mode)
+    (shell-command (format "ruff --fix %s" (buffer-file-name)))
+    (revert-buffer t t t)))
+
 (require 'py-isort)
 (add-hook 'before-save-hook 'py-isort-before-save)
 
@@ -122,26 +131,28 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
-;;;; Movement around pictures
+(defun my-org-forward-paragraph (orig-fun &rest args)
+  "Advice function to move forward by paragraphs, skipping over images."
+  (let ((orig-point (point)))
+    (when (not (apply orig-fun args))
+      (goto-char (point-max)))
+    (while (and (org-in-regexp org-image-inline-re 1)
+                (< (point) orig-point))
+      (apply orig-fun args))))
 
 (defun my-org-backward-paragraph (orig-fun &rest args)
   "Advice function to move backward by paragraphs, skipping over images."
   (let ((orig-point (point)))
-    (apply orig-fun args)
+    (when (not (apply orig-fun args))
+      (goto-char (point-min)))
     (while (and (org-in-regexp org-image-inline-re 1)
                 (> (point) orig-point))
       (apply orig-fun args))))
 
-(advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
-(defun my-org-backward-paragraph (orig-fun &rest args)
-  "Advice function to move backward by paragraphs, skipping over images."
-  (let ((orig-point (point)))
-    (apply orig-fun args)
-    (while (and (org-in-regexp org-image-inline-re 1)
-                (> (point) orig-point))
-      (apply orig-fun args))))
+;; (advice-add 'org-forward-paragraph :around #'my-org-forward-paragraph)
+;; (advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
 
-(advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
+
 
 
 ;;;; General
