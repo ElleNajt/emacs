@@ -46,3 +46,9 @@
   :recipe (:host github
            :repo "meain/evil-textobj-tree-sitter"
            :files (:defaults "queries" "treesit-queries")))
+
+(package! auctex)
+(package! company-auctex)
+
+
+(package! exec-path-from-shell)
