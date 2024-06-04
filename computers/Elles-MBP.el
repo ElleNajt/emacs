@@ -50,3 +50,4 @@
                       (lambda ()
                         (TeX-command "LatexMk" 'TeX-master-file))
                       nil t)))
+(setq ruff-command "ruff check")

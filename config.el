@@ -52,23 +52,14 @@
 ;;;; Python
 ;; (elpy-enable)
 
-(setq python-check-command "ruff")
 (add-hook 'python-mode-hook #'flymake-mode)
 (add-hook 'python-ts-mode-hook #'flymake-mode)
-
-(add-hook 'python-mode-hook
-          (lambda ()
-            (add-hook 'after-save-hook 'ruff-fix nil 'local)))
-
-(defun ruff-fix ()
-  "Format the current buffer with ruff."
-  (interactive)
-  (when (eq major-mode 'python-mode)
-    (shell-command (format "ruff --fix %s" (buffer-file-name)))
-    (revert-buffer t t t)))
+(after! apheleia
+  (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
 
 (require 'py-isort)
-(add-hook 'before-save-hook 'py-isort-before-save)
+;; (add-hook 'before-save-hook 'py-isort-before-save)
 
 (defun vterm-run-and-return (command file)
   (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" (concat  command file))))
