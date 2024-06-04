@@ -493,6 +493,13 @@ finally:
           (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
       (compile (concat "cd " current-dir " && "script-path " -r")))))
 
+(defun run-org-to-ipynb-conversion-script ()
+  (interactive)
+  (when (dired-mode-p)
+    (let ((current-dir (dired-current-directory))
+          (script-path (concat doom-user-dir "bashscripts/converttoipynb.sh" )))
+      (compile (concat "cd " current-dir " && "script-path)))))
+
 
 ;;;;; For python editing in org files
 ;; (setq-default tab-width 2) -- TODO the version of this that actually works
