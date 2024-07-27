@@ -61,8 +61,8 @@
 (require 'py-isort)
 ;; (add-hook 'before-save-hook 'py-isort-before-save)
 
-(defun vterm-run-and-return (command file)
-  (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" (concat  command file))))
+(defun vterm-run-and-return (command)
+  (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" command )))
          (buffer (get-buffer-create buffer-name)))
     (save-selected-window
       (save-mark-and-excursion
@@ -76,12 +76,13 @@
         (with-current-buffer buffer
           (unless (derived-mode-p 'vterm-mode)
             (vterm-mode))
-          (vterm-send-string (concat command " " file))
+          (vterm-send-string command)
           (vterm-send-return))))))
 
 (defun run/python ()
   (interactive)
-  (vterm-run-and-return "python " buffer-file-name))
+  (vterm-run-and-return (concat "nix-shell -p 'python3.withPackages (p: [p.ipython p.matplotlib p.pandas p.seaborn])' --run 'python " buffer-file-name "'")))
+
 
 ;;; Dired
 
@@ -144,7 +145,27 @@ it."
 ;; (advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
 
 
+;;;; Deduplicate
+(defun sort-deduplicate-todos ()
+  "Sort TODOs by date, deduplicate exact copies."
+  (interactive)
+  (when (eq major-mode 'org-mode)
+    (save-excursion
+      (goto-char (point-min))
+      ;; Sort TODOs by contents
+      (org-sort-entries nil ?a)
+      (org-sort-entries nil ?d)
 
+      ;; Deduplicate exact copies
+      (let ((seen-todos (make-hash-table :test 'equal))
+            (current-todo ""))
+        (while (re-search-forward org-heading-regexp nil t)
+          (setq current-todo (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+          (if (gethash current-todo seen-todos)
+              (delete-region (line-beginning-position) (1+ (line-end-position)))
+            (puthash current-todo t seen-todos))))
+      )))
+;; TODO Would be great to also get this to remove TODOs if the corresponding DONE exists.
 
 ;;;; General
 (auto-save-visited-mode)
