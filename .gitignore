@@ -2,6 +2,7 @@
 keep.el
 *.pdf
 .DS_Store
+*.png
 
 
 custom.el
