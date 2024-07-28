@@ -1,0 +1,73 @@
+#+title: Orgbabeltesting
+
+* testing
+:PROPERTIES:
+:header-args: :results output :python "./python" :async t :session testing
+:END:
+
+#+begin_src python
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+#+end_src
+
+#+RESULTS:
+:
+: ___________________________
+: Cell Timer:  0:00:00.810896
+
+Mixing text and plots!
+
+#+begin_src python :results drawer
+print("look!")
+for i in range(2,5):
+        print(i)
+        df = pd.DataFrame({"x": range(5, i + 5), "y": range(5, i + 5)})
+        df.plot(x="x", y="y", kind="line")
+        plt.show()
+print("the next plot!")
+df = sns.load_dataset("iris")
+sns.scatterplot(data=df, x="sepal_length", y="sepal_width", hue="species")
+plt.show()
+print("tada!")
+#+end_src
+
+#+RESULTS:
+:results:
+look!
+2
+[[file:plots/orgbabeltesting/plot_20240728_124027_7663432.png]]
+3
+[[file:plots/orgbabeltesting/plot_20240728_124027_1423741.png]]
+4
+[[file:plots/orgbabeltesting/plot_20240728_124027_2717263.png]]
+the next plot!
+[[file:plots/orgbabeltesting/plot_20240728_124027_5661842.png]]
+tada!
+___________________________
+Cell Timer:  0:00:00.163701
+:end:
+
+Handling errors!
+
+#+begin_src python :results drawer
+print("look!")
+df = pd.DataFrame({"x": [1, 2, 3, 4, 5,6,7,], "y": [10, 11, 12, 13, 14,15,16]})
+df.plot(x="x", y="y", kind="line")
+plt.show()
+print(1/0)
+print("tada!")
+#+end_src
+
+#+RESULTS:
+:results:
+look!
+[[file:plots/plot_20240727_223748_8bd224815f.png]]
+Traceback (most recent call last):
+File "<org babel source block>", line 6, in <module>
+File "<org babel source block>", line 5, in <module>
+ZeroDivisionError: division by zero
+___________________________
+Cell Timer:  0:00:00.038071
+:end:
+

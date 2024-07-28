@@ -450,6 +450,78 @@ finally:
   (if (org-element-type-p (org-element-at-point) 'src-block)
       (interrupt-org-babel-session)
     (apply orig args)))
+;;;;; pymockbabel
+
+
+(defun elle/wrap-org-babel-execute-python-mock-plt (orig body &rest args)
+  (let* ( (exec-file (make-temp-file "execution-code")))
+    (with-temp-file exec-file (insert body))
+    (let* ((body (format "\
+exec_file = \"%s\"
+try:
+    import pymockbabel
+    imported = True
+except:
+    print('pymockbabel not available')
+    imported = False
+
+if imported:
+    outputs_and_file_paths, output_types, list_writer = pymockbabel.setup(\"%s\")
+    try:
+        with open(exec_file, 'r') as file:
+            exec(compile(file.read(), '<org babel source block>', 'exec'))
+    except:
+        import traceback
+        print(traceback.format_exc())
+    finally:
+        pymockbabel.display(outputs_and_file_paths, output_types, list_writer)
+        try:
+            os.remove(exec_file)
+        except:
+            pass" exec-file (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
+           (result (apply orig body args)))
+      result)))
+
+(advice-add
+ 'org-babel-execute:python
+ :around
+ #'elle/wrap-org-babel-execute-python-mock-plt)
+
+;;;;;; Garbage collection
+
+(defun find-org-file-references ()
+  "Find all file names referenced within [[]] in the current org buffer and return them as a list."
+  (let (file-references)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "\\[\\[file:\\([^]]+\\)\\]\\]" nil t)
+        (let ((file-name (match-string 1)))
+          (push file-name file-references))))
+    file-references))
+
+(defun delete-unused-pngs-in-buffer (buffer)
+  "Delete .png files in the /plots/ directory that are not referenced in the org file corresponding to BUFFER."
+  (with-current-buffer buffer
+    (when (eq major-mode 'org-mode)
+      (let* ((org-file (buffer-file-name))
+             (org-file-name (file-name-sans-extension (file-name-nondirectory org-file)))
+             (plots-dir (concat (file-name-directory org-file) "plots/" org-file-name))
+             (referenced-files (find-org-file-references))
+             (png-files (when (file-directory-p plots-dir) (directory-files plots-dir t "\\.png$"))))
+        (when png-files
+          (dolist (png-file png-files)
+            (let ((relative-png-file (file-relative-name png-file (file-name-directory org-file))))
+              (unless (member relative-png-file referenced-files)
+                (delete-file png-file)
+                (message "Deleted: %s" png-file)))))))))
+
+(defun delete-unused-pngs-in-all-org-files ()
+  "Delete unused .png files in all open org files."
+  (interactive)
+  (dolist (buffer (buffer-list))
+    (delete-unused-pngs-in-buffer buffer)))
+
+(run-at-time "5 min" 300 'delete-unused-pngs-in-all-org-files)
 
 ;;;;; Draft of interrupt function that sets alerts
 (defun org-test ()

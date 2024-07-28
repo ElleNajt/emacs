@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec "$(nix-build ./python.nix)/bin/python"
