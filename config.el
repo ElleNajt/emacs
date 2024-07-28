@@ -454,31 +454,28 @@ finally:
 
 
 (defun elle/wrap-org-babel-execute-python-mock-plt (orig body &rest args)
-  (let* ( (exec-file (make-temp-file "execution-code")))
+  (let* ( (exec-file (make-temp-file "execution-code"))
+          (pymockbabel-script-location (concat doom-user-dir "/python/pymockbabel")))
     (with-temp-file exec-file (insert body))
     (let* ((body (format "\
 exec_file = \"%s\"
+pymockbabel_script_location = \"%s\"
+import sys
+sys.path.append(pymockbabel_script_location)
+import pymockbabel
+outputs_and_file_paths, output_types, list_writer = pymockbabel.setup(\"%s\")
 try:
-    import pymockbabel
-    imported = True
+    with open(exec_file, 'r') as file:
+        exec(compile(file.read(), '<org babel source block>', 'exec'))
 except:
-    print('pymockbabel not available')
-    imported = False
-
-if imported:
-    outputs_and_file_paths, output_types, list_writer = pymockbabel.setup(\"%s\")
+    import traceback
+    print(traceback.format_exc())
+finally:
+    pymockbabel.display(outputs_and_file_paths, output_types, list_writer)
     try:
-        with open(exec_file, 'r') as file:
-            exec(compile(file.read(), '<org babel source block>', 'exec'))
+        os.remove(exec_file)
     except:
-        import traceback
-        print(traceback.format_exc())
-    finally:
-        pymockbabel.display(outputs_and_file_paths, output_types, list_writer)
-        try:
-            os.remove(exec_file)
-        except:
-            pass" exec-file (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
+        pass" exec-file pymockbabel-script-location (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
            (result (apply orig body args)))
       result)))
 
