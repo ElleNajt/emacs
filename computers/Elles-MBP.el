@@ -31,6 +31,9 @@
       (:nv "g RET" #'run/python))
 
 
+(map! (:nv "g SPC" #'run/generic))
+
+
 ;;; Latex
 
 (after! tex

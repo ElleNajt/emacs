@@ -83,6 +83,15 @@
   (interactive)
   (vterm-run-and-return (concat "nix-shell -p 'python3.withPackages (p: [p.ipython p.matplotlib p.pandas p.seaborn])' --run 'python " buffer-file-name "'")))
 
+(defun run/generic ()
+  "Make the current buffer file executable and run it in vterm."
+  (interactive)
+  (let ((file-name buffer-file-name))
+    (if (not file-name)
+        (message "Buffer is not visiting a file")
+      (progn
+        (vterm-run-and-return (concat "chmod +x " file-name))
+        (vterm-run-and-return file-name)))))
 
 ;;; Dired
 
