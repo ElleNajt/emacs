@@ -132,6 +132,12 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
+;;;; Org edit special
+
+(map! (:mode org-mode (:n "g '"  #'org-edit-special)))
+
+;;;; Movement
+
 (defun my-org-forward-paragraph (orig-fun &rest args)
   "Advice function to move forward by paragraphs, skipping over images."
   (let ((orig-point (point)))
