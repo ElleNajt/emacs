@@ -9,30 +9,30 @@
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
 ;;;; Evil motion trainer
 
-(global-evil-motion-trainer-mode 1)
-(setq evil-motion-trainer-threshold 6)
+;; (global-evil-motion-trainer-mode 1)
+;; (setq evil-motion-trainer-threshold 6)
 ;; (setq evil-motion-trainer-super-annoying-mode t)
 
-(add-emt-advice evil-next-line
-                '(evil-search-forward evil-jumper/backward evil-snipe-s)
-                next-line)
-(add-emt-advice evil-next-visual-line
-                '(evil-search-forward evil-jumper/backward evil-snipe-s)
-                next-line)
-(add-emt-advice evil-previous-line
-                '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward)
-                previous-line)
-(add-emt-advice evil-previous-visual-line
-                '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward))
-(add-emt-advice evil-forward-char
-                '(evil-search-forward evil-find-char evil-snipe-f evil-snipe-s))
-(add-emt-advice evil-backward-char
-                '(evil-search-backward evil-find-char-backward evil-snipe-F evil-snipe-S))
+;; (add-emt-advice evil-next-line
+;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
+;;                 next-line)
+;; (add-emt-advice evil-next-visual-line
+;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
+;;                 next-line)
+;; (add-emt-advice evil-previous-line
+;;                 '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward)
+;;                 previous-line)
+;; (add-emt-advice evil-previous-visual-line
+;;                 '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward))
+;; (add-emt-advice evil-forward-char
+;;                 '(evil-search-forward evil-find-char evil-snipe-f evil-snipe-s))
+;; (add-emt-advice evil-backward-char
+;;                 '(evil-search-backward evil-find-char-backward evil-snipe-F evil-snipe-S))
 
 
-(add-emt-advice evil-next-line
-                '(evil-search-forward evil-jumper/backward evil-snipe-s)
-                next-line)
+;; (add-emt-advice evil-next-line
+;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
+;;                 next-line)
 ;;; Programming Languages
 ;;;; Elisp
 (evil-define-operator fireplace-eval-elisp (beg end)
@@ -451,11 +451,12 @@ finally:
 
 ;; C-c C-k alread bound to something in org mode, we add advice to the function that its
 ;; bound to to interrupt the process if the cursor is in a source block
-(define-advice org-kill-note-or-show-branches
-    (:around (orig &rest args) org-C-c-C-k-interrupt-org-babel-session)
-  (if (org-element-type-p (org-element-at-point) 'src-block)
-      (interrupt-org-babel-session)
-    (apply orig args)))
+;; (define-advice org-kill-note-or-show-branches
+;;     (:around (orig &rest args) interrupt-org-babel-session)
+;;   (if (org-element-type-p (org-element-at-point) 'src-block)
+;;       (interrupt-org-babel-session)
+;;     (apply orig args)))
+
 ;;;;; pymockbabel
 
 
@@ -641,17 +642,17 @@ finally:
   :config (setq completion-styles '(hotfuzz)
                 completion-ignore-case t))
 ;;;; Colors
-(require 'rainbow-mode)
-(add-hook 'prog-mode-hook 'rainbow-mode)
-(custom-set-faces!
-  `(region
-    ;; :inherit lazy-highlight
-    ;; :inherit nil
-    :foreground "#919ad9"
-    :distantforeground "#131033"
-    :background "#1575b0"
-    )
-  )
+;; (require 'rainbow-mode)
+;; (add-hook 'prog-mode-hook 'rainbow-mode)
+;; (custom-set-faces!
+;;   `(region
+;;     ;; :inherit lazy-highlight
+;;     ;; :inherit nil
+;;     :foreground "#919ad9"
+;;     :distantforeground "#131033"
+;;     :background "#1575b0"
+;;     )
+;;   )
 
 ;;; Tree sitter
 ;;  Links to code downloaded from git
@@ -890,7 +891,8 @@ finally:
 ;;;; Org python
 (map! (:mode org-mode
        :n "<S-return>" #'run-cell-and-advance
-       :n "g SPC" #'org-babel-execute-buffer)
+       :n "g SPC" #'org-babel-execute-buffer
+       :n "C-c C-k" #'interrupt-org-babel-session)
       (:mode org-agenda-mode
              "SPC m A" #'org-archive-subtree))
 ;;;; General
@@ -906,3 +908,18 @@ finally:
   :n   "g SPC" #'eval-buffer
   :n   "g RET" #'eval-buffer
   ))
+
+;;;; Smooth scrolling
+
+(add-hook 'org-mode-hook (lambda () (pixel-scroll-precision-mode 1)))
+
+(setq pixel-scroll-precision-large-scroll-height 40.0)
+
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+
