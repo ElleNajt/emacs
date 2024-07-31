@@ -525,7 +525,7 @@ finally:
   (dolist (buffer (buffer-list))
     (delete-unused-pngs-in-buffer buffer)))
 
-(run-at-time "5 min" 300 'delete-unused-pngs-in-all-org-files)
+(run-at-time 300 300 'delete-unused-pngs-in-all-org-files)
 
 ;;;;; Draft of interrupt function that sets alerts
 (defun org-test ()
