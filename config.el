@@ -923,3 +923,37 @@ finally:
 
 (setq scroll-step 1) ;; keyboard scroll one line at a time
 
+
+;;; Corfu
+
+;; already in +evil-bindings
+;; (after! corfu
+
+;;   ;; (setq! corfu-preview-current nil
+;;   ;;        corfu-preselect 'first
+;;   ;;        completion-styles '(orderless basic partial-completion))
+
+;; corfu key-bindings
+;; (setq tab-always-indent t)
+;; (map! :map corfu-map
+;;       ;; :gi "TAB" nil
+;;       ;; #'corfu-complete
+;;       ;; :gi "<tab>" nil
+;;       ;; #'corfu-complete
+;;       :gi "C-y" #'corfu-complete
+;;       "C-d" #'corfu-info-location
+;;       "C-h" #'corfu-info-documentation)
+;;; Colors for tags
+
+;; (after! hl-todo
+;;   (setq hl-todo-keyword-faces
+;;         `(("TODO"  . (:foreground "red" :weight bold))
+;;           ;; You can customize other keywords here
+;;           ("FIXME" . (:foreground "orange" :weight bold))
+;;           ("NOTE"  . (:foreground "green" :weight bold)))))
+
+(after! org
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "red" :weight ultra-bold :box t :background "black" :height 1))
+          ("DONE" . (:foreground "green" :weight bold :box t :height 1))
+          ("WAITING" . (:foreground "orange" :weight bold)))))
