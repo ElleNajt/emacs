@@ -927,7 +927,9 @@ finally:
 ;;; Corfu
 
 ;; already in +evil-bindings
-;; (after! corfu
+(after! corfu
+  (setq corfu-popupinfo-delay 0)
+  )
 
 ;;   ;; (setq! corfu-preview-current nil
 ;;   ;;        corfu-preselect 'first
@@ -954,6 +956,6 @@ finally:
 
 (after! org
   (setq org-todo-keyword-faces
-        '(("TODO" . (:foreground "red" :weight ultra-bold :box t :background "black" :height 1))
-          ("DONE" . (:foreground "green" :weight bold :box t :height 1))
+        '(("TODO" . (:foreground "red" :weight ultra-bold :box t :background "black" ))
+          ("DONE" . (:foreground "green" :weight bold :box t ))
           ("WAITING" . (:foreground "orange" :weight bold)))))
