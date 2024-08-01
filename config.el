@@ -956,6 +956,6 @@ finally:
 
 (after! org
   (setq org-todo-keyword-faces
-        '(("TODO" . (:foreground "red" :weight ultra-bold :box t :background "black" ))
-          ("DONE" . (:foreground "green" :weight bold :box t ))
+        '(("TODO" . (:foreground "#e61f44" :weight ultra-bold :box t :background "black" ))
+          ("DONE" . (:foreground "#a7da1e" :weight bold :box t ))
           ("WAITING" . (:foreground "orange" :weight bold)))))
