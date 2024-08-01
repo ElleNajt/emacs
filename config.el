@@ -959,3 +959,28 @@ finally:
         '(("TODO" . (:foreground "#e61f44" :weight ultra-bold :box t :background "black" ))
           ("DONE" . (:foreground "#a7da1e" :weight bold :box t ))
           ("WAITING" . (:foreground "orange" :weight bold)))))
+
+;;; Cancel  /mark done recursive
+
+(defun cancel-all-in-subtree ()
+  "Cancel all todos in subtree."
+  (interactive)
+  (save-excursion
+    (let ((org-enforce-todo-dependencies nil))
+      (org-narrow-to-subtree)
+      (goto-char ( point-min ))
+      (while (search-forward "TODO" nil t)
+        (org-todo "CANCELLED"))
+      (widen))))
+
+
+(defun mark-done-all-in-subtree ()
+  "Cancel all todos in subtree."
+  (interactive)
+  (save-excursion
+    (let ((org-enforce-todo-dependencies nil))
+      (org-narrow-to-subtree)
+      (goto-char ( point-min ))
+      (while (search-forward "TODO" nil t)
+        (org-todo "DONE"))
+      (widen))))
