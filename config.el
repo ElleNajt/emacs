@@ -984,3 +984,14 @@ finally:
       (while (search-forward "TODO" nil t)
         (org-todo "DONE"))
       (widen))))
+;;; Timestamps
+
+;; Adding a space because otherwise it breaks org mode
+
+(defun my/org-time-stamp-advice (orig-fun &rest args)
+  "Ensure a space is inserted before the Org timestamp."
+  (unless (or (bolp) (eq (char-before) ?\s))
+    (insert " "))
+  (apply orig-fun args))
+
+(advice-add 'org-time-stamp :around #'my/org-time-stamp-advice)
