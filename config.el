@@ -962,17 +962,27 @@ finally:
 
 ;;; Cancel  /mark done recursive
 
-(defun cancel-all-in-subtree ()
-  "Cancel all todos in subtree."
+
+(defun cancel-all-in-org-file-or-subtree ()
+  "Cancel all todos in the entire Org file if the cursor is on the #+title: line. Otherwise, cancel todos in the current subtree."
   (interactive)
   (save-excursion
-    (let ((org-enforce-todo-dependencies nil))
-      (org-narrow-to-subtree)
-      (goto-char ( point-min ))
-      (while (search-forward "TODO" nil t)
-        (org-todo "CANCELLED"))
-      (widen))))
+    (let ((org-enforce-todo-dependencies nil)
+          (is-on-title-line (save-excursion
+                              (beginning-of-line)
+                              (looking-at-p "#\\+title:"))))
+      ;; Determine the scope of the search
+      (if (not is-on-title-line)
+          (org-narrow-to-subtree))
 
+      ;; Perform the search and cancel TODOs
+      (goto-char (point-min))
+      (while (re-search-forward "^\\*+ \\(TODO\\) " nil t)
+        (org-todo "CANCELLED"))
+
+      ;; Widen the buffer if it was narrowed
+      (when (not is-on-title-line)
+        (widen)))))
 
 (defun mark-done-all-in-subtree ()
   "Cancel all todos in subtree."
