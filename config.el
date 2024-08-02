@@ -134,7 +134,7 @@ it."
 
 ;;;; Org edit special
 
-(map! (:mode org-mode (:n "g '"  #'org-edit-special)))
+(map! (:mode org-mode (:n "g s"  #'org-edit-special)))
 
 ;;;; Movement
 
