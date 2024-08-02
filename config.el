@@ -1005,3 +1005,21 @@ finally:
   (apply orig-fun args))
 
 (advice-add 'org-time-stamp :around #'my/org-time-stamp-advice)
+
+;;; Get directory as text
+
+(defun doom/concat-text-files ()
+  "Concatenate all text files in the current directory, separated by filenames."
+  (interactive)
+  (let ((output-buffer (get-buffer-create "*Concatenated Text*")))
+    (with-current-buffer output-buffer
+      (read-only-mode 0)  ; Ensure we can modify the buffer
+      (erase-buffer)      ; Clear previous contents
+      (shell-command (concat doom-user-dir "bashscripts/directoryastext.sh" ) output-buffer)
+      (read-only-mode 1)) ; Make the buffer read-only again
+    (display-buffer output-buffer)))
+
+;; Optionally, bind this function to a key in dired-mode
+(map! :after dired
+      :map dired-mode-map
+      "C-c c" #'doom/concat-text-files)
