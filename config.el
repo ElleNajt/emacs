@@ -995,6 +995,15 @@ finally:
       (while (search-forward "TODO" nil t)
         (org-todo "DONE"))
       (widen))))
+
+
+(map! :after org
+      :map org-mode-map
+      :leader
+      (:prefix ("o" . "custom")
+       :desc "Cancel all TODOs in subtree or file" "C" #'cancel-all-in-org-file-or-subtree))
+
+
 ;;; Timestamps
 
 ;; Adding a space because otherwise it breaks org mode
