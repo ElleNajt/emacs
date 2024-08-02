@@ -3,7 +3,7 @@
 # key: pyheader
 # --
 :PROPERTIES:
-:header-args: :results output :python "nix-shell --pure --run python" :async t :session $1
+:header-args: :results output :python "nix-shell --pure --run python" :async t :session $0
 :END:
 
 #+begin_src nix :tangle /tmp/shell.nix :mkdirp t

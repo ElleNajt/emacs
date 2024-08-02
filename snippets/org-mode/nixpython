@@ -1,8 +1,0 @@
-# -*- mode: snippet -*-
-# name: Nix Python
-# key: nixpython
-# --
-* Notebook
-:PROPERTIES:
-:header-args: :results output :python ./python :async t :tangle :session $1
-:END:
