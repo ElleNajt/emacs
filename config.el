@@ -406,7 +406,7 @@ except:
     import traceback
     print(traceback.format_exc())
 finally:
-    print(\"___________________________\")
+    #print(\"___________________________\")
     print(\"Cell Timer: \", str(org_babel_wrapper_datetime.now() - start), \"\\n\")
     import os
     try:
