@@ -506,12 +506,13 @@ finally:
 (defun delete-unused-pngs-in-buffer (buffer)
   "Delete .png files in the /plots/ directory that are not referenced in the org file corresponding to BUFFER."
   (with-current-buffer buffer
-    (when (eq major-mode 'org-mode)
+    (when (and (eq major-mode 'org-mode) (buffer-file-name))
       (let* ((org-file (buffer-file-name))
              (org-file-name (file-name-sans-extension (file-name-nondirectory org-file)))
              (plots-dir (concat (file-name-directory org-file) "plots/" org-file-name))
              (referenced-files (find-org-file-references))
-             (png-files (when (file-directory-p plots-dir) (directory-files plots-dir t "\\.png$"))))
+             (png-files (when (and (file-directory-p plots-dir) (file-exists-p plots-dir))
+                          (directory-files plots-dir t "\\.png$"))))
         (when png-files
           (dolist (png-file png-files)
             (let ((relative-png-file (file-relative-name png-file (file-name-directory org-file))))
