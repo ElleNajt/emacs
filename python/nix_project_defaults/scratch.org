@@ -1,0 +1,11 @@
+#+title: Scratch
+
+* Notebook
+:PROPERTIES:
+:header-args: :results output :python "nix-shell --run python" :async t :tangle :session testingnix
+:END:
+
+#+begin_src python
+import pandas as pd
+import seaborn as sns
+#+end_src
