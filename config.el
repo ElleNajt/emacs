@@ -7,6 +7,13 @@
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
+
+;;; Theme
+(setq doom-theme 'doom-outrun-electric)
+
+;; (setq doom-theme 'doom-shades-of-purple)
+
+;; (setq doom-theme 'doom-feather-dark)
 ;;;; Evil motion trainer
 
 ;; (global-evil-motion-trainer-mode 1)
