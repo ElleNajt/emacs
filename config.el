@@ -1040,3 +1040,59 @@ finally:
 (map! :after dired
       :map dired-mode-map
       "C-c c" #'doom/concat-text-files)
+
+;;; i3 status stuff
+
+
+(defun elle/org-text-element->string (elt)
+  (cond
+   ((stringp elt) elt)
+   ((and (consp elt)
+         (symbolp (car elt)))
+    (-> elt (caddr) (elle/org-text-element->string) (s-trim) (concat " ")))))
+
+(defun elle/org-element-title (elt)
+  (let ((title (org-element-property :title elt)))
+    (cond
+     ((stringp title) title)
+     ((listp title)
+      (->> title
+           (mapcar #'elle/org-text-element->string)
+           (s-join "")
+           (s-trim))))))
+
+(defun elle/minutes->hours:minutes (minutes)
+  (format "%d:%02d"
+          (floor (/ minutes 60))
+          (mod minutes 60)))
+(defun elle/org-element-clocked-in-task ()
+  (elle/at-org-clocked-in-item
+   (org-element-at-point)))
+
+
+(defmacro elle/at-org-clocked-in-item (&rest body)
+  `(when (org-clocking-p)
+     (let ((m org-clock-marker))
+       (with-current-buffer (marker-buffer m)
+         (save-mark-and-excursion
+           (goto-char m)
+           (org-back-to-heading t)
+           ,@body)))))
+
+(defun elle/org-current-clocked-in-task-message ()
+  (interactive)
+  (if (org-clocking-p)
+      (format "(%s) [%s]"
+              (->> (elle/org-element-clocked-in-task)
+                   (elle/org-element-title)
+                   (substring-no-properties)
+                   (s-trim))
+              (elle/minutes->hours:minutes
+               (org-clock-get-clocked-time)))
+    ""))
+
+
+(defun elle/test_message ()
+  (interactive)
+  "Hello from emacs!"
+  )
