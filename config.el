@@ -1096,3 +1096,12 @@ finally:
   (interactive)
   "Hello from emacs!"
   )
+
+;;;
+;;;
+(use-package eglot
+  :config
+  ;; Ensure `nil` is in your PATH.
+  (add-to-list 'eglot-server-programs '(nix-mode . ("nil")))
+  :hook
+  (nix-mode . eglot-ensure))
