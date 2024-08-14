@@ -3,8 +3,7 @@
 
 (setq
  org-agenda-files (append
-                   (directory-files-recursively "/mnt/shared/Notes" "\\.org$")
-                   (directory-files-recursively "/mnt/shared/OrgModeJupyter" "\\.org$"))
- org-directory "/mnt/shared/Notes")
+                   (directory-files-recursively "~/Notes" "\\.org$"))
+ org-directory "~/Notes")
 
 (load! (concat "personal_common.el" ))
