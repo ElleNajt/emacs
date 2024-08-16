@@ -12,7 +12,6 @@
 (setq doom-theme 'doom-outrun-electric)
 
 ;; (setq doom-theme 'doom-shades-of-purple)
-
 ;; (setq doom-theme 'doom-feather-dark)
 ;;;; Evil motion trainer
 
@@ -41,6 +40,12 @@
 ;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
 ;;                 next-line)
 ;;; Programming Languages
+
+(map!
+ :n "] e" 'flycheck-next-error
+ :n "[ e" 'flycheck-previous-error
+
+ )
 ;;;; Elisp
 (evil-define-operator fireplace-eval-elisp (beg end)
   (pp-eval-expression (read (buffer-substring beg end))))
@@ -54,6 +59,9 @@
 
 ;;;;; Paxedit
 (load! "vendored/paxedit")
+
+;;; Rust
+
 ;;;; Clojure
 
 ;;;; Python
@@ -662,129 +670,6 @@ finally:
 ;;     )
 ;;   )
 
-;;; Tree sitter
-;;  Links to code downloaded from git
-;; (setq combobulate-source-code-path "~/Documents/GitHub/combobulate")
-;; (setq tsfold-source-code-path "~/Documents/GitHub/ts-fold")
-
-;; (load! "../vendored/combobulate-config")
-;; (setq major-mode-remap-alist
-;;       '((python-mode . python-ts-mode)))
-
-(use-package! tree-sitter
-  :config
-  (require 'tree-sitter-langs)
-  (global-tree-sitter-mode)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-(use-package tree-sitter-langs)
-;; (use-package ts-fold
-;;   :load-path tsfold-source-code-path)
-;;;; Evil Object Tree sitter
-;;;;; Evil text objects
-;; Docs: You can also bind multiple items and we will match the first one we can find
-
-(define-key evil-outer-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.outer"))
-(define-key evil-inner-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.inner"))
-(define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.outer"))
-;; (define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-function--class.outer ))
-(define-key evil-inner-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.inner"))
-(define-key evil-outer-text-objects-map "l" (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer")))
-(define-key evil-inner-text-objects-map "l" (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner")))
-(define-key evil-outer-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ( "assignment.outer")))
-(define-key evil-inner-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ( "assignment.inner")))
-
-;;;;; Goto text object
-(defun goto-text-object (group &optional previous end query)
-  (interactive)
-  (evil-textobj-tree-sitter-goto-textobj group previous end query))
-;; Some comments here
-
-
-(map!
- :desc "Next Parameter" :nv "] x" (lambda () (interactive) (goto-text-object "parameter.inner"))
- :desc "Previous Parameter" :nv "[ x" (lambda () (interactive) (goto-text-object "parameter.inner" t))
-
- :desc "Next Return" :nv "] r" (lambda () (interactive) (goto-text-object "return.outer"))
- :desc "Previous Return" :nv "[ r" (lambda () (interactive) (goto-text-object "return.outer" t))
- :desc "Next Return" :nv "] R" (lambda () (interactive) (goto-text-object "return.inner"))
- :desc "Previous Return" :nv "[ R" (lambda () (interactive) (goto-text-object "return.inner" t))
-
- ;;  Next applicatioN
- :desc "Next Call" :nv "] n" (lambda () (interactive) (goto-text-object "call.outer"))
- :desc "Previous Call" :nv "[ n" (lambda () (interactive) (goto-text-object "call.outer" t))
-
- :desc "Next loop (Inner)" :nv "] l" (lambda () (interactive) (goto-text-object "loop.inner"))
- :desc "Previous loop (Inner)" :nv "[ l" (lambda () (interactive) (goto-text-object "loop.inner" t))
- :desc "Next loop (Outer)" :nv "] l" (lambda () (interactive) (goto-text-object "loop.outer"))
- :desc "Previous loop (Outer)" :nv "[ l" (lambda () (interactive) (goto-text-object "loop.outer" t))
-
- :desc "Next if (Inner)" :nv "] i" (lambda () (interactive) (goto-text-object "conditional.inner"))
- :desc "Previous if (Inner)" :nv "[ i" (lambda () (interactive) (goto-text-object "conditional.inner" t))
- :desc "Next if (Outer)" :nv "] i" (lambda () (interactive) (goto-text-object "conditional.outer"))
- :desc "Previous if (Outer)" :nv "[ i" (lambda () (interactive) (goto-text-object "conditional.outer" t))
-
- ;;  Mostly I want to move to outer assignments, it's easy to get to the inner assignment from them with WW
- :desc "Next Assignment" :nv "] a" (lambda () (interactive) (goto-text-object "assignment.outer"))
- :desc "Previous Assignment" :nv "[ a" (lambda () (interactive) (goto-text-object "assignment.outer" t))
- :desc "Next Assignment" :nv "] A" (lambda () (interactive) (goto-text-object "assignment.inner"))
- :desc "Previous Assignment" :nv "[ A" (lambda () (interactive) (goto-text-object "assignment.inner" t))
-
- :desc "Next class (Outer)" :nv "] c" (lambda () (interactive) (goto-text-object "class.outer"))
- :desc "Previous class (Outer)" :nv "[ c" (lambda () (interactive) (goto-text-object "class.outer" t))
- :desc "Next class (Inner)" :nv "] C" (lambda () (interactive) (goto-text-object "class.inner"))
- :desc "Previous class (Inner)" :nv "[ C" (lambda () (interactive) (goto-text-object "class.inner" t))
-
- ;;  undecided about this binding because Next/Previous function is cool, and [ m ] m feels kinda clunky
- :desc "Next function (Inner)" :nv "] F" (lambda () (interactive) (goto-text-object "function.inner"))
- :desc "Previous function (Inner)" :nv "[ F" (lambda () (interactive) (goto-text-object "function.inner" t))
- :desc "Next function (Outer)" :nv "] f" (lambda () (interactive) (goto-text-object "function.outer"))
- :desc "Previous function (Outer)" :nv "[ f" (lambda () (interactive) (goto-text-object "function.outer" t)))
-
-;;;;; top / bottom of text object
-
-;; Can these be made into motions?
-(map!
-
- :desc "Begging of Function (Inner)" :nv "SPC f ["
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--function.inner ))))
- :desc "End of Function (Inner)" :nv "SPC f ]"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--function.inner ))))
- :desc "End of Function (Outer)" :nv "SPC f {"
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--function.outer ))))
- :desc "End of Function (Outer)" :nv "SPC f }"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--function.outer ))))
-
- :desc "Begging of Class (Inner)" :nv "SPC c ["
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--class.inner ))))
- :desc "End of Class (Inner)" :nv "SPC c ]"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--class.inner ))))
- :desc "End of Class (Outer)" :nv "SPC c {"
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--class.outer ))))
- :desc "End of Class (Outer)" :nv "SPC c }"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--class.outer ))))
-
- :desc "Begging of Loop (Inner)" :nv "SPC l ["
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--loop.inner ))))
- :desc "End of Loop (Inner)" :nv "SPC l ]"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--loop.inner ))))
- :desc "End of Loop (Outer)" :nv "SPC l {"
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--loop.outer ))))
- :desc "End of Loop (Outer)" :nv "SPC l }"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--loop.outer ))))
-
- :desc "Begging of Conditional (Inner)" :nv "SPC i ["
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--conditional.inner ))))
- :desc "End of Conditional (Inner)" :nv "SPC i ]"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--conditional.inner ))))
- :desc "End of Conditional (Outer)" :nv "SPC i {"
- (lambda () (interactive) (goto-char (car  (evil-textobj-tree-sitter-function--conditional.outer ))))
- :desc "End of Conditional (Outer)" :nv "SPC i }"
- (lambda () (interactive) (goto-char (cadr  (evil-textobj-tree-sitter-function--conditional.outer ))))
-
- )
-
-
-
 ;;; Keybindings
 ;;;; Python
 (defun positional-to-keyword-regexp (beg end)
@@ -1105,3 +990,73 @@ finally:
   (add-to-list 'eglot-server-programs '(nix-mode . ("nil")))
   :hook
   (nix-mode . eglot-ensure))
+
+;;; next action
+;; idea from here: https://www.adventuresinwhy.com/post/next-actions/
+(defun org-agenda-skip-all-siblings-but-first ()
+  "Skip all but the first non-done entry."
+  (interactive)
+  (let (should-skip-entry)
+    (unless (org-current-is-todo)
+      (setq should-skip-entry t))
+    (save-excursion
+      ;; If previous sibling exists and is TODO,
+      ;; skip this entry
+      (while (and (not should-skip-entry) (org-goto-sibling t))
+        (when (org-current-is-todo)
+          (setq should-skip-entry t))))
+    (let ((num-ancestors (org-current-level))
+          (ancestor-level 1))
+      (while (and (not should-skip-entry) (<= ancestor-level num-ancestors))
+        (save-excursion
+          ;; When ancestor (parent, grandparent, etc) exists
+          (when (ignore-errors (outline-up-heading ancestor-level t))
+            ;; If ancestor is WAITING, skip entry
+            (if (string= "WAITING" (org-get-todo-state))
+                (setq should-skip-entry t)
+              ;; Else if ancestor is TODO, check previous siblings of
+              ;; ancestor ("uncles"); if any of them are TODO, skip
+              (when (org-current-is-todo)
+                (while (and (not should-skip-entry) (org-goto-sibling t))
+                  (when (org-current-is-todo)
+                    (setq should-skip-entry t)))))))
+        (setq ancestor-level (1+ ancestor-level))
+        ))
+    (when should-skip-entry
+      (or (outline-next-heading)
+          (goto-char (point-max))))))
+
+;; (defun org-current-is-todo ()
+;;   (string= "TODO" (org-get-todo-state)))
+;; (org-agenda-custom-commands
+;;  '(
+;;    ("N" "Next Actions"
+;;     ((agenda)
+;;      (tags-todo "@work"
+;;                 ((org-agenda-overriding-header "Work")
+;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
+;;      (tags-todo "@home"
+;;                 ((org-agenda-overriding-header "Home")
+;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
+;;      ))
+;;    ("h" "At home" tags-todo "@home"
+;;     ((org-agenda-overriding-header "Home")
+;;      (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
+;;    ("w" "Work" tags-todo "@work"
+;;     ((org-agenda-overriding-header "Work")
+;;      (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
+;;    ("F" "First Action"
+;;     ((tags-todo "@first"
+;;                 ((org-agenda-overriding-header "First Action")
+;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))))
+;;    ("W" "Waiting" todo "WAITING")
+;;    ))
+;; (org-stuck-projects '("+LEVEL>=2+LEVEL<=3-@notstuck/-CANCELLED-DONE"
+;;                       ("TODO" "WAITING")
+;;                       nil
+;;                       ""))
+
+
+;;; Turning off tree sitter
+
+(setq tree-sitter-mode nil)

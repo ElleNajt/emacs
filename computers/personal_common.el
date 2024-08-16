@@ -1,8 +1,22 @@
 ;;; computers/personal_common.el -*- lexical-binding: t; -*-
 
+;;; Gptel
 
+(use-package! gptel)
+(setq! gptel-api-key (shell-command-to-string "pass openai-api"))
+(setq gptel-log-level "debug")
+
+
+;; (setq
+;;  gptel-model "claude-3-sonnet-20240229" ;  "claude-3-opus-20240229" also available
+;;  gptel-backend (gptel-make-openai "OpenAI"
+;;                  :stream t :key (shell-command-to-string "pass openai"))
+;;  gptel-backend (gptel-make-anthropic "Claude"
+;;                  :stream t :key (shell-command-to-string "pass claude-api"))
+;;  )
+;; (setq gptel-use-curl t)
+;;; Ruff
 (setq ruff-command "ruff check")
-
 
 ;;; Local keybindings:
 (map! :mode python-mode

@@ -109,14 +109,14 @@
        (lsp +eglot +docsets)      ; M-x vscode
        magit             ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
-       ;;pass              ; password manager for nerds
+       pass              ; password manager for nerds
        pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        rgb               ; creating color strings
        ;;taskrunner        ; taskrunner for all your projects
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
-       tree-sitter       ; syntax and parsing, sitting in a tree...
+       ;; tree-sitter       ; syntax and parsing, sitting in a tree...
        ;;upload            ; map local to remote projects via ssh/ftp
 
        :os
@@ -163,7 +163,8 @@
        markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
        ( nix
-         +tree-sitter)               ; I hereby declare "nix geht mehr!"
+         ;; +tree-sitter
+         )               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
        (org
         +pandoc
@@ -179,14 +180,15 @@
         +lsp
         +pyright
         +isort
-        +tree-sitter)            ; beautiful is better than ugly
+        ;; +tree-sitter
+        )            ; beautiful is better than ugly
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;raku              ; the artist formerly known as perl6
        ;;rest              ; Emacs as a REST client
        ;;rst               ; ReST in peace
        ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       ;;(rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+       (rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
        ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        sh                ; she sells {ba,z,fi}sh shells on the C xor

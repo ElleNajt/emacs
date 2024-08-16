@@ -66,4 +66,6 @@
       :desc "Toggle auto compile LaTeX"
       "t c" #'my-toggle-auto-compile-latex)
 
-(load! (concat "personal_common.el" ))
+(load! (concat "personal_common" ))
+;; turning off tree sitter globally
+;; (load! "treesitter")
