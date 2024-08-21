@@ -94,6 +94,11 @@
           (vterm-send-string command)
           (vterm-send-return))))))
 
+(defun run/rust ()
+  (interactive)
+  (vterm-run-and-return (concat "clear & cargo run")))
+
+
 (defun run/python ()
   (interactive)
   (vterm-run-and-return (concat "nix-shell -p 'python3.withPackages (p: [p.ipython p.matplotlib p.pandas p.seaborn])' --run 'python " buffer-file-name "'")))
