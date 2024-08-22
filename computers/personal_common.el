@@ -23,9 +23,11 @@
       (:nv "g RET" #'run/python))
 
 
-(map! :mode rustic-mode
-      (:nv "g RET" #'run/rust))
 (map! (:nv "g SPC" #'run/generic))
+
+(map! :mode rustic-mode
+      (:nv "g RET" #'rust/run)
+      (:nv "g SPC" #'rust/check))
 
 ;;; Default python project
 
