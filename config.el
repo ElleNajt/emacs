@@ -94,9 +94,18 @@
           (vterm-send-string command)
           (vterm-send-return))))))
 
-(defun run/rust ()
+(defun rust/run ()
   (interactive)
-  (vterm-run-and-return (concat "clear & cargo run")))
+  (save-buffer)
+  (vterm-run-and-return (concat (format  "cd %s & clear & cargo run" (file-name-directory buffer-file-name)))))
+
+
+(defun rust/check ()
+  (interactive)
+
+  (save-buffer)
+  (vterm-run-and-return (concat (format  "cd %s & clear & cargo check" (file-name-directory buffer-file-name)))))
+
 
 
 (defun run/python ()
@@ -623,8 +632,6 @@ finally:
 ;; (setq-default tab-width 2) -- TODO the version of this that actually works
 ;;;; Org-babel Nix
 (add-hook 'org-mode  'org-nix-shell-mode)
-;;;; Computer specific after org
-(load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-after"))
 ;;; Outline mode
 ;;;;  Clean code folding via Outline minor mode.
 (add-hook 'prog-mode-hook 'outline-minor-mode)
