@@ -53,3 +53,5 @@
 
 ;;; Loading computer specific files
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
+
+(package! org-fragtog)

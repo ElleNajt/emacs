@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: \begin
+# key: \begin
+# condition: t
+# --
+\begin{$1}
+   $0
+\end{$1}

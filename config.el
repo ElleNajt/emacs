@@ -1072,3 +1072,66 @@ finally:
 ;;; Turning off tree sitter
 
 (setq tree-sitter-mode nil)
+
+;;; Latex
+(after! latex
+  (setq TeX-auto-save t
+        TeX-parse-self t
+        TeX-syntactic-comment t
+        ;; Synctex support
+        TeX-source-correlate-start-server nil
+        ;; Don't insert line-break at inline math
+        LaTeX-fill-break-at-separators nil)
+  (setq-default TeX-master nil)
+
+  ;; Enable nice osx pdf viewer
+  (when (eq system-type 'darwin)
+    (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
+    (setq TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view)))))
+
+;; If you want to use pdf-tools (recommended for PDF viewing)
+(use-package! pdf-tools
+  :config
+  (pdf-tools-install)
+  (setq-default pdf-view-display-size 'fit-page)
+  (setq pdf-annot-activate-created-annotations t))
+
+;; For inline LaTeX preview in Org mode
+(after! org
+  (setq org-startup-with-latex-preview t)
+  (setq org-format-latex-options
+        (plist-put org-format-latex-options :scale .9))
+  (setq org-latex-create-formula-image-program 'dvisvgm)
+
+
+  (add-hook 'org-mode-hook 'org-fragtog-mode)
+
+  ;; Optional: If you want to use dvipng for faster previews (but lower quality)
+  ;; (setq org-preview-latex-default-process 'dvipng)
+
+  ;; Optional: Increase the size of the LaTeX fragment cache to reduce re-rendering
+  (setq org-preview-latex-image-cache-max 200)  ; Default is 20
+
+  ;; Optional: Set a directory for LaTeX preview images
+  (setq org-preview-latex-image-directory "~/.emacs.d/.local/lt-cache/")
+  )
+
+;; If you're using the preview-latex package
+(after! preview
+  (setq-default preview-scale 1))  ; Adjust this value as needed
+
+;; Load org-fragtog package
+(use-package! org-fragtog
+  :after org
+  :hook (org-mode . org-fragtog-mode))
+
+
+(add-hook 'org-mode-hook 'org-latex-preview)
+(remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
+(remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
+
+;; TODO Turn of org-cdlatex-mode
+
+(after! cdlatex
+  (setq cdlatex-math-symbol-alist '()))
+;;; Turn off writegood mode
