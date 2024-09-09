@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: nixpropertiesbox
+# key: nixpropertiesbox
+# condition: t
+# --
+:PROPERTIES:
+:header-args: :results output :python "nix-shell --run python" :async t :tangle :session $1
+:END:
