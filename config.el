@@ -156,6 +156,7 @@ it."
  (:map dired-mode-map                   ;; TODO Why does this work?
        (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
 
+;; (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
 ;;; Loading computer specific files
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
@@ -1100,10 +1101,9 @@ finally:
     (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
     (setq TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view)))))
 
-;; If you want to use pdf-tools (recommended for PDF viewing)
 (use-package! pdf-tools
   :config
-  (pdf-tools-install)
+  ;; (pdf-tools-install)
   (setq-default pdf-view-display-size 'fit-page)
   (setq pdf-annot-activate-created-annotations t))
 

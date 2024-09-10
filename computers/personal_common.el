@@ -63,3 +63,7 @@
 
     (dired project-dir)
     (message "Python project '%s' created successfully." project-name)))
+
+;;; pdf tools
+
+
