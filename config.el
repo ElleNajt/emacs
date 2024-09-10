@@ -1145,4 +1145,9 @@ finally:
 
 (after! cdlatex
   (setq cdlatex-math-symbol-alist '()))
-;;; Turn off writegood mode
+
+;;; based pyright
+
+(add-to-list 'eglot-server-programs
+             '((python-mode python-ts-mode)
+               "basedpyright-langserver" "--stdio"))
