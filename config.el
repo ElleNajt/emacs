@@ -988,6 +988,17 @@ finally:
                (org-clock-get-clocked-time)))
     ""))
 
+(defun update-org-clocked-in-task-file ()
+  (interactive)
+  (let ((current-task (elle/org-current-clocked-in-task-message)))
+    (with-temp-file "~/.emacs.d/current-task"
+      (insert current-task))))
+
+(add-hook 'org-clock-in-hook 'update-org-clocked-in-task-file)
+(add-hook 'org-clock-out-hook 'update-org-clocked-in-task-file)
+(add-hook 'org-after-todo-state-change-hook 'update-org-clocked-in-task-file)
+
+(run-at-time "1 min" 60 'update-org-clocked-in-task-file)
 
 (defun elle/test_message ()
   (interactive)
