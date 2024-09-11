@@ -1116,9 +1116,16 @@ finally:
 
 
   (add-hook 'org-mode-hook 'org-fragtog-mode)
+  (add-hook 'org-mode-hook 'org-toggle-pretty-entities)
+  (add-hook 'latex-mode 'prettify-symbols-mode)
+
+
+  (map!
+   :map org-mode-map
+   :ni "C-l" #'cdlatex-tab)
 
   ;; Optional: If you want to use dvipng for faster previews (but lower quality)
-  ;; (setq org-preview-latex-default-process 'dvipng)
+  (setq org-preview-latex-default-process 'dvipng)
 
   ;; Optional: Increase the size of the LaTeX fragment cache to reduce re-rendering
   (setq org-preview-latex-image-cache-max 200)  ; Default is 20
@@ -1138,10 +1145,9 @@ finally:
 
 
 (add-hook 'org-mode-hook 'org-latex-preview)
-(remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
-(remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
+;; (remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
+;; (remove-hook 'org-mode-hook 'turn-on-org-cdlatex)
 
-;; TODO Turn of org-cdlatex-mode
 
 (after! cdlatex
   (setq cdlatex-math-symbol-alist '()))
