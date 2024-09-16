@@ -835,7 +835,10 @@ finally:
 ;; already in +evil-bindings
 (after! corfu
   (setq corfu-popupinfo-delay 0)
+  (setq corfu-auto t)
+  (setq corfu-preselect t)
   )
+
 
 ;;   ;; (setq! corfu-preview-current nil
 ;;   ;;        corfu-preselect 'first
@@ -937,7 +940,8 @@ finally:
 ;; Optionally, bind this function to a key in dired-mode
 (map! :after dired
       :map dired-mode-map
-      "C-c c" #'doom/concat-text-files)
+      "C-c c" #'doom/concat-text-files
+      :n "L" #'dired-do-symlink)
 
 ;;; i3 status stuff
 
@@ -1112,7 +1116,7 @@ finally:
   (setq org-startup-with-latex-preview t)
   (setq org-format-latex-options
         (plist-put org-format-latex-options :scale .9))
-  (setq org-latex-create-formula-image-program 'dvisvgm)
+  (setq org-latex-create-formula-image-program 'dvipng)
 
 
   (add-hook 'org-mode-hook 'org-fragtog-mode)
@@ -1124,7 +1128,6 @@ finally:
    :map org-mode-map
    :ni "C-l" #'cdlatex-tab)
 
-  ;; Optional: If you want to use dvipng for faster previews (but lower quality)
   (setq org-preview-latex-default-process 'dvipng)
 
   ;; Optional: Increase the size of the LaTeX fragment cache to reduce re-rendering
@@ -1154,6 +1157,7 @@ finally:
 
 ;;; based pyright
 
-(add-to-list 'eglot-server-programs
-             '((python-mode python-ts-mode)
-               "basedpyright-langserver" "--stdio"))
+(after! eglot
+  (add-to-list 'eglot-server-programs
+               '((python-mode python-ts-mode)
+                 "basedpyright-langserver" "--stdio")))
