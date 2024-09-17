@@ -162,6 +162,9 @@ it."
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
+
+(map! (:mode org-mode (:n "SPC f i"  #'org-toggle-inline-images)))
+
 ;;;; Org edit special
 
 (map! (:mode org-mode (:n "g s"  #'org-edit-special)))
