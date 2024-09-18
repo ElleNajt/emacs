@@ -12,9 +12,12 @@ try:
 except ImportError:
     pass
 
-def org_repr(df):
+def org_repr(obj):
     output = io.StringIO()
-    df.to_csv(output, sep="|", index=isinstance(df, pd.Series))
+    if isinstance(obj, pd.DataFrame):
+        obj.to_csv(output, sep="|",index = False)
+    elif isinstance(obj, pd.Series):
+        pd.DataFrame(obj).to_csv(output, sep="|", index=False, header=[obj.name or ''])
     output.seek(0)
     table = output.read().strip().split("\n")
     table = [f"| {line.strip()} |" for line in table]
@@ -65,6 +68,7 @@ if __name__ == "__main__":
     enable()
 
     print(df)
+    print(df.Name)
 
-    disable()
-    print(df)
+    # disable()
+    # print(df)
