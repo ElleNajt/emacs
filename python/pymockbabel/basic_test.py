@@ -9,6 +9,7 @@ import seaborn as sns
 
 import pymockbabel
 
+from print_org_df import orgprintdf_enable, orgprintdf_disable
 
 # Example pandas and seaborn plot code
 def create_pandas_plot():
@@ -41,5 +42,22 @@ def main():
     pymockbabel.display(outputs_and_file_paths, output_types, list_writer)
 
 
+def test_df_print():
+    data = {
+        'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva'],
+        'Age': [25, 30, 35, 28, 22],
+        'City': ['New York', 'San Francisco', 'London', 'Paris', 'Tokyo'],
+        'Score': [92.5, 88.0, 95.2, 78.9, 90.1]
+    }
+    df = pd.DataFrame(data)
+    orgprintdf_enable()
+
+    print(df)
+
+    orgprintdf_disable()
+    print(df)
+
 if __name__ == "__main__":
-    main()
+    test_df_print()
+
+    # main()

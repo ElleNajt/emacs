@@ -537,7 +537,8 @@ exec_file = \"%s\"
 pymockbabel_script_location = \"%s\"
 import sys
 sys.path.append(pymockbabel_script_location)
-from print_org_df import orgprint
+import print_org_df
+print_org_df.enable()
 try:
     with open(exec_file, 'r') as file:
         exec(compile(file.read(), '<org babel source block>', 'exec'))
@@ -557,6 +558,7 @@ finally:
  :around
  #'elle/wrap-org-babel-execute-python-mock-table)
 
+;; (advice-remove 'org-babel-execute:python nil)
 ;;;;;; Garbage collection
 
 (defun find-org-file-references ()

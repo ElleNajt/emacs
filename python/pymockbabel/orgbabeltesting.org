@@ -81,7 +81,9 @@ data = {
 }
 df = pd.DataFrame(data)
 
-orgprint(df)
+print(df)
+print("hello")
+print(df.Name)
 #+end_src
 
 #+RESULTS:
@@ -92,5 +94,12 @@ orgprint(df)
 | Charlie |  35 | London        |  95.2 |
 | David   |  28 | Paris         |  78.9 |
 | Eva     |  22 | Tokyo         |  90.1 |
-Cell Timer:  0:00:00.001078
+hello
+|   | Name    |
+| 0 | Alice   |
+| 1 | Bob     |
+| 2 | Charlie |
+| 3 | David   |
+| 4 | Eva     |
+Cell Timer:  0:00:00.009903
 :end:
