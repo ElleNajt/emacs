@@ -2,9 +2,10 @@
 
 import io
 
+
 PANDAS_AVAILABLE = False
-_print_org_df_original_repr = {}
-_print_org_df_original_str = {}
+_original_repr = {}
+_original_str = {}
 
 try:
     import pandas as pd
@@ -21,6 +22,11 @@ def org_repr(obj):
     output.seek(0)
     table = output.read().strip().split("\n")
     table = [f"| {line.strip()} |" for line in table]
+
+    if len(table) > 1:
+        header_width = len(table[0])
+        hline = f"|{'-' * (header_width - 2)}|"
+        table.insert(1, hline)
     return "\n".join(table)
 
 def enable():
@@ -30,9 +36,9 @@ def enable():
         return
 
     for obj in [pd.DataFrame, pd.Series]:
-        if obj not in _print_org_df_original_repr:
-            _print_org_df_original_repr[obj] = obj.__repr__
-            _print_org_df_original_str[obj] = obj.__str__
+        if obj not in _original_repr:
+            _original_repr[obj] = obj.__repr__
+            _original_str[obj] = obj.__str__
 
         obj.__str__ = org_repr
         obj.__repr__ = org_repr
@@ -44,9 +50,9 @@ def disable():
         return
 
     for obj in [pd.DataFrame, pd.Series]:
-        if obj in _print_org_df_original_repr:
-            obj.__repr__ = _print_org_df_original_repr[obj]
-            obj.__str__ = _print_org_df_original_str[obj]
+        if obj in _original_repr:
+            obj.__repr__ = _original_repr[obj]
+            obj.__str__ = _original_str[obj]
 
 def is_enabled():
     return PANDAS_AVAILABLE and pd.DataFrame.__repr__ == org_repr
