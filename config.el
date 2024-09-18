@@ -45,6 +45,7 @@
  :n "] e" 'flycheck-next-error
  :n "[ e" 'flycheck-previous-error
 
+
  )
 ;;;; Elisp
 (evil-define-operator fireplace-eval-elisp (beg end)
@@ -163,11 +164,15 @@ it."
 ;;; Org mode
 
 
-(map! (:mode org-mode (:n "SPC f i"  #'org-toggle-inline-images)))
+(map! (:mode org-mode
+       :n "SPC f i"  #'org-toggle-inline-images
+       :n "g s"  #'org-edit-special
+       :n "] c" 'evil-next-flyspell-error
+       :n "[ c" 'evil-prev-flyspell-error
+       ))
 
 ;;;; Org edit special
 
-(map! (:mode org-mode (:n "g s"  #'org-edit-special)))
 
 ;;;; Movement
 
@@ -1199,3 +1204,5 @@ finally:
   (add-to-list 'eglot-server-programs
                '((python-mode python-ts-mode)
                  "basedpyright-langserver" "--stdio")))
+
+;;;
