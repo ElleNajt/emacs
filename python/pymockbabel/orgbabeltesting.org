@@ -12,9 +12,7 @@ import matplotlib.pyplot as plt
 #+end_src
 
 #+RESULTS:
-:
-: ___________________________
-: Cell Timer:  0:00:00.810896
+: Cell Timer:  0:00:00.555547
 
 Mixing text and plots!
 
@@ -71,3 +69,28 @@ ___________________________
 Cell Timer:  0:00:00.038071
 :end:
 
+
+#+begin_src python :results drawer
+import pandas as pd
+
+data = {
+'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva'],
+'Age': [25, 30, 35, 28, 22],
+'City': ['New York', 'San Francisco', 'London', 'Paris', 'Tokyo'],
+'Score': [92.5, 88.0, 95.2, 78.9, 90.1]
+}
+df = pd.DataFrame(data)
+
+orgprint(df)
+#+end_src
+
+#+RESULTS:
+:results:
+| Name    | Age | City          | Score |
+| Alice   |  25 | New York      |  92.5 |
+| Bob     |  30 | San Francisco |  88.0 |
+| Charlie |  35 | London        |  95.2 |
+| David   |  28 | Paris         |  78.9 |
+| Eva     |  22 | Tokyo         |  90.1 |
+Cell Timer:  0:00:00.001078
+:end:
