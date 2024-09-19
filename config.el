@@ -166,6 +166,7 @@ it."
 
 (map! (:mode org-mode
        :n "SPC f i"  #'org-toggle-inline-images
+       :n "SPC f I"  #'org-display-inline-images
        :n "g s"  #'org-edit-special
        :n "] c" 'evil-next-flyspell-error
        :n "[ c" 'evil-prev-flyspell-error
@@ -1205,4 +1206,7 @@ finally:
                '((python-mode python-ts-mode)
                  "basedpyright-langserver" "--stdio")))
 
+;;;
+
+;;;
 ;;;
