@@ -51,27 +51,27 @@ Handling errors!
 #+begin_src python :results drawer
 print("look!")
 df = pd.DataFrame({"x": [1, 2, 3, 4, 5,6,7,], "y": [10, 11, 12, 13, 14,15,16]})
+print(df)
 df.plot(x="x", y="y", kind="line")
 plt.show()
-print(1/0)
+# print(1/0)
 print("tada!")
 #+end_src
 
 #+RESULTS:
 :results:
 look!
-[[file:plots/plot_20240727_223748_8bd224815f.png]]
 Traceback (most recent call last):
-File "<org babel source block>", line 6, in <module>
-File "<org babel source block>", line 5, in <module>
-ZeroDivisionError: division by zero
-___________________________
-Cell Timer:  0:00:00.038071
+File "<org babel source block>", line 9, in <module>
+File "<org babel source block>", line 2, in <module>
+NameError: name 'pd' is not defined
+Cell Timer:  0:00:00.580385
 :end:
 
 
 #+begin_src python :results drawer
 import pandas as pd
+from matplotlib import pyplot as plt
 
 data = {
 'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva'],
@@ -84,22 +84,36 @@ df = pd.DataFrame(data)
 print(df)
 print("hello")
 print(df.Name)
+df[["Score"]].plot()
+plt.show()
+
+print(df.set_index("Name"))
 #+end_src
 
 #+RESULTS:
 :results:
+| idx | Name    | Age | City          | Score |
+|-----+---------+-----+---------------+-------|
+|   0 | Alice   |  25 | New York      |  92.5 |
+|   1 | Bob     |  30 | San Francisco |  88.0 |
+|   2 | Charlie |  35 | London        |  95.2 |
+|   3 | David   |  28 | Paris         |  78.9 |
+|   4 | Eva     |  22 | Tokyo         |  90.1 |
+hello
+| idx  |Name |
+|------------|
+| 0|Alice |
+| 1|Bob |
+| 2|Charlie |
+| 3|David |
+| 4|Eva |
+[[file:plots/orgbabeltesting/plot_20240918_204903_4159689.png]]
 | Name    | Age | City          | Score |
+|---------+-----+---------------+-------|
 | Alice   |  25 | New York      |  92.5 |
 | Bob     |  30 | San Francisco |  88.0 |
 | Charlie |  35 | London        |  95.2 |
 | David   |  28 | Paris         |  78.9 |
 | Eva     |  22 | Tokyo         |  90.1 |
-hello
-|   | Name    |
-| 0 | Alice   |
-| 1 | Bob     |
-| 2 | Charlie |
-| 3 | David   |
-| 4 | Eva     |
-Cell Timer:  0:00:00.009903
+Cell Timer:  0:00:00.094709
 :end:

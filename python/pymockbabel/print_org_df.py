@@ -16,11 +16,24 @@ except ImportError:
 def org_repr(obj):
     output = io.StringIO()
     if isinstance(obj, pd.DataFrame):
-        obj.to_csv(output, sep="|",index = False)
+        obj.to_csv(output, sep="|",index = True)
     elif isinstance(obj, pd.Series):
-        pd.DataFrame(obj).to_csv(output, sep="|", index=False, header=[obj.name or ''])
+        pd.DataFrame(obj).to_csv(output, sep="|", index=True, header=[obj.name or ''])
     output.seek(0)
+
+
+
+
     table = output.read().strip().split("\n")
+
+    header = table[0].split('|')
+    if obj.index.name:
+        header[0] = f" {obj.index.name} "
+    else:
+        header[0] = " idx  "
+    table[0] = "|".join(header)
+
+
     table = [f"| {line.strip()} |" for line in table]
 
     if len(table) > 1:
@@ -71,10 +84,13 @@ if __name__ == "__main__":
         'Score': [92.5, 88.0, 95.2, 78.9, 90.1]
     }
     df = pd.DataFrame(data)
+    df.index.name = 'ID'
     enable()
 
     print(df)
     print(df.Name)
+
+    print(df.set_index("Name"))
 
     # disable()
     # print(df)
