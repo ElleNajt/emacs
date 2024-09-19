@@ -14,11 +14,17 @@ except ImportError:
     pass
 
 def org_repr(obj):
+
+    float_format = pd.get_option('display.float_format')
     output = io.StringIO()
     if isinstance(obj, pd.DataFrame):
-        obj.to_csv(output, sep="|",index = True)
+        obj.to_csv(output, sep="|",index = True,
+
+                   float_format = float_format
+
+                   )
     elif isinstance(obj, pd.Series):
-        pd.DataFrame(obj).to_csv(output, sep="|", index=True, header=[obj.name or ''])
+        pd.DataFrame(obj).to_csv(output, sep="|", index=True, header=[obj.name or ''], float_format = float_format,)
     output.seek(0)
 
 
@@ -81,7 +87,7 @@ if __name__ == "__main__":
         'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva'],
         'Age': [25, 30, 35, 28, 22],
         'City': ['New York', 'San Francisco', 'London', 'Paris', 'Tokyo'],
-        'Score': [92.5, 88.0, 95.2, 78.9, 90.1]
+        'Score': [92.5, 88.0, 95.2, 78.9, 90.11111]
     }
     df = pd.DataFrame(data)
     df.index.name = 'ID'
@@ -89,6 +95,10 @@ if __name__ == "__main__":
 
     print(df)
     print(df.Name)
+
+    pd.options.display.float_format = '{:.1f}'.format
+    print(df.Score)
+
 
     print(df.set_index("Name"))
 
