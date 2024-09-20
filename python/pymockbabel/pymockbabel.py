@@ -2,6 +2,7 @@
 #! nix-shell -i python3 -p python3Packages.matplotlib
 
 import os
+import gc
 import random
 import sys
 from datetime import datetime
@@ -55,6 +56,7 @@ def mock_show(outputs_and_file_paths, output_types, org_babel_file_name):
     outputs_and_file_paths.append(file_path)
     output_types.append("Image")
     plt.close()
+    gc.collect()
 
 
 def setup(org_babel_file_name):
