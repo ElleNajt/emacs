@@ -46,7 +46,9 @@ def org_repr(obj):
         header_width = len(table[0])
         hline = f"|{'-' * (header_width - 2)}|"
         table.insert(1, hline)
-    return "\n".join(table)
+
+    # TODO Add the head and tail printing like jupyter does
+    return "\n".join(table[:pd.options.display.max_rows ])
 
 def enable():
     global PANDAS_AVAILABLE
