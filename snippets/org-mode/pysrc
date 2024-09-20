@@ -4,5 +4,5 @@
 # --
 
 #+begin_src python
-$0
+$1
 #+end_src
