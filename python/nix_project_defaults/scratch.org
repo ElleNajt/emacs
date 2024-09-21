@@ -5,7 +5,7 @@
 :header-args: :results output :python "nix-shell --run python" :async t :tangle :session project
 :END:
 
-#+begin_src jupyter-python :exports both
+#+begin_src python
 import pandas as pd
 import seaborn as sns
 print(1)
