@@ -500,8 +500,11 @@ except:
 
 (defun elle/wrap-org-babel-execute-python (orig body params &rest args)
   (let* ( (exec-file (make-temp-file "execution-code"))
-          (show-timer (not (equal "no" (cdr (assq :timer params))))))
-    (message "showtimer: %S" show-timer)
+          (timer-show (not (equal "no" (cdr (assq :timer-show params)))))
+          (timer-string (cdr (assq :timer-string params)))
+          (timer-string-formatted (if (not timer-string) "Cell Timer:" timer-string))
+          (timer-rounded (not (equal "no" (cdr (assq :timer-rounded params)))))
+          )
     (with-temp-file exec-file (insert body))
     (let* ((body (format "\
 exec_file = \"%s\"
@@ -518,12 +521,21 @@ except:
 finally:
     #print(\"___________________________\")
     if %s:
-        print(\"Cell Timer: \", str(org_babel_wrapper_datetime.now() - start), \"\\n\")
+
+        timerstring = \"%s\"
+
+        if %s:
+            print(timerstring, str((org_babel_wrapper_datetime.now() - start)).split('.')[0], \"\\n\")
+        else:
+            print(timerstring, str((org_babel_wrapper_datetime.now() - start)), \"\\n\")
     import os
     try:
         os.remove(exec_file)
     except:
-        pass" exec-file (if  show-timer "True" "False")))
+        pass" exec-file
+        (if  timer-show "True" "False")
+        timer-string-formatted
+        (if  timer-rounded "True" "False")))
            (result (apply orig body params args)))
       result)))
 
