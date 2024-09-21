@@ -181,39 +181,17 @@ it."
     ))
 
 (defun my-align-advice-function (args)
-  ;; TODO make this faster
-  ;; (message "all passed args   %S" args)
-  ;; (message  "next   %S" (nth 5 args))
-  (let ((top-of-src-block nil)
-        (in-table nil)
-        (top-of-src-block (nth 5 args)))
-    (save-excursion
+  (let ((top-of-src-block (nth 5 args)))
+    (with-current-buffer (current-buffer)
       (goto-char top-of-src-block)
-      (let ((end-of-results-block
-             (save-excursion
-               (goto-char top-of-src-block)
-               (setq in-table nil)
-               (cl-loop initially (forward-line 1)
-                        for line from 1
-                        until (eobp)
-                        for line-content = (buffer-substring-no-properties
-                                            (line-beginning-position)
-                                            (line-end-position))
-                        do (progn
-                             ;; (message "Line %d: %s" line line-content)
-                             ;; (message "In table: %s" in-table)
-                             (cond
-                              ((and (not in-table) (string-match-p "^[ \t]*|" line-content))
-                               (setq in-table t)
-                               ;; (message "aligning")
-                               (org-table-align))
-                              ((and in-table (not (string-match-p "^[ \t]*|" line-content)))
-                               (setq in-table nil)))
-                             (when (string-match-p "^[ \t]*:END:[ \t]*$" line-content)
-                               (cl-return (point))))
-                        do (forward-line 1)
-                        finally return nil))))
-        ))))
+      (forward-line 1)
+      (let ((in-table nil))
+        (while (and (= (forward-line) 0)
+                    (not (looking-at "^[ \t]*:END:[ \t]*$")))
+          (let ((at-table-line (looking-at "^[ \t]*|")))
+            (when (and (not in-table) at-table-line)
+              (org-table-align))
+            (setq in-table at-table-line)))))))
 
 
 (defun adjust-org-babel-results (orig-fun params &rest args)
