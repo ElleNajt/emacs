@@ -497,8 +497,11 @@ except:
       (progn (delete-file exc-file)
              (delete-file exec-file)))))
 
-(defun elle/wrap-org-babel-execute-python (orig body &rest args)
-  (let* ( (exec-file (make-temp-file "execution-code")))
+
+(defun elle/wrap-org-babel-execute-python (orig body params &rest args)
+  (let* ( (exec-file (make-temp-file "execution-code"))
+          (show-timer (not (equal "no" (cdr (assq :timer params))))))
+    (message "showtimer: %S" show-timer)
     (with-temp-file exec-file (insert body))
     (let* ((body (format "\
 exec_file = \"%s\"
@@ -514,13 +517,14 @@ except:
     print(traceback.format_exc())
 finally:
     #print(\"___________________________\")
-    print(\"Cell Timer: \", str(org_babel_wrapper_datetime.now() - start), \"\\n\")
+    if %s:
+        print(\"Cell Timer: \", str(org_babel_wrapper_datetime.now() - start), \"\\n\")
     import os
     try:
         os.remove(exec_file)
     except:
-        pass" exec-file))
-           (result (apply orig body args)))
+        pass" exec-file (if  show-timer "True" "False")))
+           (result (apply orig body params args)))
       result)))
 
 (advice-add
@@ -828,7 +832,7 @@ finally:
       )
 
 (map!
- ;;  3 as in # 
+ ;;  3 as in #
  :desc "Next Comment" :nv "] 3" #'+evil/next-comment
  :desc "Previous Comment" :nv "[ 3" #'+evil/previous-comment
 
