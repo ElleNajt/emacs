@@ -180,48 +180,63 @@ it."
       )
     ))
 
+(defun my-align-advice-function (args)
+  ;; TODO make this faster
+  ;; (message "all passed args   %S" args)
+  ;; (message  "next   %S" (nth 5 args))
+  (let ((top-of-src-block nil)
+        (in-table nil)
+        (top-of-src-block (nth 5 args)))
+    (save-excursion
+      (goto-char top-of-src-block)
+      (let ((end-of-results-block
+             (save-excursion
+               (goto-char top-of-src-block)
+               (setq in-table nil)
+               (cl-loop initially (forward-line 1)
+                        for line from 1
+                        until (eobp)
+                        for line-content = (buffer-substring-no-properties
+                                            (line-beginning-position)
+                                            (line-end-position))
+                        do (progn
+                             ;; (message "Line %d: %s" line line-content)
+                             ;; (message "In table: %s" in-table)
+                             (cond
+                              ((and (not in-table) (string-match-p "^[ \t]*|" line-content))
+                               (setq in-table t)
+                               ;; (message "aligning")
+                               (org-table-align))
+                              ((and in-table (not (string-match-p "^[ \t]*|" line-content)))
+                               (setq in-table nil)))
+                             (when (string-match-p "^[ \t]*:END:[ \t]*$" line-content)
+                               (cl-return (point))))
+                        do (forward-line 1)
+                        finally return nil))))
+        ))))
 
-(defun adjust-org-babel-results (orig-fun &rest args)
-  ;;  terrible hack to get the starting point of the src block
-  ;;  TODO make this better
-  ;; (let ((top-of-src-block nil)
-  ;;       (in-table nil))
-  ;;   (when (>= (length args) 2)
-  ;;     (let ((second-arg (nth 1 args)))
-  ;;       (let ((fifth-element (nth 5 second-arg)))
-  ;;         (when (numberp fifth-element)
-  ;;           (setq top-of-src-block fifth-element)
-  ;;           (save-excursion
-  ;;             (goto-char top-of-src-block)
-  ;;             (let ((end-of-results-block
-  ;;                    (save-excursion
-  ;;                      (goto-char top-of-src-block)
-  ;;                      (setq in-table nil)
-  ;;                      (cl-loop initially (forward-line 1)
-  ;;                               for line from 1
-  ;;                               until (eobp)
-  ;;                               for line-content = (buffer-substring-no-properties
-  ;;                                                   (line-beginning-position)
-  ;;                                                   (line-end-position))
-  ;;                               do (progn
-  ;;                                    ;; (message "Line %d: %s" line line-content)
-  ;;                                    ;; (message "In table: %s" in-table)
-  ;;                                    (cond
-  ;;                                     ((and (not in-table) (string-match-p "^[ \t]*|" line-content))
-  ;;                                      (setq in-table t)
-  ;;                                      (message "aligning")
-  ;;                                      (org-table-align))
-  ;;                                     ((and in-table (not (string-match-p "^[ \t]*|" line-content)))
-  ;;                                      (setq in-table nil)))
-  ;;                                    (when (string-match-p "^[ \t]*:END:[ \t]*$" line-content)
-  ;;                                      (cl-return (point))))
-  ;;                               do (forward-line 1)
-  ;;                               finally return nil))))
-  ;;               (align-tables top-of-src-block end-of-results-block))))))))
 
-  ;; (org-table-map-tables 'org-table-align)
-  ;; gonna use this because it seems more likely to get better in the future through optimizations to emacs
-  ;; this is also slow
+(defun adjust-org-babel-results (orig-fun params &rest args)
+  (let*
+
+      (
+       ( options (nth 2 (car args)))
+       ( auto-align-val (cdr (assq :tables-auto-align options)))
+       ( auto-align (if (string= "no" auto-align-val) nil t))
+       )
+
+    ;; (message "all option: %S" options)
+    ;; (message "auto-align option: %S"  auto-align)
+    ;; (message "auto-align option: %S" auto-align)
+    (if auto-align
+        (my-align-advice-function (nth 0 args))
+      ;; this is a built in that accomplishes the same task
+      ;; but it operates on the entire org file,
+      ;; which is slow and breaks hermeticism in a way I don't like
+      ;; I tried narrowing the buffer, but it didn't work
+      ;; (org-table-map-tables 'org-table-align)
+      )
+    ())
 
   (org-display-inline-images))
 
