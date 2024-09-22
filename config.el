@@ -182,41 +182,129 @@ it."
 
 (defun my-align-advice-function (args)
   (let ((top-of-src-block (nth 5 args)))
-    (with-current-buffer (current-buffer)
-      (goto-char top-of-src-block)
-      (forward-line 1)
-      (let ((in-table nil))
-        (while (and (= (forward-line) 0)
-                    (not (looking-at "^[ \t]*:END:[ \t]*$")))
-          (let ((at-table-line (looking-at "^[ \t]*|")))
-            (when (and (not in-table) at-table-line)
-              (org-table-align))
-            (setq in-table at-table-line)))))))
+    (save-excursion
+      (with-current-buffer (current-buffer)
+        (goto-char top-of-src-block)
+        (forward-line 1)
+        (let ((in-table nil))
+          (while (and (= (forward-line) 0)
+                      (not (looking-at "^[ \t]*:END:[ \t]*$")))
+            (let ((at-table-line (looking-at "^[ \t]*|")))
+              (when (and (not in-table) at-table-line)
+                (org-table-align))
+              (setq in-table at-table-line))))))))
 
+
+(defun my-cell-finished-alert (params args)
+  (let* ((buffer-name (buffer-name))
+         (buffer-file (buffer-file-name))
+         (link (concat "file:" buffer-file "::" (number-to-string (line-number-at-pos))))
+         (buffer (generate-new-buffer "Org Cell Completion Alert"))
+         )
+
+    (progn
+
+      (split-window-below)
+      (switch-to-buffer buffer)
+
+      ;; initiaziling org mode is slow
+      ;; (org-mode)
+      (special-mode)
+      (insert "A code cell finished at: " link ))
+
+
+    )
+  )
+
+(defun my-cell-finished-alert (params args)
+  "Create an alert with an Emacs-native clickable link in a pop-up buffer when a code cell finishes."
+  (let* ((buffer-name (buffer-name))
+         (buffer-file (buffer-file-name))
+         (line-number (line-number-at-pos))
+         (link-text (if buffer-file
+                        (format "%s:%d" buffer-file line-number)
+                      buffer-name))
+         (alerts-buffer-name "*Cell Completion Alerts*"))
+
+    ;; Configure display behavior for the alerts buffer
+    (add-to-list 'display-buffer-alist
+                 `(,alerts-buffer-name
+                   (display-buffer-in-side-window)
+                   (side . bottom)
+                   (slot . 1)
+                   (window-height . 0.3)
+                   (preserve-size . (nil . t))))
+
+    (with-current-buffer (get-buffer-create alerts-buffer-name)
+      (let ((inhibit-read-only t))
+        (goto-char (point-max))
+        (let ((start (point)))
+          (insert "\n\n")
+          (insert (format-time-string "[%Y-%m-%d %H:%M:%S]\n"))
+          (insert "A code cell finished at:\n")
+          (insert-text-button link-text
+                              'action (lambda (_)
+                                        (if buffer-file
+                                            (find-file-other-window buffer-file)
+                                          (switch-to-buffer-other-window buffer-name))
+                                        (when buffer-file
+                                          (goto-char (point-min))
+                                          (forward-line (1- line-number))))
+                              'follow-link t
+                              'help-echo "Click to go to the cell location")
+          (put-text-property start (point) 'read-only t)))
+      (special-mode)  ; Make the buffer read-only
+      (let ((window (display-buffer (current-buffer))))
+        (when window
+          (with-selected-window window
+            (goto-char (point-max))
+            (recenter -1))))))  ; Scroll to show the last line
+  (message "Finished cell!"))
 
 (defun adjust-org-babel-results (orig-fun params &rest args)
   (let*
 
       (
        ( options (nth 2 (car args)))
-       ( auto-align-val (cdr (assq :tables-auto-align options)))
-       ( auto-align (if (string= "no" auto-align-val) nil t))
+       ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
+       ( alert-finish (if (string= "yes" (cdr (assq :alert-finish options))) t nil))
        )
 
     ;; (message "all option: %S" options)
     ;; (message "auto-align option: %S"  auto-align)
     ;; (message "auto-align option: %S" auto-align)
-    (if auto-align
-        (my-align-advice-function (nth 0 args))
-      ;; this is a built in that accomplishes the same task
-      ;; but it operates on the entire org file,
-      ;; which is slow and breaks hermeticism in a way I don't like
-      ;; I tried narrowing the buffer, but it didn't work
-      ;; (org-table-map-tables 'org-table-align)
-      )
+
+    (message "alert-finish option: %S"
+             (cdr (assq :alert-finish options))
+             )
+    (message "alert-finish option: %S" alert-finish)
+
+    ;; TODO this is a terrible hack
+    ;; it happens to be that this argument is populated for the hash insert
+    ;; and not for the content insert
+    ;; I should refactor this to depend on hooks instead
+    (if (not (nth 2 args))
+        (progn
+          (if auto-align
+              (my-align-advice-function (nth 0 args))
+            ;; this is a built in that accomplishes the same task
+            ;; but it operates on the entire org file,
+            ;; which is slow and breaks hermeticism in a way I don't like
+            ;; I tried narrowing the buffer, but it didn't work
+            ;; (org-table-map-tables 'org-table-align)
+            )
+          (if alert-finish
+              (my-cell-finished-alert params args)
+            ;; (message "alert finish!")
+            ()))
+      ())
     ())
 
-  (org-display-inline-images))
+
+  (org-display-inline-images)
+
+
+  )
 
 (advice-add 'org-babel-insert-result :after #'adjust-org-babel-results)
 ;; (setq debug-on-message "Code block evaluation complete\\.")
@@ -1284,7 +1372,6 @@ finally:
                  "basedpyright-langserver" "--stdio")))
 
 ;;;
-
 ;;;
 ;;;
 
