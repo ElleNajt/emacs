@@ -164,7 +164,8 @@ it."
 ;;; Org mode
 
 
-;;; alignment
+;;;; advice
+;;;;; alignment
 
 (defun my-align-tables ()
   (interactive)
@@ -194,27 +195,10 @@ it."
                 (org-table-align))
               (setq in-table at-table-line))))))))
 
-
-(defun my-cell-finished-alert (params args)
-  (let* ((buffer-name (buffer-name))
-         (buffer-file (buffer-file-name))
-         (link (concat "file:" buffer-file "::" (number-to-string (line-number-at-pos))))
-         (buffer (generate-new-buffer "Org Cell Completion Alert"))
-         )
-
-    (progn
-
-      (split-window-below)
-      (switch-to-buffer buffer)
-
-      ;; initiaziling org mode is slow
-      ;; (org-mode)
-      (special-mode)
-      (insert "A code cell finished at: " link ))
-
-
-    )
-  )
+;;;;; alerts
+;; Define a major mode for our alerts buffer
+(define-derived-mode cell-alerts-mode special-mode "Cell Alerts"
+  "Major mode for displaying cell completion alerts.")
 
 (defun my-cell-finished-alert (params args)
   "Create an alert with an Emacs-native clickable link in a pop-up buffer when a code cell finishes."
@@ -226,16 +210,9 @@ it."
                       buffer-name))
          (alerts-buffer-name "*Cell Completion Alerts*"))
 
-    ;; Configure display behavior for the alerts buffer
-    (add-to-list 'display-buffer-alist
-                 `(,alerts-buffer-name
-                   (display-buffer-in-side-window)
-                   (side . bottom)
-                   (slot . 1)
-                   (window-height . 0.3)
-                   (preserve-size . (nil . t))))
-
     (with-current-buffer (get-buffer-create alerts-buffer-name)
+      (unless (eq major-mode 'cell-alerts-mode)
+        (cell-alerts-mode))
       (let ((inhibit-read-only t))
         (goto-char (point-max))
         (let ((start (point)))
@@ -253,13 +230,47 @@ it."
                               'follow-link t
                               'help-echo "Click to go to the cell location")
           (put-text-property start (point) 'read-only t)))
-      (special-mode)  ; Make the buffer read-only
-      (let ((window (display-buffer (current-buffer))))
+      (let ((window (display-buffer-in-side-window (current-buffer) '((side . bottom)))))
         (when window
           (with-selected-window window
             (goto-char (point-max))
-            (recenter -1))))))  ; Scroll to show the last line
+            (recenter -1))))))
   (message "Finished cell!"))
+
+;; Doom Emacs specific configuration
+(after! evil
+  (add-to-list 'evil-escape-excluded-major-modes 'cell-alerts-mode)
+  (evil-set-initial-state 'cell-alerts-mode 'normal))
+
+(after! (:and (:or evil-collection evil-integration) which-key)
+  (map! :map cell-alerts-mode-map
+        :n "q" #'quit-window
+        :n [escape] #'quit-window))
+
+;; Function to close the alerts buffer
+(defun close-cell-alerts-buffer ()
+  "Close the Cell Completion Alerts buffer from anywhere."
+  (interactive)
+  (when-let ((buffer (get-buffer "*Cell Completion Alerts*")))
+    (when-let ((window (get-buffer-window buffer t)))
+      (quit-window nil window))))
+
+;; ESC key handling
+(defadvice! my-universal-esc-handler (&rest _)
+  :before #'keyboard-quit
+  (when (get-buffer-window "*Cell Completion Alerts*" t)
+    (close-cell-alerts-buffer)))
+
+;; Set up the display rules for the alerts buffer
+(set-popup-rule! "^\\*Cell Completion Alerts\\*$"
+  :side 'bottom
+  :size 0.3
+  :select nil
+  :quit t)
+
+;;;; combined advice
+;;;  TODO Alerts should be split out of this
+
 
 (defun adjust-org-babel-results (orig-fun params &rest args)
   (let*
@@ -267,17 +278,13 @@ it."
       (
        ( options (nth 2 (car args)))
        ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
-       ( alert-finish (if (string= "yes" (cdr (assq :alert-finish options))) t nil))
+       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil))
        )
 
     ;; (message "all option: %S" options)
     ;; (message "auto-align option: %S"  auto-align)
     ;; (message "auto-align option: %S" auto-align)
 
-    (message "alert-finish option: %S"
-             (cdr (assq :alert-finish options))
-             )
-    (message "alert-finish option: %S" alert-finish)
 
     ;; TODO this is a terrible hack
     ;; it happens to be that this argument is populated for the hash insert
