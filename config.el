@@ -187,7 +187,6 @@ it."
       (
        ( options (nth 2 (car args)))
        ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
-       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil))
        )
 
     ;; (message "all option: %S" options)
@@ -229,7 +228,7 @@ it."
 (define-derived-mode cell-alerts-mode special-mode "Cell Alerts"
   "Major mode for displaying cell completion alerts.")
 
-(defun my-cell-finished-alert (params args)
+(defun my-cell-finished-alert ()
   "Create an alert with an Emacs-native clickable link in a pop-up buffer when a code cell finishes."
   (let* ((buffer-name (buffer-name))
          (buffer-file (buffer-file-name))
@@ -298,6 +297,38 @@ it."
   :select nil
   :quit t)
 
+;;;;; cell timer based
+
+(defun notify-if-took-a-while (alert-threshold)
+  "Scan through a results block to find a 'Cell Timer:' line and parse the time in seconds."
+  (interactive)
+  (save-excursion
+    (let ((case-fold-search t))
+      (if (search-forward-regexp "^[ \t]*#\\+RESULTS:" nil t)
+          (let ((end (save-excursion
+                       (if (search-forward-regexp "^[ \t]*#\\:END:" nil t)
+                           (match-beginning 0)
+                         (point-max)))))
+            (when (search-forward-regexp "^Cell Timer:\\s-*\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\)" end t)
+              (let ((hours (string-to-number (match-string 1)))
+                    (minutes (string-to-number (match-string 2)))
+                    (seconds (string-to-number (match-string 3))))
+                (+ (* hours 3600) (* minutes 60) seconds)
+
+                (if (>= seconds alert-threshold)
+                    (my-cell-finished-alert)
+                  ()
+
+
+                  )
+
+
+                )))
+        (message "No results block found.")
+        nil))))
+
+(defun cell-timer-above (params args lower_bound)
+  "Display an alert if the cell timer is above lower_bound")
 
 (defun alert-advice-after-org-babel-results (orig-fun params &rest args)
   (let*
@@ -307,11 +338,16 @@ it."
     ;; it happens to be that this argument is populated for the hash insert
     ;; and not for the content insert
     ;; I should refactor this to depend on hooks instead
+
+    ;; if cell took a while always alert
     (if (not (nth 2 args))
         (if alert-finish
-            (my-cell-finished-alert params args)
+            (my-cell-finished-alert)
           ;; (message "alert finish!")
-          ())
+
+          ;; always alerts if the cell took a while (more than 30 seconds)
+          (notify-if-took-a-while 10))
+      ()
       ()) ()))
 
 (advice-add 'org-babel-insert-result :after #'alert-advice-after-org-babel-results)
