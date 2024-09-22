@@ -164,22 +164,7 @@ it."
 ;;; Org mode
 
 
-;;;; advice
-;;;;; alignment
-
-(defun my-align-tables ()
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (while (< (point) (point-max))
-      (beginning-of-line)
-      (when (org-at-table-p)
-        (org-table-align)
-
-        )
-      (forward-line 1)
-      )
-    ))
+;;;; aligning and displaying iamges after output
 
 (defun my-align-advice-function (args)
   (let ((top-of-src-block (nth 5 args)))
@@ -195,6 +180,50 @@ it."
                 (org-table-align))
               (setq in-table at-table-line))))))))
 
+
+(defun adjust-org-babel-results (orig-fun params &rest args)
+  (let*
+
+      (
+       ( options (nth 2 (car args)))
+       ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
+       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil))
+       )
+
+    ;; (message "all option: %S" options)
+    ;; (message "auto-align option: %S"  auto-align)
+    ;; (message "auto-align option: %S" auto-align)
+
+
+    ;; TODO this is a terrible hack
+    ;; it happens to be that this argument is populated for the hash insert
+    ;; and not for the content insert
+    ;; I should refactor this to depend on hooks instead
+    (if (not (nth 2 args))
+        (progn
+          (if auto-align
+              (my-align-advice-function (nth 0 args))
+            ;; this is a built in that accomplishes the same task
+            ;; but it operates on the entire org file,
+            ;; which is slow and breaks hermeticism in a way I don't like
+            ;; I tried narrowing the buffer, but it didn't work
+            ;; (org-table-map-tables 'org-table-align)
+            )
+          )
+      ())
+    ())
+
+
+  (org-display-inline-images)
+
+
+  )
+
+(advice-add 'org-babel-insert-result :after #'adjust-org-babel-results)
+;; (setq debug-on-message "Code block evaluation complete\\.")
+
+(setq debug-on-message nil)
+;; does async have a hook?
 ;;;;; alerts
 ;; Define a major mode for our alerts buffer
 (define-derived-mode cell-alerts-mode special-mode "Cell Alerts"
@@ -219,6 +248,7 @@ it."
           (insert "\n\n")
           (insert (format-time-string "[%Y-%m-%d %H:%M:%S]\n"))
           (insert "A code cell finished at:\n")
+          (shell-command (format  "notify-send \"An org cell in %s finished!\"" buffer-name))
           (insert-text-button link-text
                               'action (lambda (_)
                                         (if buffer-file
@@ -268,56 +298,40 @@ it."
   :select nil
   :quit t)
 
-;;;; combined advice
-;;;  TODO Alerts should be split out of this
 
-
-(defun adjust-org-babel-results (orig-fun params &rest args)
+(defun alert-advice-after-org-babel-results (orig-fun params &rest args)
   (let*
-
-      (
-       ( options (nth 2 (car args)))
-       ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
-       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil))
-       )
-
-    ;; (message "all option: %S" options)
-    ;; (message "auto-align option: %S"  auto-align)
-    ;; (message "auto-align option: %S" auto-align)
-
-
+      (( options (nth 2 (car args)))
+       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil)))
     ;; TODO this is a terrible hack
     ;; it happens to be that this argument is populated for the hash insert
     ;; and not for the content insert
     ;; I should refactor this to depend on hooks instead
     (if (not (nth 2 args))
-        (progn
-          (if auto-align
-              (my-align-advice-function (nth 0 args))
-            ;; this is a built in that accomplishes the same task
-            ;; but it operates on the entire org file,
-            ;; which is slow and breaks hermeticism in a way I don't like
-            ;; I tried narrowing the buffer, but it didn't work
-            ;; (org-table-map-tables 'org-table-align)
-            )
-          (if alert-finish
-              (my-cell-finished-alert params args)
-            ;; (message "alert finish!")
-            ()))
-      ())
-    ())
+        (if alert-finish
+            (my-cell-finished-alert params args)
+          ;; (message "alert finish!")
+          ())
+      ()) ()))
 
-
-  (org-display-inline-images)
-
-
-  )
-
-(advice-add 'org-babel-insert-result :after #'adjust-org-babel-results)
+(advice-add 'org-babel-insert-result :after #'alert-advice-after-org-babel-results)
 ;; (setq debug-on-message "Code block evaluation complete\\.")
 
-(setq debug-on-message nil)
-;; does async have a hook
+
+;;;; display shortcuts
+
+(defun my-align-tables ()
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (< (point) (point-max))
+      (beginning-of-line)
+      (when (org-at-table-p)
+        (org-table-align))
+      (forward-line 1)
+      )
+    ))
+
 
 (map! (:mode org-mode
        :n "SPC f i"  #'org-toggle-inline-images
