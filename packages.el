@@ -55,3 +55,10 @@
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
 
 (package! org-fragtog)
+
+(package! alert)
+
+
+(package! org-download
+  :recipe (:host github
+           :repo "abo-abo/org-download"))
