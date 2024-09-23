@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
 
 find . -type f -name "*.html" -delete {} \;
-find . -type f -name "*.org" -exec export-org-to-html {} \;
-
-# TODO make it export both
+find . -type f -name "*.org" -exec export-org-to-html-batch {} \;

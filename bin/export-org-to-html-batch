@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+
+# this is much faster than the doomscript
+
+# Check if an org file is passed as an argument
+if [ -z "$1" ]; then
+  echo "Usage: $0 <org-file>"
+  exit 1
+fi
+
+# Define the org file
+ORG_FILE="$1"
+
+# Use Emacs in batch mode to export the Org file to HTML
+emacs --batch \
+  --eval "(progn
+            (require 'org)
+            (find-file \"$ORG_FILE\")
+            (org-html-export-to-html))"
