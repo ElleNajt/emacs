@@ -1432,3 +1432,18 @@ finally:
 ;;;
 ;;;
 
+
+;;; org-download
+;; for drag and drop of images
+
+(require 'org-download)
+
+;; Drag-and-drop to `dired`
+(add-hook 'dired-mode-hook 'org-download-enable)
+
+;;; org clocking
+;; make sure to define org-clocking-p before clocking, to avoid issues with
+;; batch jobs / doom scripts
+(defun org-clocking-p ()
+  "Return t when clocking a task."
+  (not (equal (org-clocking-buffer) nil)))
