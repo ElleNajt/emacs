@@ -4,9 +4,9 @@
   (require 'doom-start)
   (dolist (file files)
     (find-file file)
-    (case-fold-search t)
+
     (goto-char (point-min))
-    (re-search-forward "^#\\TITLE:.*")
+    ;; (re-search-forward "^#\\TITLE:.*")
     (insert "\n#+OPTIONS: \\n:t ^:nil \n")
     (message "%S" (org-html-export-to-html))
     ;; (flush-lines "^\s*Cell Timer:.*")
