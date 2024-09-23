@@ -1,0 +1,11 @@
+#!/usr/bin/env doomscript
+
+(defcli! evaluate-org (&args files)
+  (require 'doom-start)
+  (dolist (file files)
+    (find-file file)
+    (org-babel-execute-buffer)
+    (save-buffer)
+    ))
+
+(run! "evaluate-org" (cdr (member "--" argv)))
