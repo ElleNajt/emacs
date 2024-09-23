@@ -9,6 +9,7 @@ _original_str = {}
 
 try:
     import pandas as pd
+    pd.options.display.max_rows = 20
     PANDAS_AVAILABLE = True
 except ImportError:
     pass
@@ -48,7 +49,10 @@ def org_repr(obj):
         table.insert(1, hline)
 
     # TODO Add the head and tail printing like jupyter does
-    return "\n".join(table[:pd.options.display.max_rows ])
+
+    OFFSET_DUE_TO_HEADER_AND_HLINE = 2
+    return "\n".join(table[:pd.options.display.max_rows + OFFSET_DUE_TO_HEADER_AND_HLINE ])
+
 
 def enable():
     global PANDAS_AVAILABLE
