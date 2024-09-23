@@ -70,4 +70,6 @@
 ;;; password store
 (use-package! exec-path-from-shell
   :config
-  (exec-path-from-shell-copy-env "PASSWORD_STORE_DIR"))
+  (progn
+    (exec-path-from-shell-copy-env "PATH")
+    (exec-path-from-shell-copy-env "PASSWORD_STORE_DIR")))
