@@ -1,15 +1,16 @@
 #!/usr/bin/env sh
 set -x
 
-for file in $(git diff --cached --name-only --diff-filter=D | grep '.org$'); do
+git diff --cached --name-only --diff-filter=D | grep '.org$' | while IFS= read -r org_file; do
     base_name="${file%.org}"
     ipynb_file="${base_name}_githookgenerated.ipynb"
     rm -f "$ipynb_file"
     git rm --cached "$ipynb_file"
 done
 
-for org_file in $(git diff --cached --name-only --diff-filter=AM | grep '.org$'); do
-    base_name=$(basename ${org_file})
+git diff --cached --name-only --diff-filter=AM | grep '.org$' | while IFS= read -r org_file; do
+    echo "Processing: $org_file"
+    base_name=$(basename "${org_file}")
     base_name="${base_name%.org}"
     file_directory=$(dirname "${org_file}")
     ipynbs_folder_name="auto_generated_ipynbs"
