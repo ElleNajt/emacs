@@ -1207,7 +1207,8 @@ finally:
 (map! :after dired
       :map dired-mode-map
       "C-c c" #'doom/concat-text-files
-      :n "L" #'dired-do-symlink)
+      :n "L" #'dired-do-symlink
+      :n "W" #'dired-do-eww)
 
 ;;; i3 status stuff
 
@@ -1447,3 +1448,8 @@ finally:
 (defun org-clocking-p ()
   "Return t when clocking a task."
   (not (equal (org-clocking-buffer) nil)))
+
+
+;;;  publishing
+
+(setq org-link-file-path-type 'relative)
