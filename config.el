@@ -1063,6 +1063,8 @@ finally:
 ;;;; Org python
 (map! (:mode org-mode
        :n "<S-return>" #'run-cell-and-advance
+       :n "SPC S" #'jupyter-org-split-src-block
+       :n "SPC M" #'jupyter-org-merge-blocks
        :n "g SPC" #'org-babel-execute-buffer
        :n "C-c C-k" #'interrupt-org-babel-session)
       (:mode org-agenda-mode
