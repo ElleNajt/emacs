@@ -4,5 +4,6 @@
 # condition: t
 # --
 :PROPERTIES:
-:header-args: :results output :python "nix-shell --run python" :async t :tangle :session $1
+:header-args:python :results output drawer :python "nix-shell --run python" :async t :tangle :session $1
+:header-args:bash :results output :async t :tangle :session bash_$1
 :END:

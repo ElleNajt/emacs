@@ -3,4 +3,5 @@
 # key: nixpropertyheader
 # condition: t
 # --
-#+PROPERTY: header-args:python :results output :python "nix-shell --run python" :async t :tangle :session $1
+#+PROPERTY: header-args:python :results output drawer :python "nix-shell --run python" :async t :tangle :session python_$1
+#+PROPERTY: header-args:bash :results output :async t :tangle :session bash_$1

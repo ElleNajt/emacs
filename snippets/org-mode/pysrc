@@ -1,8 +1,7 @@
 # -*- mode: snippet -*-
 # name: Python source file
-# key: pysrc
+# key: pythonsrc
 # --
-
 #+begin_src python
 $1
 #+end_src
