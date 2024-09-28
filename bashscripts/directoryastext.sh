@@ -1,12 +1,10 @@
 #!/usr/bin/env sh
-
 shopt -s dotglob
 shopt -s nullglob
 
-for file in *; do
-    if [ -f "$file" ]; then # Ensure it's a file
-        echo "===== $file ====="
-        cat "$file"
-        echo -e "\n----------------------------------------------------"
-    fi
+find . -type f | while read -r file; do
+    relpath=$(realpath --relative-to="$(pwd)" "$file") # Get the relative path
+    echo "===== $relpath ====="
+    cat "$file"
+    echo -e "\n----------------------------------------------------"
 done

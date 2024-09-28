@@ -1194,21 +1194,21 @@ finally:
 
 ;;; Get directory as text
 
-(defun doom/concat-text-files ()
+(defun doom/directory-as-text ()
   "Concatenate all text files in the current directory, separated by filenames."
   (interactive)
   (let ((output-buffer (get-buffer-create "*Concatenated Text*")))
     (with-current-buffer output-buffer
       (read-only-mode 0)  ; Ensure we can modify the buffer
       (erase-buffer)      ; Clear previous contents
-      (shell-command (concat doom-user-dir "bashscripts/directoryastext.sh" ) output-buffer)
+      (shell-command (concat "bash " doom-user-dir "bashscripts/directoryastext.sh" ) output-buffer)
       (read-only-mode 1)) ; Make the buffer read-only again
     (display-buffer output-buffer)))
 
 ;; Optionally, bind this function to a key in dired-mode
 (map! :after dired
       :map dired-mode-map
-      "C-c c" #'doom/concat-text-files
+      "C-c c" #'doom/directory-as-text
       :n "L" #'dired-do-symlink
       :n "W" #'dired-do-eww)
 
