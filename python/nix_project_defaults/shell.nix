@@ -14,4 +14,5 @@ in pkgs.mkShell {
   buildInputs = [ pythonEnv pkgs.pyright ];
 }
 
-# NOTE: To get this to be reflected in eglot, you'll need to M-x envrc-reload, then reload eglot.
+# NOTE: To get changes here to be reflected in eglot, you'll need to
+# M-x envrc-reload, then reload eglot.
