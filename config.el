@@ -1430,11 +1430,10 @@ finally:
 
 ;;; based pyright
 
-(after! eglot
-  (add-to-list 'eglot-server-programs
-               '((python-mode python-ts-mode)
-                 "basedpyright-langserver" "--stdio")))
-
+;; (after! eglot
+;;   (add-to-list 'eglot-server-programs
+;;                '((python-mode python-ts-mode)
+;;                  "basedpyright-langserver" "--stdio")))
 ;;;
 ;;;
 ;;;
