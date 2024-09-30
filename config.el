@@ -979,7 +979,9 @@ finally:
 
 (map! :mode python-mode
       :leader :nv "c =" #'positional-to-keyword
-      )
+      :leader :n "r" #'eglot-rename
+      :leader :n "e r" #'eglot-reconnect
+      :leader :n "e e" #'eglot)
 
 (map!
  ;;  3 as in #
@@ -1210,11 +1212,15 @@ finally:
       :map dired-mode-map
       "C-c c" #'doom/directory-as-text
       :n "L" #'dired-do-symlink
-      :n "SPC e a" #'envrc-allow
-      :n "SPC e r" #'envrc-reload
-      :n "SPC e R" #'envrc-reload-all
 
       :n "W" #'dired-do-eww)
+(map!
+
+ :n "SPC d a" #'envrc-allow
+ :n "SPC d r" #'envrc-reload
+ :n "SPC d R" #'envrc-reload-all
+
+ )
 
 ;;; i3 status stuff
 
