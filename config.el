@@ -1210,6 +1210,10 @@ finally:
       :map dired-mode-map
       "C-c c" #'doom/directory-as-text
       :n "L" #'dired-do-symlink
+      :n "SPC e a" #'envrc-allow
+      :n "SPC e r" #'envrc-reload
+      :n "SPC e R" #'envrc-reload-all
+
       :n "W" #'dired-do-eww)
 
 ;;; i3 status stuff
