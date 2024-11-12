@@ -34,8 +34,6 @@
 ;;                 '(evil-search-forward evil-find-char evil-snipe-f evil-snipe-s))
 ;; (add-emt-advice evil-backward-char
 ;;                 '(evil-search-backward evil-find-char-backward evil-snipe-F evil-snipe-S))
-
-
 ;; (add-emt-advice evil-next-line
 ;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
 ;;                 next-line)
@@ -103,11 +101,8 @@
 
 (defun rust/check ()
   (interactive)
-
   (save-buffer)
   (vterm-run-and-return (concat (format  "cd %s & clear & cargo check" (file-name-directory buffer-file-name)))))
-
-
 
 (defun run/python ()
   (interactive)
@@ -160,252 +155,50 @@ it."
 ;; (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
 ;;; Loading computer specific files
-(load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
+;; (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
 
-;;;; aligning and displaying iamges after output
+;;; Org evil keybindings
 
-(defun my-align-advice-function (args)
-  (let ((top-of-src-block (nth 5 args)))
-    (save-excursion
-      (with-current-buffer (current-buffer)
-        (goto-char top-of-src-block)
-        (forward-line 1)
-        (let ((in-table nil))
-          (while (and (= (forward-line) 0)
-                      (not (looking-at "^[ \t]*:END:[ \t]*$")))
-            (let ((at-table-line (looking-at "^[ \t]*|")))
-              (when (and (not in-table) at-table-line)
-                (org-table-align))
-              (setq in-table at-table-line))))))))
+;; Loading in org-evil functions with keybindings removed and setting my own
+(load! "vendored/org-evil/org-evil-core")
+(load! "vendored/org-evil/org-evil-commands")
+(load! "vendored/org-evil/org-evil-motion")
 
+(org-evil--define-key 'motion 'org-evil-motion-mode
+                      "[[" 'org-evil-motion-backward-block-begin
+                      "]]" 'org-evil-motion-forward-block-begin)
 
-(defun adjust-org-babel-results (orig-fun params &rest args)
-  (let*
+;; https://discourse.doomemacs.org/t/common-config-anti-patterns/119
+(add-hook! 'org-mode-hook 'org-evil-mode)
 
-      (
-       ( options (nth 2 (car args)))
-       ( auto-align (if (string= "no" (cdr (assq :tables-auto-align options))) nil t))
-       )
+(undefine-key! evil-motion-state-map "[ s" "] s")
 
-    ;; (message "all option: %S" options)
-    ;; (message "auto-align option: %S"  auto-align)
-    ;; (message "auto-align option: %S" auto-align)
+(map! (:mode org-mode
+       :n "] r" #'org-babel-goto-src-block-results
+       :n "[ s" 'org-evil-block-beginning-of-block
+       :n "] s" 'org-evil-block-end-of-block))
 
+(org-evil--define-key 'motion 'org-evil-block-mode
+                      "[ s" 'org-evil-block-beginning-of-block
+                      "] s" 'org-evil-block-end-of-block)
 
-    ;; TODO this is a terrible hack
-    ;; it happens to be that this argument is populated for the hash insert
-    ;; and not for the content insert
-    ;; I should refactor this to depend on hooks instead
-    (if (not (nth 2 args))
-        (progn
-          (if auto-align
-              (my-align-advice-function (nth 0 args))
-            ;; this is a built in that accomplishes the same task
-            ;; but it operates on the entire org file,
-            ;; which is slow and breaks hermeticism in a way I don't like
-            ;; I tried narrowing the buffer, but it didn't work
-            ;; (org-table-map-tables 'org-table-align)
-            )
-          )
-      ())
-    ())
-
-
-  (org-display-inline-images)
-
-
-  )
-
-(advice-add 'org-babel-insert-result :after #'adjust-org-babel-results)
-;; (setq debug-on-message "Code block evaluation complete\\.")
-
-(setq debug-on-message nil)
-;; does async have a hook?
-;;;;; alerts
-;; Define a major mode for our alerts buffer
-(define-derived-mode cell-alerts-mode special-mode "Cell Alerts"
-  "Major mode for displaying cell completion alerts.")
-
-(defun my-cell-finished-alert ()
-  "Create an alert with an Emacs-native clickable link in a pop-up buffer when a code cell finishes."
-  (let* ((buffer-name (buffer-name))
-         (buffer-file (buffer-file-name))
-         (line-number (line-number-at-pos))
-         (link-text (if buffer-file
-                        (format "%s:%d" buffer-file line-number)
-                      buffer-name))
-         (alerts-buffer-name "*Cell Completion Alerts*"))
-
-    (with-current-buffer (get-buffer-create alerts-buffer-name)
-      (unless (eq major-mode 'cell-alerts-mode)
-        (cell-alerts-mode))
-      (let ((inhibit-read-only t))
-        (goto-char (point-max))
-        (let ((start (point)))
-          (insert "\n\n")
-          (insert (format-time-string "[%Y-%m-%d %H:%M:%S]\n"))
-          (insert "A code cell finished at:\n")
-          (shell-command (format  "notify-send \"An org cell in %s finished!\"" buffer-name))
-          (insert-text-button link-text
-                              'action (lambda (_)
-                                        (if buffer-file
-                                            (find-file-other-window buffer-file)
-                                          (switch-to-buffer-other-window buffer-name))
-                                        (when buffer-file
-                                          (goto-char (point-min))
-                                          (forward-line (1- line-number))))
-                              'follow-link t
-                              'help-echo "Click to go to the cell location")
-          (put-text-property start (point) 'read-only t)))
-      (let ((window (display-buffer-in-side-window (current-buffer) '((side . bottom)))))
-        (when window
-          (with-selected-window window
-            (goto-char (point-max))
-            (recenter -1))))))
-  (message "Finished cell!"))
-
-;; Doom Emacs specific configuration
-(after! evil
-  (add-to-list 'evil-escape-excluded-major-modes 'cell-alerts-mode)
-  (evil-set-initial-state 'cell-alerts-mode 'normal))
-
-(after! (:and (:or evil-collection evil-integration) which-key)
-  (map! :map cell-alerts-mode-map
-        :n "q" #'quit-window
-        :n [escape] #'quit-window))
-
-;; Function to close the alerts buffer
-(defun close-cell-alerts-buffer ()
-  "Close the Cell Completion Alerts buffer from anywhere."
-  (interactive)
-  (when-let ((buffer (get-buffer "*Cell Completion Alerts*")))
-    (when-let ((window (get-buffer-window buffer t)))
-      (quit-window nil window))))
-
-;; ESC key handling
-(defadvice! my-universal-esc-handler (&rest _)
-  :before #'keyboard-quit
-  (when (get-buffer-window "*Cell Completion Alerts*" t)
-    (close-cell-alerts-buffer)))
-
-;; Set up the display rules for the alerts buffer
-(set-popup-rule! "^\\*Cell Completion Alerts\\*$"
-  :side 'bottom
-  :size 0.3
-  :select nil
-  :quit t)
-
-;;;;; cell timer based
-
-(defun notify-if-took-a-while (alert-threshold)
-  "Scan through a results block to find a 'Cell Timer:' line and parse the time in seconds."
-  (interactive)
-  (save-excursion
-    (let ((case-fold-search t))
-      (if (search-forward-regexp "^[ \t]*#\\+RESULTS:" nil t)
-          (let ((end (save-excursion
-                       (if (search-forward-regexp "^[ \t]*#\\:END:" nil t)
-                           (match-beginning 0)
-                         (point-max)))))
-            (when (search-forward-regexp "^Cell Timer:\\s-*\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\)" end t)
-              (let ((hours (string-to-number (match-string 1)))
-                    (minutes (string-to-number (match-string 2)))
-                    (seconds (string-to-number (match-string 3))))
-                (+ (* hours 3600) (* minutes 60) seconds)
-
-                (if (>= seconds alert-threshold)
-                    (my-cell-finished-alert)
-                  ()
-
-
-                  )
-
-
-                )))
-        (message "No results block found.")
-        nil))))
-
-(defun cell-timer-above (params args lower_bound)
-  "Display an alert if the cell timer is above lower_bound")
-
-(defun alert-advice-after-org-babel-results (orig-fun params &rest args)
-  (let*
-      (( options (nth 2 (car args)))
-       ( alert-finish (if (string= "yes" (cdr (assq :alert options))) t nil)))
-    ;; TODO this is a terrible hack
-    ;; it happens to be that this argument is populated for the hash insert
-    ;; and not for the content insert
-    ;; I should refactor this to depend on hooks instead
-
-    ;; if cell took a while always alert
-    (if (not (nth 2 args))
-        (if alert-finish
-            (my-cell-finished-alert)
-          ;; (message "alert finish!")
-
-          ;; always alerts if the cell took a while (more than 30 seconds)
-          (notify-if-took-a-while 10))
-      ()
-      ()) ()))
-
-(advice-add 'org-babel-insert-result :after #'alert-advice-after-org-babel-results)
-;; (setq debug-on-message "Code block evaluation complete\\.")
-
-
-;;;; display shortcuts
-
-(defun my-align-tables ()
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (while (< (point) (point-max))
-      (beginning-of-line)
-      (when (org-at-table-p)
-        (org-table-align))
-      (forward-line 1)
-      )
-    ))
+;;  Per org-evil comment
+;; Have to loop through as it looks like the text objects
+;; don't configure correctly when binding multiple states
+;; at once.
+(dolist (mode '(operator visual))
+  (org-evil--define-key mode 'org-evil-block-mode
+                        "ib" 'org-evil-block-inner-block
+                        "ab" 'org-evil-block-a-block))
 
 
 (map! (:mode org-mode
-       :n "SPC f i"  #'org-toggle-inline-images
-       :n "SPC f I"  #'org-display-inline-images
-       :n "SPC f t" #'my-align-tables
-       :n "g s"  #'org-edit-special
-       :n "] c" 'evil-next-flyspell-error
-       :n "[ c" 'evil-prev-flyspell-error
-       ))
+       :n "<up>" 'org-evil-motion-backward-heading
+       :n "<down>" 'org-evil-motion-forward-heading))
 
-;;;; Org edit special
-
-
-;;;; Movement
-
-(defun my-org-forward-paragraph (orig-fun &rest args)
-  "Advice function to move forward by paragraphs, skipping over images."
-  (let ((orig-point (point)))
-    (when (not (apply orig-fun args))
-      (goto-char (point-max)))
-    (while (and (org-in-regexp org-image-inline-re 1)
-                (< (point) orig-point))
-      (apply orig-fun args))))
-
-(defun my-org-backward-paragraph (orig-fun &rest args)
-  "Advice function to move backward by paragraphs, skipping over images."
-  (let ((orig-point (point)))
-    (when (not (apply orig-fun args))
-      (goto-char (point-min)))
-    (while (and (org-in-regexp org-image-inline-re 1)
-                (> (point) orig-point))
-      (apply orig-fun args))))
-
-;; (advice-add 'org-forward-paragraph :around #'my-org-forward-paragraph)
-;; (advice-add 'org-backward-paragraph :around #'my-org-backward-paragraph)
-
-
-;;;; Deduplicate
+;;;; Deduplicate Todos
 (defun sort-deduplicate-todos ()
   "Sort TODOs by date, deduplicate exact copies."
   (interactive)
@@ -509,178 +302,9 @@ it."
   (remove-hook 'org-tab-first-hook #'+org-cycle-only-current-subtree-h))
 
 ;;;; Evil Motions
-;; (require 'org)
-;; Loading in org-evil functions with keybindings removed and setting my own
-(load! "vendored/org-evil/org-evil-core")
-(load! "vendored/org-evil/org-evil-commands")
-(load! "vendored/org-evil/org-evil-motion")
-
-;; https://discourse.doomemacs.org/t/common-config-anti-patterns/119
-(add-hook! 'org-mode-hook 'org-evil-mode)
 
 
-(undefine-key! evil-motion-state-map "[ s" "] s")
-
-(map! (:mode org-mode
-       :n "] r" #'org-babel-goto-src-block-results
-       :n "[ s" 'org-evil-block-beginning-of-block
-       :n "] s" 'org-evil-block-end-of-block))
-
-(org-evil--define-key 'motion 'org-evil-block-mode
-                      "[ s" 'org-evil-block-beginning-of-block
-                      "] s" 'org-evil-block-end-of-block)
-
-;;  Per org-evil comment
-;; Have to loop through as it looks like the text objects
-;; don't configure correctly when binding multiple states
-;; at once.
-(dolist (mode '(operator visual))
-  (org-evil--define-key mode 'org-evil-block-mode
-                        "ib" 'org-evil-block-inner-block
-                        "ab" 'org-evil-block-a-block))
-
-(org-evil--define-key 'motion 'org-evil-motion-mode
-                      "[[" 'org-evil-motion-backward-block-begin
-                      "]]" 'org-evil-motion-forward-block-begin
-                      "gH" 'org-evil-motion-up-heading-top
-                      "gh" 'org-evil-motion-up-heading)
-
-(map! (:mode org-mode
-       :n "<up>" 'org-evil-motion-backward-heading
-       :n "<down>" 'org-evil-motion-forward-heading))
 ;;;; Org-Babel Python
-;;;;; Source Block Functions
-
-(defun org-babel-goto-src-block-results ()
-  (interactive)
-  (goto-char (org-babel-where-is-src-block-result))
-  )
-
-(defun org-src-block-end-header (&optional element)
-  (let ((element (or element (org-element-at-point))))
-    (save-excursion
-      (goto-char (org-element-end element))
-      (re-search-backward (rx (and bol "#+END_SRC")))
-      (point))))
-
-(defun grfn/+org-insert-item (orig direction)
-  (interactive)
-  (if (and (org-in-src-block-p)
-           (equal direction 'below))
-      (grfn/insert-new-src-block)
-    (funcall orig direction)))
-(advice-add #'+org--insert-item :around #'grfn/+org-insert-item)
-
-(defun org-src-block-results-end (src-block)
-  (save-excursion
-    (goto-char (org-element-begin src-block))
-    (when-let (results-loc (org-babel-where-is-src-block-result))
-      (goto-char results-loc)
-      (goto-char (org-element-end (org-element-at-point)))
-      (skip-chars-backward " \t\n")
-      (point))))
-
-(defun grfn/insert-new-src-block ()
-  (interactive)
-  (let* ((current-src-block (org-element-at-point))
-         (point-to-insert
-          (or (org-src-block-results-end current-src-block)
-              (save-excursion
-                (goto-char (org-element-end current-src-block))
-                (skip-chars-backward " \t\n")
-                (point))))
-         (src-block-head (save-excursion
-                           (goto-char (org-element-property
-                                       :begin current-src-block))
-                           (let ((line (thing-at-point 'line t)))
-                             (if (not (s-starts-with? "#+NAME:" (s-trim line)))
-                                 line
-                               (forward-line)
-                               (thing-at-point 'line t))))))
-    (goto-char point-to-insert)
-    (insert "\n\n")
-    (insert src-block-head)
-    (let ((contents (point-marker)))
-      (insert "\n#+end_src\n")
-      (goto-char contents))))
-
-(defun run-cell-and-advance () (interactive) (org-babel-execute-src-block) (org-babel-next-src-block) )
-
-;;;;; Exception Handling
-(defun ob-python--eval-python-session-with-exceptions
-    (orig session body &rest args)
-  (let* ((exc-file (make-temp-file "session-exception"))
-         (exec-file (make-temp-file "execution-code")))
-    (unwind-protect
-        (progn
-          (with-temp-file exec-file (insert body))
-          (let* ((body (format "\
-try:
-    with open(\"%s\", 'r') as file:
-        exec(file.read())
-except:
-    import traceback
-    with open(\"%s\", \"w\") as f:
-        f.write(traceback.format_exc())
-    raise"
-                               exec-file
-                               exc-file))
-                 (result (apply orig session body args))
-                 (exc-string (with-temp-buffer
-                               (insert-file-contents exc-file)
-                               (buffer-string))))
-            (when (not (string-empty-p exc-string))
-              (org-babel-eval-error-notify nil exc-string))
-            result))
-      (progn (delete-file exc-file)
-             (delete-file exec-file)))))
-
-
-(defun elle/wrap-org-babel-execute-python (orig body params &rest args)
-  (let* ( (exec-file (make-temp-file "execution-code"))
-          (timer-show (not (equal "no" (cdr (assq :timer-show params)))))
-          (timer-string (cdr (assq :timer-string params)))
-          (timer-string-formatted (if (not timer-string) "Cell Timer:" timer-string))
-          (timer-rounded (not (equal "no" (cdr (assq :timer-rounded params)))))
-          )
-    (with-temp-file exec-file (insert body))
-    (let* ((body (format "\
-exec_file = \"%s\"
-import time
-# since this can cause collisions if something else in the python script gets named datetime
-from datetime import datetime as org_babel_wrapper_datetime
-start = org_babel_wrapper_datetime.now()
-try:
-    with open(exec_file, 'r') as file:
-        exec(compile(file.read(), '<org babel source block>', 'exec'))
-except:
-    import traceback
-    print(traceback.format_exc())
-finally:
-    #print(\"___________________________\")
-    if %s:
-
-        timerstring = \"%s\"
-
-        if %s:
-            print(timerstring, str((org_babel_wrapper_datetime.now() - start)).split('.')[0], \"\\n\")
-        else:
-            print(timerstring, str((org_babel_wrapper_datetime.now() - start)), \"\\n\")
-    import os
-    try:
-        os.remove(exec_file)
-    except:
-        pass" exec-file
-        (if  timer-show "True" "False")
-        timer-string-formatted
-        (if  timer-rounded "True" "False")))
-           (result (apply orig body params args)))
-      result)))
-
-(advice-add
- 'org-babel-execute:python
- :around
- #'elle/wrap-org-babel-execute-python)
 
 (defun python-org-header ()
   (interactive)
@@ -691,25 +315,6 @@ finally:
  :header-args: :results output :async t :session %s
  :END:" session-name))))
 
-(defun org-babel-get-session ()
-  (interactive)
-  (let* ((src-info (org-babel-get-src-block-info))
-         (headers (nth 2 src-info))
-         (session (cdr (assoc :session headers))))
-    session))
-
-
-(defun interrupt-org-babel-session ()
-  (interactive)
-  (let* ((current-session (org-babel-get-session))
-         (session-buffer (and current-session
-                              (concat "*" current-session "*"))))
-    (when session-buffer
-      (let ((proc (get-buffer-process (get-buffer session-buffer))))
-        (when proc
-          (interrupt-process proc)
-          (message "Interrupted session: %s" current-session))))))
-
 ;; C-c C-k alread bound to something in org mode, we add advice to the function that its
 ;; bound to to interrupt the process if the cursor is in a source block
 ;; (define-advice org-kill-note-or-show-branches
@@ -718,158 +323,7 @@ finally:
 ;;       (interrupt-org-babel-session)
 ;;     (apply orig args)))
 
-;;;;; pymockbabel
 
-
-(defun elle/wrap-org-babel-execute-python-mock-plt (orig body &rest args)
-  (let* ( (exec-file (make-temp-file "execution-code"))
-          (pymockbabel-script-location (concat doom-user-dir "/python/pymockbabel")))
-    (with-temp-file exec-file (insert body))
-    (let* ((body (format "\
-exec_file = \"%s\"
-pymockbabel_script_location = \"%s\"
-import sys
-sys.path.append(pymockbabel_script_location)
-import pymockbabel
-outputs_and_file_paths, output_types, list_writer = pymockbabel.setup(\"%s\")
-try:
-    with open(exec_file, 'r') as file:
-        exec(compile(file.read(), '<org babel source block>', 'exec'))
-except:
-    import traceback
-    print(traceback.format_exc())
-finally:
-    pymockbabel.display(outputs_and_file_paths, output_types, list_writer)
-    try:
-        os.remove(exec_file)
-    except:
-        pass" exec-file pymockbabel-script-location (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
-           (result (apply orig body args)))
-      result)))
-
-(advice-add
- 'org-babel-execute:python
- :around
- #'elle/wrap-org-babel-execute-python-mock-plt)
-
-
-;;;;; fix table plots
-
-
-(defun elle/wrap-org-babel-execute-python-mock-table (orig body &rest args)
-  (let* ( (exec-file (make-temp-file "execution-code"))
-          (pymockbabel-script-location (concat doom-user-dir "/python/pymockbabel")))
-    (with-temp-file exec-file (insert body))
-    (let* ((body (format "\
-exec_file = \"%s\"
-pymockbabel_script_location = \"%s\"
-import sys
-sys.path.append(pymockbabel_script_location)
-import print_org_df
-print_org_df.enable()
-try:
-    with open(exec_file, 'r') as file:
-        exec(compile(file.read(), '<org babel source block>', 'exec'))
-except:
-    import traceback
-    print(traceback.format_exc())
-finally:
-    try:
-        os.remove(exec_file)
-    except:
-        pass" exec-file pymockbabel-script-location (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
-           (result (apply orig body args)))
-      result)))
-
-(advice-add
- 'org-babel-execute:python
- :around
- #'elle/wrap-org-babel-execute-python-mock-table)
-
-;; (advice-remove 'org-babel-execute:python nil)
-;;;;;; Garbage collection
-
-(defun find-org-file-references ()
-  "Find all file names referenced within [[]] in the current org buffer and return them as a list."
-  (let (file-references)
-    (save-excursion
-      (goto-char (point-min))
-      (while (re-search-forward "\\[\\[file:\\([^]]+\\)\\]\\]" nil t)
-        (let ((file-name (match-string 1)))
-          (push file-name file-references))))
-    file-references))
-
-(defun delete-unused-pngs-in-buffer (buffer)
-  "Delete .png files in the /plots/ directory that are not referenced in the org file corresponding to BUFFER."
-  (with-current-buffer buffer
-    (when (and (eq major-mode 'org-mode) (buffer-file-name))
-      (let* ((org-file (buffer-file-name))
-             (org-file-name (file-name-sans-extension (file-name-nondirectory org-file)))
-             (plots-dir (concat (file-name-directory org-file) "plots/" org-file-name))
-             (referenced-files (find-org-file-references))
-             (png-files (when (and (file-directory-p plots-dir) (file-exists-p plots-dir))
-                          (directory-files plots-dir t "\\.png$"))))
-        (when png-files
-          (dolist (png-file png-files)
-            (let ((relative-png-file (file-relative-name png-file (file-name-directory org-file))))
-              (unless (member relative-png-file referenced-files)
-                (delete-file png-file)
-                (message "Deleted: %s" png-file)))))))))
-
-(defun delete-unused-pngs-in-all-org-files ()
-  "Delete unused .png files in all open org files."
-  (interactive)
-  (dolist (buffer (buffer-list))
-    (delete-unused-pngs-in-buffer buffer)))
-
-(run-at-time 300 300 'delete-unused-pngs-in-all-org-files)
-
-;;;;; Draft of interrupt function that sets alerts
-(defun org-test ()
-  (interactive)
-  (let ((info (org-babel-get-src-block-info)))
-    (if info
-        (let ((session (cdr (assq :session info))))
-          (if session
-              (message "Session: %s" session)
-            (message "No session found.")))
-      (message "Not in a source block or no source block info found."))))
-
-(defvar min-babel-exec-time-for-alert (* 60 3))
-(defun add-babel-exec-time-alert-to-todo (src-block-element))
-
-(defun timer-babel-execute-src-block-wrapper (orig &optional arg info params)
-  "Wrap `org-babel-execute-src-block' to measure and display execution time."
-  (let* ((start-time (current-time))
-         ;; Execute the block and capture the result.
-         (result (funcall orig arg info params))
-         (end-time (current-time))
-         (execution-time (float-time (time-subtract end-time start-time)))
-         (results-end (org-src-block-results-end (org-element-at-point)))
-         (time-string (format "\ntime: %.3fs" execution-time)))
-    (save-excursion
-      ;; Find and remove the existing "time :" line, if present.
-      (goto-char results-end)
-      (let ((next-heading (save-excursion (outline-next-heading) (point))))
-        (while (re-search-forward
-                (rx (and bol "time: "
-                         (zero-or-more any)
-                         eol
-                         "\n"))
-                next-heading
-                t)
-          (replace-match "" nil nil)))
-
-      ;; Insert the new execution time.
-      (goto-char results-end)
-      (end-of-line)
-      (insert time-string))
-    (when (> execution-time min-babel-exec-time-for-alert)
-      (min-babel-exec-time-alert-to-todo
-       (org-element-at-point)))
-    result))
-
-;; (advice-add 'org-babel-execute-src-block :around #'timer-babel-execute-src-block-wrapper)
 
 ;;;;; Pandoc conversion script
 
@@ -1042,8 +496,8 @@ finally:
   :nv "r" #'evil-open-folds
   :nv "s" 'outline-show-all
   :nv "h" 'outline-show-only-headings
-  :nv "f" 'outline-forward-same-level
-  :nv "p" 'outline-backward-same-level
+  :nv "J" 'outline-forward-same-level
+  :nv "K" 'outline-backward-same-level
   :nv "j" 'outline-next-heading
   :nv "k" 'outline-previous-heading
   :nv "n" 'outli-toggle-narrow-to-subtree  ; replacing evil-scroll-start-column
@@ -1052,8 +506,8 @@ finally:
   ;; make condition using outli-on-heading-p
   :nv "," 'outline-promote
   :nv "." 'outline-demote
-  :nv "<up>" 'outline-move-subtree-up
-  :nv "<down>" 'outline-move-subtree-down
+  :nv "m k" 'outline-move-subtree-up
+  :nv "m j" 'outline-move-subtree-down
   :nv "i" 'outli-insert-heading-respect-content
   ;; :nv "1" '(outline-hide-sublevels 1)
   ;; :nv "2" '(outline-hide-sublevels 2)
@@ -1062,15 +516,20 @@ finally:
   ;; :nv "5" '(outline-hide-sublevels 5)
   ))
 
+;;; Org mode
+(defun org-time-stamp-advice (orig-fun &rest args)
+  "Ensure a space is inserted before the Org timestamp."
+  (unless (or (bolp) (eq (char-before) ?\s))
+    (insert " "))
+  (apply orig-fun args))
+
+(advice-add 'org-time-stamp :around #'org-time-stamp-advice)
+
 ;;;; Org python
-(map! (:mode org-mode
-       :n "<S-return>" #'run-cell-and-advance
-       :n "SPC S" #'jupyter-org-split-src-block
-       :n "SPC M" #'jupyter-org-merge-blocks
-       :n "g SPC" #'org-babel-execute-buffer
-       :n "C-c C-k" #'interrupt-org-babel-session)
-      (:mode org-agenda-mode
-             "SPC m A" #'org-archive-subtree))
+
+(map!
+ (:mode org-agenda-mode
+        "SPC m A" #'org-archive-subtree))
 ;;;; General
 (map!
  :n "-" #'elle/dired-minus
@@ -1182,19 +641,20 @@ finally:
        :desc "Cancel all TODOs in subtree or file" "C" #'cancel-all-in-org-file-or-subtree))
 
 
-;;; Timestamps
-
-;; Adding a space because otherwise it breaks org mode
-
-(defun my/org-time-stamp-advice (orig-fun &rest args)
-  "Ensure a space is inserted before the Org timestamp."
-  (unless (or (bolp) (eq (char-before) ?\s))
-    (insert " "))
-  (apply orig-fun args))
-
-(advice-add 'org-time-stamp :around #'my/org-time-stamp-advice)
 
 ;;; Get directory as text
+
+
+(defun doom/directory-as-text_all ()
+  "Concatenate all text files in the current directory, separated by filenames."
+  (interactive)
+  (let ((output-buffer (get-buffer-create "*Concatenated Text*")))
+    (with-current-buffer output-buffer
+      (read-only-mode 0)  ; Ensure we can modify the buffer
+      (erase-buffer)      ; Clear previous contents
+      (shell-command (concat "bash " doom-user-dir "bashscripts/directoryastext.sh --all" ) output-buffer)
+      (read-only-mode 1)) ; Make the buffer read-only again
+    (display-buffer output-buffer)))
 
 (defun doom/directory-as-text ()
   "Concatenate all text files in the current directory, separated by filenames."
@@ -1464,3 +924,85 @@ finally:
 ;;;  publishing
 
 (setq org-link-file-path-type 'relative)
+;;; fix org agenda direnv interactions
+
+
+;; (defun my/disable-envrc-temporarily (orig-fun &rest args)
+;;   "Disable `envrc-mode` temporarily when running Org Agenda."
+;;   (let ((envrc-active envrc-mode)) ;; Check if envrc-mode is active
+;;     (when envrc-active
+;;       (envrc-mode -1)) ;; Disable envrc-mode
+;;     (unwind-protect
+;;         (apply orig-fun args)
+;;       ;; Re-enable envrc-mode if it was active
+;;       (when envrc-active
+;;         (envrc-mode 1)))))
+
+;; Apply this to Org Agenda and other relevant functions
+;; (advice-add 'org-agenda :around #'my/disable-envrc-temporarily)
+;; (advice-add 'org-agenda-list :around #'my/disable-envrc-temporarily)
+;; (advice-add 'org-todo-list :around #'my/disable-envrc-temporarily)
+
+;; (setq debug-on-message "Running direnv")
+
+;;;  org download
+(setq-default org-download-image-dir "./images/org-download/")
+
+(setq org-download-image-dir nil)
+
+;;; w3m config
+
+;; (require 'mime-w3m)
+;; (w3m-search )
+(map!
+ :map w3m-mode-map
+ :nv "J" #'w3m-previous-buffer
+
+ ;;  only want yy in normal mode, so you can still visual select
+ :n "yy"  #'w3m-print-this-url
+
+ :n "f"  #'w3m-lnum-follow
+ :n "F"  #'w3m-lnum-universal
+ :nv "gh"  #'w3m-goto-home-page
+ :nv "H"   #'w3m-view-previous-page
+ :nv "L"   #'w3m-view-next-page
+ :nv "r"   #'w3m-reload-this-page
+ :nv "R"   #'w3m-reload-all-pages
+ :nv "s"   #'w3m-search
+ :nv "K" #'w3m-next-buffer
+ :nv "X"   #'w3m-delete-buffer)
+
+(map! :map w3m-mode-map
+      "SPC T" #'w3m-copy-buffer)
+
+;;; consult preferences
+
+(setq case-fold-search t)
+
+;;; use ob-python-extras
+(use-package! ob-python-extras)
+
+;;; Useful for making packages:
+;;;
+(defun rename-module-functions ()
+  (interactive)
+  ;; First collect all defined functions
+  (save-excursion
+    (goto-char (point-min))
+    (let (my-functions)
+      ;; Collect all defined functions
+      (while (re-search-forward "(defun \\([^/ ]+\\)" nil t)
+        (push (match-string 1) my-functions))
+
+      ;; Now for each function, rename its definition and calls
+      (dolist (func my-functions)
+        ;; Rename definition
+        (goto-char (point-min))
+        (while (re-search-forward (format "(defun %s\\b" (regexp-quote func)) nil t)
+          (replace-match (format "(defun ob-python-extras/%s" func)))
+
+        ;; Rename calls
+        (goto-char (point-min))
+        (while (re-search-forward (format "\\([^-a-zA-Z/]\\)%s\\b" (regexp-quote func)) nil t)
+          (replace-match (format "\\1ob-python-extras/%s" func)))))))
+
