@@ -2,11 +2,12 @@
 
 * Notebook
 :PROPERTIES:
-:header-args: :results output :python "nix-shell --run python" :async t :tangle :session project
+:header-args: :results output drawer :python "nix-shell --run python" :async t :tangle :session project
 :END:
 
 #+begin_src python
 import pandas as pd
 import seaborn as sns
+import time
 print(1)
 #+end_src
