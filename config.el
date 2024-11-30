@@ -158,6 +158,13 @@ it."
 ;; (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
+(map! (:mode org-mode
+       :n "g s" #'org-edit-special
+       :n "] c" #'evil-next-flyspell-error
+       :n "[ c" #'evil-previous-flyspell-error))
+
+
+
 
 ;;; Org evil keybindings
 
