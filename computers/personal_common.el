@@ -2,19 +2,46 @@
 
 ;;; Gptel
 
-(use-package! gptel)
-(setq! gptel-api-key (shell-command-to-string "pass openai-api"))
-(setq gptel-log-level "debug")
+(use-package! gptel
+  :config  (setq! gptel-api-key (shell-command-to-string "pass api-keys/openai-api")))
+
+(setq gptel-use-curl nil)
+(setq gptel-log-level 'debug)
+
+(map! (:nv "SPC o g g" 'gptel) )
 
 
-;; (setq
-;;  gptel-model "claude-3-sonnet-20240229" ;  "claude-3-opus-20240229" also available
-;;  gptel-backend (gptel-make-openai "OpenAI"
-;;                  :stream t :key (shell-command-to-string "pass openai"))
-;;  gptel-backend (gptel-make-anthropic "Claude"
-;;                  :stream t :key (shell-command-to-string "pass claude-api"))
-;;  )
-;; (setq gptel-use-curl t)
+;; (use-package! org-ai)
+;; (setq org-ai-openai-api-token (shell-command-to-string "pass api-keys/openai-api"))
+;; (setq  org-ai-image-directory "../images")
+
+(setq
+ gptel-model "claude-3-sonnet-20241022" ;  "claude-3-opus-20240229" also available
+ gptel-backend (gptel-make-openai "OpenAI"
+                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
+ gptel-backend (gptel-make-anthropic "Claude"
+                 :stream t :key (shell-command-to-string "pass api-keys/claude-api"))
+ gptel-default-mode 'org-mode
+ gptel-track-response t
+ gptel-prompt-prefix-alist '((markdown-mode . "") (org-mode . "* USER\n") (text-mode . ""))
+ gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
+ ;; gptel-display-buffer-action
+ gptel-rewrite-default-action 'ediff
+ )
+
+(setq gptel-post-stream-hook nil)
+
+(add-hook 'gptel-post-response-functions
+          (lambda (beg end)
+            (goto-char (point-max))
+            (newline)))
+
+(add-hook 'gptel-post-stream-hook
+          (lambda ()
+            (message "Hook running!")
+            (goto-char (point-max))
+            (newline)))
+
 ;;; Ruff
 (setq ruff-command "ruff check")
 
