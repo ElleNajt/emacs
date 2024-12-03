@@ -13,30 +13,11 @@
 
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq doom-theme 'doom-feather-dark)
-;;;; Evil motion trainer
+;;; Evil
+(map! :map evil-org-mode-map
+      :vn "g j" #'evil-next-visual-line
+      :vn "g k" #'evil-previous-visual-line)
 
-;; (global-evil-motion-trainer-mode 1)
-;; (setq evil-motion-trainer-threshold 6)
-;; (setq evil-motion-trainer-super-annoying-mode t)
-
-;; (add-emt-advice evil-next-line
-;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
-;;                 next-line)
-;; (add-emt-advice evil-next-visual-line
-;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
-;;                 next-line)
-;; (add-emt-advice evil-previous-line
-;;                 '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward)
-;;                 previous-line)
-;; (add-emt-advice evil-previous-visual-line
-;;                 '(evil-search-backward evil-snipe-S evil-jumper/backward evil-find-char-backward))
-;; (add-emt-advice evil-forward-char
-;;                 '(evil-search-forward evil-find-char evil-snipe-f evil-snipe-s))
-;; (add-emt-advice evil-backward-char
-;;                 '(evil-search-backward evil-find-char-backward evil-snipe-F evil-snipe-S))
-;; (add-emt-advice evil-next-line
-;;                 '(evil-search-forward evil-jumper/backward evil-snipe-s)
-;;                 next-line)
 ;;; Programming Languages
 
 (map!
@@ -161,7 +142,7 @@ it."
 (map! (:mode org-mode
        :n "g s" #'org-edit-special
        :n "] c" #'evil-next-flyspell-error
-       :n "[ c" #'evil-previous-flyspell-error))
+       :n "[ c" #'evil-prev-flyspell-error))
 
 
 
