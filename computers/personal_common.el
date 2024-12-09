@@ -2,45 +2,42 @@
 
 ;;; Gptel
 
-(use-package! gptel
-  :config  (setq! gptel-api-key (shell-command-to-string "pass api-keys/openai-api")))
+(use-package! gptel)
 
-(setq gptel-use-curl nil)
-(setq gptel-log-level 'debug)
-
-(map! (:nv "SPC o g g" 'gptel) )
 
 
 ;; (use-package! org-ai)
 ;; (setq org-ai-openai-api-token (shell-command-to-string "pass api-keys/openai-api"))
 ;; (setq  org-ai-image-directory "../images")
+(after! gptel
 
-(setq
- gptel-model "claude-3-sonnet-20241022" ;  "claude-3-opus-20240229" also available
- gptel-backend (gptel-make-openai "OpenAI"
-                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
- gptel-backend (gptel-make-anthropic "Claude"
-                 :stream t :key (shell-command-to-string "pass api-keys/claude-api"))
- gptel-default-mode 'org-mode
- gptel-track-response t
- gptel-prompt-prefix-alist '((markdown-mode . "") (org-mode . "* USER\n") (text-mode . ""))
- gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
- ;; gptel-display-buffer-action
- gptel-rewrite-default-action 'ediff
- )
+  (setq gptel-use-curl nil)
+  (setq gptel-log-level 'debug)
 
-(setq gptel-post-stream-hook nil)
+  (map! (:nv "SPC o g g" 'gptel))
+  (setq
+   gptel-model "claude-3-5-sonnet-20241022" ;  "claude-3-opus-20240229" also available
+   gptel-backend (gptel-make-openai "OpenAI"
+                   :stream t :key (shell-command-to-string "pass api-keys/openai"))
+   gptel-backend (gptel-make-anthropic "Claude"
+                   :stream t :key (shell-command-to-string "pass api-keys/claude-api"))
+   gptel-default-mode 'org-mode
+   gptel-track-response t
+   gptel-prompt-prefix-alist '((markdown-mode . "") (org-mode . "* USER\n") (text-mode . ""))
+   gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
+   gptel-rewrite-default-action 'ediff
+   gptel-post-response-hook nil)
 
-(add-hook 'gptel-post-response-functions
-          (lambda (beg end)
-            (goto-char (point-max))
-            (newline)))
+  (setq gptel-stream nil)
 
-(add-hook 'gptel-post-stream-hook
-          (lambda ()
-            (message "Hook running!")
-            (goto-char (point-max))
-            (newline)))
+  (add-hook 'gptel-post-response-functions
+            (lambda (beg end)
+              (goto-char (point-max))
+              (newline)))
+
+  (add-hook 'gptel-post-stream-hook
+            (lambda ()
+              (goto-char (point-max)))))
 
 ;;; Ruff
 (setq ruff-command "ruff check")
@@ -57,6 +54,7 @@
       (:nv "g SPC" #'rust/check))
 
 ;;; Default python project
+
 
 (defun new-python-project (project-name)
   "Create a new Python project folder with a specified structure in the current dired directory."
@@ -100,3 +98,4 @@
   (progn
     (exec-path-from-shell-copy-env "PATH")
     (exec-path-from-shell-copy-env "PASSWORD_STORE_DIR")))
+
