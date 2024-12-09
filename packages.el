@@ -62,3 +62,14 @@
 (package! org-download
   :recipe (:host github
            :repo "abo-abo/org-download"))
+
+
+(package! ob-python-extras
+  :recipe (:local-repo "ElleNajt/ob-python-extras"
+           :files ("*.el" "python")))
+
+
+
+;; (package! poly-org
+;;   :recipe (:host github
+;;            :repo "polymode/poly-org"))
