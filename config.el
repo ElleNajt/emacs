@@ -134,7 +134,7 @@ it."
 ;; (add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
 ;;; Loading computer specific files
-;; (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
+(load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
 ;;; Org mode
 
 (map! (:mode org-mode
