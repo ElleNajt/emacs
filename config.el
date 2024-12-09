@@ -968,6 +968,9 @@ it."
 ;;; use ob-python-extras
 (use-package! ob-python-extras)
 
+(after! ob-python-extras
+  (ob-python-extras/map-suggested-keyindings))
+
 ;;; Useful for making packages:
 ;;;
 (defun rename-module-functions ()
