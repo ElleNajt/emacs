@@ -14,18 +14,16 @@
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq doom-theme 'doom-feather-dark)
 ;;; Evil
-(map! :map evil-org-mode-map
-      :vn "g j" #'evil-next-visual-line
-      :vn "g k" #'evil-previous-visual-line)
+(after! org
+  (map! :map evil-org-mode-map
+        :vn "g j" #'evil-next-visual-line
+        :vn "g k" #'evil-previous-visual-line))
 
 ;;; Programming Languages
 
 (map!
  :n "] e" 'flycheck-next-error
- :n "[ e" 'flycheck-previous-error
-
-
- )
+ :n "[ e" 'flycheck-previous-error)
 ;;;; Elisp
 (evil-define-operator fireplace-eval-elisp (beg end)
   (pp-eval-expression (read (buffer-substring beg end))))
