@@ -932,9 +932,9 @@ it."
 ;; (setq debug-on-message "Running direnv")
 
 ;;;  org download
-(setq-default org-download-image-dir "./images/org-download/")
+(setq org-download-image-dir "./plots/org-download/")
+(setq org-download-method 'directory)
 
-(setq org-download-image-dir nil)
 
 ;;; w3m config
 
