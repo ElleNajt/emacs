@@ -67,10 +67,21 @@
 (package! ob-python-extras
   :recipe (:host github
            :repo "ElleNajt/ob-python-extras"
-           :files ("*.el" "python")))
+           :branch "Development"
+           :files ("*.el" "bashscripts" "python")))
 
-
+(package! org-modern
+  :recipe (:host github
+           :repo "minad/org-modern"))
 
 ;; (package! poly-org
 ;;   :recipe (:host github
 ;;            :repo "polymode/poly-org"))
+
+
+(package! python-black)
+(package! python-isort)
+
+(package! gptel
+  :recipe (:host github
+           :repo "ElleNajt/gptel"))

@@ -4,6 +4,7 @@
 ;;; Requirements
 (require 'general)
 (require 'predd)
+(require 'yasnippet)
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
