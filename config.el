@@ -972,6 +972,12 @@ it."
 (after! ob-python-extras
   (ob-python-extras/map-suggested-keyindings))
 
+(after! ob-python-extras
+  (ob-python-extras-load-gptel-integration))
+
+(after! ob-python-extras
+  (ob-python-extras-load-alerts))
+
 ;;; Useful for making packages:
 ;;;
 (defun rename-module-functions ()
