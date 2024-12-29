@@ -84,4 +84,5 @@
 
 (package! gptel
   :recipe (:host github
+           :branch "fix-source-block-formatting"
            :repo "ElleNajt/gptel"))
