@@ -1,0 +1,4 @@
+#+PROPERTY: header-args:python :results output drawer :python "nix-shell --run python" :async t :tangle :session python_curvature
+#+PROPERTY: header-args:bash :results output :async t :tangle :session bash_curvature
+
+* Original notebook
