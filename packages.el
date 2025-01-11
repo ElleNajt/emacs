@@ -82,7 +82,16 @@
 (package! python-black)
 (package! python-isort)
 
+;; (package! gptel
+;;   :recipe (:host github
+;;            :branch "fix-source-block-formatting"
+;;            :repo "ElleNajt/gptel"))
+
+
 (package! gptel
   :recipe (:host github
-           :branch "fix-source-block-formatting"
-           :repo "ElleNajt/gptel"))
+           :repo "karthink/gptel"))
+
+
+(package! jcfk
+  :recipe (:host github :repo "jcfk/org-sliced-images"))

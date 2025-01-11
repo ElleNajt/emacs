@@ -1,15 +1,15 @@
 #!/usr/bin/env doomscript
 
 (defcli! export-org-to-html (&args files)
-  (require 'doom-start)
-  (dolist (file files)
-    (find-file file)
+         (require 'doom-start)
+         (dolist (file files)
+           (find-file file)
 
-    (goto-char (point-min))
-    ;; (re-search-forward "^#\\TITLE:.*")
-    (insert "\n#+OPTIONS: \\n:t ^:nil \n")
-    (message "%S" (org-html-export-to-html))
-    ;; (flush-lines "^\s*Cell Timer:.*")
-    ))
+           (goto-char (point-min))
+           ;; (re-search-forward "^#\\TITLE:.*")
+           (insert "\n#+OPTIONS: \\n:t ^:nil \n")
+           (message "%S" (org-html-export-to-html))
+           ;; (flush-lines "^\s*Cell Timer:.*")
+           ))
 
 (run! "export-org-to-html" (cdr (member "--" argv)))

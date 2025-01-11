@@ -1,11 +1,15 @@
 #!/usr/bin/env doomscript
 
+(setq debug-on-error t)
+(message "in script")
+
 (defcli! evaluate-org (&args files)
+  (message "in function %s" files)
   (require 'doom-start)
   (dolist (file files)
+    (message "found file: %s" file)
     (find-file file)
     (org-babel-execute-buffer)
-    (save-buffer)
-    ))
+    (save-buffer)))
 
 (run! "evaluate-org" (cdr (member "--" argv)))

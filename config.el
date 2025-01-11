@@ -84,9 +84,13 @@
   (save-buffer)
   (vterm-run-and-return (concat (format  "cd %s & clear & cargo check" (file-name-directory buffer-file-name)))))
 
+(defun debug/python ()
+  (interactive)
+  (vterm-run-and-return (concat "nix-shell --run 'python -m pdb" buffer-file-name "'")))
+
 (defun run/python ()
   (interactive)
-  (vterm-run-and-return (concat "nix-shell -p 'python3.withPackages (p: [p.ipython p.matplotlib p.pandas p.seaborn])' --run 'python " buffer-file-name "'")))
+  (vterm-run-and-return (concat "nix-shell --run 'python " buffer-file-name "'")))
 
 (defun run/generic ()
   "Make the current buffer file executable and run it in vterm."
@@ -312,28 +316,6 @@ it."
 
 
 
-;;;;; Pandoc conversion script
-
-(defun run-ipynb-to-org-conversion-script ()
-  (interactive)
-  (when (dired-mode-p)
-    (let ((current-dir (dired-current-directory))
-          (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
-      (compile (concat "cd " current-dir " && "script-path)))))
-
-(defun run-ipynb-to-org-conversion-script-recursively ()
-  (interactive)
-  (when (dired-mode-p)
-    (let ((current-dir (dired-current-directory))
-          (script-path (concat doom-user-dir "bashscripts/convertnotebooks.sh" )))
-      (compile (concat "cd " current-dir " && "script-path " -r")))))
-
-(defun run-org-to-ipynb-conversion-script ()
-  (interactive)
-  (when (dired-mode-p)
-    (let ((current-dir (dired-current-directory))
-          (script-path (concat doom-user-dir "bashscripts/converttoipynb.sh" )))
-      (compile (concat "cd " current-dir " && "script-path)))))
 
 
 ;;;;; For python editing in org files
@@ -1058,3 +1040,9 @@ it."
   (set-face-attribute 'org-ellipsis nil :inherit 'default :box nil)
 
   (global-org-modern-mode))
+
+(after! org
+  (use-package! org-sliced-images
+    :config
+    (org-sliced-images-mode 1)))
+
