@@ -94,4 +94,4 @@
 
 
 (package! jcfk
-  :recipe (:host github :repo "jcfk/org-sliced-images"))
+  :recipe (:host github :repo "ElleNajt/org-sliced-images"))
