@@ -5,10 +5,27 @@ let
     with ps; [
       pandas
       numpy
+      duckdb
       scikit-learn
       matplotlib
+      jaxtyping
+      einops
+      pytest
+      black
+      isort
       seaborn
-      # httpx
+      streamlit
+      black
+      isort
+      torch
+      tiktoken
+      ipython
+      umap-learn
+      transformers
+      torchvision
+      rich
+      scipy
+      statsmodels
     ]);
 in pkgs.mkShell {
   buildInputs = [ pythonEnv pkgs.pyright ];
