@@ -19,9 +19,9 @@ git diff --cached --name-only --diff-filter=AM | grep '.org$' | while IFS= read 
     [[ -d "$ipynbs_dir" ]] || mkdir "$ipynbs_dir"
     ipynb_file="${ipynbs_dir}/${base_name}.ipynb"
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/#+begin_src python/#+begin_src jupyter-python :exports both/gI" "$org_file" | pandoc --resource-path="$file_directory" -f org -o "$ipynb_file" -
+        sed -i '' "s/#+begin_src python/#+begin_src jupyter-python :exports both/gI" "$org_file" | pandoc --resource-path="$file_directory" -f org -o "$ipynb_file" - || true
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        sed 's/#+begin_src python/#+begin_src jupyter-python :exports both/gI' "$org_file" | pandoc --resource-path="$file_directory" -f org -o "$ipynb_file" -
+        sed 's/#+begin_src python/#+begin_src jupyter-python :exports both/gI' "$org_file" | pandoc --resource-path="$file_directory" -f org -o "$ipynb_file" - || true
     else
         echo "Unsupported operating system: $OSTYPE"
         exit 1
