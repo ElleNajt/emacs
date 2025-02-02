@@ -95,3 +95,5 @@
 
 (package! jcfk
   :recipe (:host github :repo "ElleNajt/org-sliced-images"))
+
+(package! realgud)

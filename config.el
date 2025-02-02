@@ -1046,3 +1046,7 @@ it."
     :config
     (org-sliced-images-mode 1)))
 
+
+
+(use-package! realgud
+  :commands realgud:pdb)
