@@ -1050,3 +1050,29 @@ it."
 
 (use-package! realgud
   :commands realgud:pdb)
+
+
+(use-package! realgud-ipdb)
+
+
+
+
+;;; Org-clipboard-download
+(require 'org-download)
+
+(defun org-clipboard-has-image-p ()
+  (interactive)
+  ;; timeout necessary because otherwise xclip hangs
+  (string-match-p "image/png"
+                  (shell-command-to-string "timeout .05 xclip -selection clipboard -t TARGETS -o")))
+
+
+
+(defun org-clipboard-download-smart ()
+  (interactive)
+  (if (org-clipboard-has-image-p)
+      (org-download-clipboard)
+    (evil-paste-before 1)))
+
+(map! :map org-mode-map
+      :n "p" #'org-clipboard-download-smart)

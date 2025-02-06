@@ -97,3 +97,5 @@
   :recipe (:host github :repo "ElleNajt/org-sliced-images"))
 
 (package! realgud)
+
+(package! realgud-ipdb)
