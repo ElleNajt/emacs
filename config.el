@@ -1062,11 +1062,17 @@ it."
 
 (defun org-clipboard-has-image-p ()
   (interactive)
-  ;; timeout necessary because otherwise xclip hangs
-  (string-match-p "image/png"
-                  (shell-command-to-string "timeout .05 xclip -selection clipboard -t TARGETS -o")))
-
-
+  ;; timeout necessary so xclip doesn't hang
+  ;; this shell command is returning "" in emacs, though correct output if not
+  ;; an image/png is the given error message -- compare to the terminal output of
+  ;; the command.
+  ;; to get the correct output in emacs the shell command needs
+  ;; to be run async, which is more complicated to use here.
+  ;; I haven't bothered to figure out why, checking for "" or the Error message
+  ;; for stability
+  (let ((output (shell-command-to-string "timeout 0.01 xclip -selection clipboard -t image/png -o")))
+    (not (or (string-empty-p output)
+             (string-match-p "Error: target image/png not available" output)))))
 
 (defun org-clipboard-download-smart ()
   (interactive)
