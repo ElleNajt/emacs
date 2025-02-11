@@ -1078,7 +1078,7 @@ it."
   (interactive)
   (if (org-clipboard-has-image-p)
       (org-download-clipboard)
-    (evil-paste-before 1)))
+    (evil-paste-after 1)))
 
 (map! :map org-mode-map
       :n "p" #'org-clipboard-download-smart)
