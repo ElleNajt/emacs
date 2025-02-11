@@ -720,12 +720,13 @@ it."
 
 ;;;
 ;;;
-(use-package eglot
-  :config
-  ;; Ensure `nil` is in your PATH.
-  (add-to-list 'eglot-server-programs '(nix-mode . ("nil")))
-  :hook
-  (nix-mode . eglot-ensure))
+
+;; (use-package eglot
+;;   :config
+;;   ;; Ensure `nil` is in your PATH.
+;;   (add-to-list 'eglot-server-programs '(nix-mode . ("nil")))
+;;   :hook
+;;   (nix-mode . eglot-ensure))
 
 ;;; next action
 ;; idea from here: https://www.adventuresinwhy.com/post/next-actions/
@@ -1082,3 +1083,11 @@ it."
 
 (map! :map org-mode-map
       :n "p" #'org-clipboard-download-smart)
+
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook 'eglot-format nil t)))
+
+(with-eval-after-load 'eglot
+  (dolist (mode '((nix-mode . ("nixd"))))
+    (add-to-list 'eglot-server-programs mode)))
