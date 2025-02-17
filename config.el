@@ -11,6 +11,7 @@
 
 ;;; Theme
 (setq doom-theme 'doom-outrun-electric)
+(setq doom-theme 'doom-dark+)
 
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq doom-theme 'doom-feather-dark)
