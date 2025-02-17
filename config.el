@@ -952,16 +952,45 @@ it."
 ;;; use ob-python-extras
 (use-package! ob-python-extras)
 
-(after! ob-python-extras
-  (ob-python-extras/map-suggested-keyindings))
+(after! (evil org ob-python-extras)
 
-(after! ob-python-extras
-  (ob-python-extras-load-gptel-integration))
 
-(after! ob-python-extras
-  (ob-python-extras-load-alerts))
+  (defun ob-python-extras/map-suggested-keyindings ()
+    "Map suggested keybindings for ob-python."
+    (interactive)
+    ;; (require 'evil)
 
-(setq ob-python-extras/auto-format t)
+    (advice-add #'+org--insert-item :around #'ob-python-extras/+org-insert-item)
+
+    (evil-define-key* '(normal visual) org-mode-map
+      (kbd "<S-return>") #'ob-python-extras/run-cell-and-advance
+      (kbd "SPC S") #'ob-python-extras/split-block
+      (kbd "SPC M k") #'join-source-block-to-previous
+      (kbd "SPC M j") #'join-source-block-to-next
+      (kbd "g SPC") #'org-babel-execute-buffer
+      (kbd "g d") #'ob-python-extras/python-goto-definition
+      (kbd "C-c C-k") #'ob-python-extras/interrupt-org-babel-session
+      (kbd "SPC f i") #'org-toggle-inline-images
+      (kbd "SPC f I") #'org-display-inline-images
+      (kbd "C-c C-c") #'org-dispatch-C-c-C-c
+      (kbd "SPC o s") #'ob-python-extras/open-session-buffer
+      (kbd "SPC o g f") 'ob-python-extras/gptel-fix-block
+      (kbd "SPC o g s") 'ob-python-extras/send-block-to-gptel
+      (kbd "SPC o g p") 'ob-python-extras/patch-gptel-blocks
+      (kbd "g s") #'org-edit-special)
+
+    (map! 
+     :map org-mode-map
+     [remap +lookup/documentation] #'ob-python-extras/python-help-clean))
+  (ob-python-extras/map-suggested-keyindings)
+
+
+  (ob-python-extras-load-gptel-integration)
+
+  (ob-python-extras-load-alerts)
+
+  (setq ob-python-extras/auto-format t))
+
 
 ;;; Useful for making packages:
 ;;;
