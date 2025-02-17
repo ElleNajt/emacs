@@ -1122,3 +1122,9 @@ it."
 (with-eval-after-load 'eglot
   (dolist (mode '((nix-mode . ("nixd"))))
     (add-to-list 'eglot-server-programs mode)))
+;;; docview
+
+(after! doc-view
+  (map! :mode doc-view-mode
+        :nm "]" #'doc-view-scroll-up-or-next-page
+        :nm "[" #'doc-view-scroll-down-or-previous-page))
