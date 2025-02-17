@@ -961,6 +961,8 @@ it."
 (after! ob-python-extras
   (ob-python-extras-load-alerts))
 
+(setq ob-python-extras/auto-format t)
+
 ;;; Useful for making packages:
 ;;;
 (defun rename-module-functions ()
