@@ -1129,3 +1129,43 @@ it."
   (map! :mode doc-view-mode
         :nm "]" #'doc-view-scroll-up-or-next-page
         :nm "[" #'doc-view-scroll-down-or-previous-page))
+
+;;; Oneko
+
+
+(defun move-mouse-to-cursor ()
+  (let ((pos (window-absolute-pixel-position)))
+    (when pos
+      (start-process "xdotool" nil "xdotool" "mousemove" 
+                     (number-to-string (car pos))
+                     (number-to-string (cdr pos))))))
+
+(defun stop-oneko-follower ()
+  "Stop oneko and cursor following"
+  (interactive)
+  (shell-command "pkill oneko")
+  (remove-hook 'post-command-hook 'move-mouse-to-cursor))
+
+(defun start-oneko-follower ()
+  "Start oneko and make it follow the cursor"
+  (interactive)
+  (shell-command "oneko -time 60000 &")
+  (add-hook 'post-command-hook 'move-mouse-to-cursor))
+
+
+(defun choose-follower ()
+  "Choose a friend to follow your cursor"
+  (interactive)
+  
+  (let* ((options '(("Normal Cat" . "oneko -time 60000 ")
+                    ("Tora (Tiger)" . "oneko -tora -time 60000 ")
+                    ("Sakura (Cherry)" . "oneko -sakura -time 60000 ")
+                    ("Tomoyo" . "oneko -tomoyo -time 60000 ")
+                    ("Dog" . "oneko -dog -time 60000 ")))
+         (choice (completing-read "Choose your follower: " options nil t))
+         (cmd (cdr (assoc choice options))))
+    (shell-command (concat cmd " &"))
+    
+    (add-hook 'post-command-hook 'move-mouse-to-cursor)))
+
+(setq async-shell-command-buffer 'new-buffer)
