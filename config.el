@@ -1169,3 +1169,6 @@ it."
     (add-hook 'post-command-hook 'move-mouse-to-cursor)))
 
 (setq async-shell-command-buffer 'new-buffer)
+
+
+(setq display-line-numbers-type 'relative)
