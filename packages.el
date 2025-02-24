@@ -90,7 +90,8 @@
 
 (package! gptel
   :recipe (:host github
-           :repo "karthink/gptel"))
+           :branch "curl_noproxy_variable"
+           :repo "ElleNajt/gptel"))
 
 
 (package! jcfk
