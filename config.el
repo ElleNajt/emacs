@@ -148,8 +148,22 @@ it."
        :n "] c" #'evil-next-flyspell-error
        :n "[ c" #'evil-prev-flyspell-error))
 
+;;; Fix evil shift width in org files
 
 
+;; this is gross, I could figure out what is setting it
+;; (add-variable-watcher
+;;  'evil-shift-width
+;;  (lambda (symbol newval operation where)
+;;    (message "evil-shift-width changed to %s in %s by %s" newval where operation)))
+;; (remove-variable-watcher 'evil-shift-width)
+
+(after! evil
+  (setq-default evil-shift-width 4)
+  (add-hook 'org-mode-hook (lambda () (setq-local evil-shift-width 4))))
+
+(after! org
+  (advice-add 'org-mode :after (lambda (&rest _) (setq-local evil-shift-width 4))))
 
 ;;; Org evil keybindings
 
