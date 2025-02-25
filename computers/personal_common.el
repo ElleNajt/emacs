@@ -9,6 +9,8 @@
 ;; (use-package! org-ai)
 ;; (setq org-ai-openai-api-token (shell-command-to-string "pass api-keys/openai-api"))
 ;; (setq  org-ai-image-directory "../images")
+
+(defvar gptel-anthropic-initialized nil)
 (after! gptel
 
   (setq gptel-use-curl t)
@@ -16,22 +18,37 @@
 
   (setq gptel-log-level 'info)
 
+  (unless gptel-anthropic-initialized
+    (setq gptel-backend (gptel-make-anthropic "Claude"
+                          :stream t 
+                          :key (string-trim (shell-command-to-string "pass api-keys/claude-api"))))
+    (setq gptel-anthropic-initialized t))
+
   (map! (:nv "SPC o g g" 'gptel))
   (setq
    gptel-model "claude-3-5-sonnet-20241022" ;  "claude-3-opus-20240229" also available
-   gptel-backend (gptel-make-openai "OpenAI"
-                   :stream t :key (shell-command-to-string "pass api-keys/openai"))
-   gptel-backend (gptel-make-anthropic "Claude"
-                   :stream t :key (shell-command-to-string "pass api-keys/claude-api"))
+
+   ;; gptel-backend (gptel-make-openai "OpenAI"
+   ;;                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
+
+
    gptel-default-mode 'org-mode
    gptel-max-tokens 8192
    gptel-track-response t
    gptel-prompt-prefix-alist '((markdown-mode . "") (org-mode . "* USER\n") (text-mode . ""))
    gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
+
    gptel-rewrite-default-action 'ediff
    gptel-post-response-hook nil)
 
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+
+  (setq gptel-org-branching-context t)
+  (setq gptel-expert-commands t)
+
   (setq gptel-stream t)
+  (setq gptel-org-branching-context t)
 
   (add-hook 'gptel-post-response-functions
             (lambda (beg end)
