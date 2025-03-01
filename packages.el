@@ -64,6 +64,11 @@
            :repo "abo-abo/org-download"))
 
 
+(package! gpt-babel
+  :recipe (:host github
+           :repo "ElleNajt/gpt-babel"
+           :branch "main"
+           :files ("*.el")))
 (package! ob-python-extras
   :recipe (:host github
            :repo "ElleNajt/ob-python-extras"
