@@ -75,6 +75,9 @@
            :branch "Development"
            :files ("*.el" "bashscripts" "python")))
 
+(package! oneko-macs
+  :recipe (:host github
+           :repo "ElleNajt/oneko-macs"))
 (package! org-modern
   :recipe (:host github
            :repo "minad/org-modern"))
