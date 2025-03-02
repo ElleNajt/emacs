@@ -902,13 +902,6 @@ it."
 ;;;
 
 
-;;; org-download
-;; for drag and drop of images
-
-(require 'org-download)
-
-;; Drag-and-drop to `dired`
-(add-hook 'dired-mode-hook 'org-download-enable)
 
 ;;; org clocking
 ;; make sure to define org-clocking-p before clocking, to avoid issues with
@@ -1099,6 +1092,10 @@ it."
 
 ;;; Org-clipboard-download
 (require 'org-download)
+
+
+;; Drag-and-drop to `dired`
+;; (add-hook 'dired-mode-hook 'org-download-enable)
 
 (defun org-clipboard-has-image-p ()
   (interactive)
