@@ -1069,10 +1069,10 @@ it."
 
   (global-org-modern-mode))
 
-(after! org
-  (use-package! org-sliced-images
-    :config
-    (org-sliced-images-mode 1)))
+;; (after! org
+;;   (use-package! org-sliced-images
+;;     :config
+;;     (org-sliced-images-mode 1)))
 
 
 
