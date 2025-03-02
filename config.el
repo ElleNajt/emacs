@@ -17,15 +17,29 @@
 ;; (setq doom-theme 'doom-feather-dark)
 ;;; Evil
 (after! org
+
   (map! :map evil-org-mode-map
+
         :vn "g j" #'evil-next-visual-line
-        :vn "g k" #'evil-previous-visual-line))
+        :vn "g k" #'evil-previous-visual-line
+        ;;  This breaks M-x in org mode for some reason
+        ;; :vin "C-[" #'org-evil-motion-backward-block-begin
+        ;; :vin "C-]" #'org-evil-motion-forward-block-begin
+
+        ))
 
 ;;; Programming Languages
 
 (map!
  :n "] e" 'flycheck-next-error
  :n "[ e" 'flycheck-previous-error)
+
+;;;; nix
+
+(with-eval-after-load 'eglot
+  (dolist (mode '((nix-mode . ("nixd"))))
+    (add-to-list 'eglot-server-programs mode)))
+
 ;;;; Elisp
 (evil-define-operator fireplace-eval-elisp (beg end)
   (pp-eval-expression (read (buffer-substring beg end))))
@@ -40,9 +54,7 @@
 ;;;;; Paxedit
 (load! "vendored/paxedit")
 
-;;; Rust
-
-;;;; Clojure
+;;;; Rust
 
 ;;;; Python
 ;; (elpy-enable)
