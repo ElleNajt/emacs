@@ -153,6 +153,10 @@ it."
 
 ;;; Loading computer specific files
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname"))))
+
+(let ((host-config (concat "computers/" (string-trim (shell-command-to-string "hostname")))))
+  (when (file-exists-p host-config)
+    (load! host-config)))
 ;;; Org mode
 
 (map! (:mode org-mode
@@ -977,8 +981,9 @@ it."
   (ob-python-extras-load-keybindings)
 
   (ob-python-extras-load-alerts)
+  (setq ob-python-extras/auto-format t)
 
-  (setq ob-python-extras/auto-format t))
+  (setq ob-python-extras/allow-png-deletion t))
 
 
 ;;; use gpt-babel
@@ -990,7 +995,7 @@ it."
   (gpt-babel-load-keybindings)
   (gpt-babel/map-suggested-keyindings))
 
-;; (setq gpt-babel/error-action 'fix)
+(setq gpt-babel/error-action nil)
 
 
 ;;; Useful for making packages:
