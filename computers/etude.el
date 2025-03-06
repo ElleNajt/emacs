@@ -74,4 +74,26 @@
 (setq mu4e-index-cleanup nil
       mu4e-index-lazy-check t)
 
+(set-email-account! "gmail"
+                    '((user-full-name . "Elle Najt")
+                      (mu4e-drafts-folder     . "/[Gmail].Drafts")
+                      (mu4e-compose-signature . "--\n Elle Najt")
+                      (user-mail-address . "lnajt4@gmail.com")
+                      (smtpmail-servers-requiring-authorization . "smtp\\.gmail\\.com")
+                      (smtpmail-smtp-user . "lnajt4@gmail.com")
+                      (smtpmail-smtp-server   . "smtp.gmail.com"))
+                    t)
+
 (setq mu4e-maildir (expand-file-name "~/Maildir"))
+
+(setq user-email-address "lnajt4@gmail.com")
+(setq smtpmail-smtp-service 587)
+
+
+(setq mu4e-update-interval 60)
+
+;; I'd liek to get tehse headers for org email?
+;; (setq  ??
+;;        "#+OPTIONS: html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil tex:dvipng d:nil
+;; #+PROPERTY: header-args:python :results output drawer :python \"nix-shell /home/elle/code/ob-python-extras/shell.nix --run python\" :async t :tangle :session python_1
+;; #+STARTUP: hidestars indent inlineimages\n")
