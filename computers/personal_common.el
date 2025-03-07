@@ -25,8 +25,9 @@
     (setq gptel-anthropic-initialized t))
 
   (map! (:nv "SPC o g g" 'gptel))
+  (map! (:nv "SPC o g r" 'gptel-rewrite))
   (setq
-   gptel-model "claude-3-5-sonnet-20241022" ;  "claude-3-opus-20240229" also available
+   gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
 
    ;; gptel-backend (gptel-make-openai "OpenAI"
    ;;                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
@@ -183,3 +184,4 @@
 (after! tramp
   (set-default 'tramp-auto-save-directory "~/.emacs.d/.tramp-autosave")
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+
