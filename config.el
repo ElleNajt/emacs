@@ -1153,3 +1153,17 @@ it."
 ;;; oneko
 
 (use-package! oneko-macs)
+;;; gptel
+
+(after! gptel
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+
+  (setq gptel-org-branching-context t
+        gptel-default-mode 'org-mode  
+        gptel-max-tokens 8192
+        gptel-rewrite-default-action 'ediff)
+
+  (map! :nv "SPC o g g" 'gptel
+        :nv "SPC o g a" 'gptel-add 
+        :nv "SPC o g r" 'gptel-rewrite))

@@ -24,8 +24,6 @@
                           :key (string-trim (shell-command-to-string "pass api-keys/claude-api"))))
     (setq gptel-anthropic-initialized t))
 
-  (map! (:nv "SPC o g g" 'gptel))
-  (map! (:nv "SPC o g r" 'gptel-rewrite))
   (setq
    gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
 
@@ -38,24 +36,18 @@
    gptel-track-response t
    gptel-prompt-prefix-alist '((markdown-mode . "") (org-mode . "* USER\n") (text-mode . ""))
    gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
-
-   gptel-rewrite-default-action 'ediff
    gptel-post-response-hook nil)
 
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
 
-  (setq gptel-org-branching-context t)
-  (setq gptel-expert-commands t)
+  (setq gptel-expert-commands nil)
 
   (setq gptel-stream t)
-  (setq gptel-org-branching-context t)
 
-  (add-hook 'gptel-post-response-functions
-            (lambda (beg end)
-              ;; (replace-stars-in-python-blocks)
-              (goto-char (point-max))
-              (newline)))
+  ;; (add-hook 'gptel-post-response-functions
+  ;;           (lambda (beg end)
+  ;;             ;; (replace-stars-in-python-blocks)
+  ;;             (goto-char (point-max))
+  ;;             (newline)))
 
 
   (add-hook 'gptel-post-stream-hook
