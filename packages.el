@@ -98,13 +98,25 @@
 
 (package! gptel
   :recipe (:host github
-           :branch "curl_noproxy_variable"
-           :repo "ElleNajt/gptel"))
+           ;; :branch "curl_noproxy_variable"
+           :repo "karthink/gptel"))
 
 
 (package! jcfk
   :recipe (:host github :repo "ElleNajt/org-sliced-images"))
 
-(package! realgud)
+;; (package! realgud)
+;; (package! realgud-ipdb)
 
-(package! realgud-ipdb)
+(package! org-src-context
+  :recipe (:host github :repo "karthink/org-src-context"
+           :files ("*.el")))
+
+(package! emacs-zmq
+  :recipe ( :host github :repo "nnicandro/emacs-zmq"))
+
+;;(package! origami
+;;  :recipe (:host github :repo "gregsexton/origami"))
+;;
+;;(package! ob-ipython
+;;  :recipe (:host github :repo "gregsexton/ob-ipython"))
