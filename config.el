@@ -1164,3 +1164,26 @@ it."
   (map! :nv "SPC o g g" 'gptel
         :nv "SPC o g a" 'gptel-add 
         :nv "SPC o g r" 'gptel-rewrite))
+
+;;; magit
+
+;; make magit bearable in nixpkgs
+;; (setq magit-refresh-verbose t)
+
+(with-eval-after-load 'magit
+  (defvar my/big-repos '("nixpkgs" )
+    "List of strings identifying large repositories for magit optimization.")
+
+  (defun my/is-big-repo ()
+    (and (magit-toplevel)
+         (seq-some (lambda (repo) (string-match-p repo (magit-toplevel)))
+                   my/big-repos)))
+
+  (defun my/maybe-modify-magit-sections ()
+    (when (my/is-big-repo)
+      (setq-local magit-status-sections-hook
+                  (remove 'magit-insert-status-headers
+                          (remove 'magit-insert-tags-header
+                                  magit-status-sections-hook)))))
+
+  (add-hook 'magit-status-mode-hook #'my/maybe-modify-magit-sections))
