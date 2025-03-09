@@ -1109,9 +1109,11 @@ it."
   ;; to be run async, which is more complicated to use here.
   ;; I haven't bothered to figure out why, checking for "" or the Error message
   ;; for stability
-  (let ((output (shell-command-to-string "timeout 0.01 xclip -selection clipboard -t image/png -o")))
-    (not (or (string-empty-p output)
-             (string-match-p "Error: target image/png not available" output)))))
+  (if (eq system-type 'darwin)
+      (string-match-p "\\<PNG\\>" (shell-command-to-string "osascript -e 'clipboard info'"))
+    (let ((output (shell-command-to-string "timeout 0.01 xclip -selection clipboard -t image/png -o")))
+      (not (or (string-empty-p output)
+               (string-match-p "Error: target image/png not available" output))))))
 
 (defun org-clipboard-download-smart ()
   (interactive)
