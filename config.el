@@ -939,9 +939,6 @@ it."
 
 ;; (setq debug-on-message "Running direnv")
 
-;;;  org download
-(setq org-download-image-dir "./plots/org-download/")
-(setq org-download-method 'directory)
 
 
 ;;; w3m config
@@ -1093,36 +1090,43 @@ it."
 
 
 ;;; Org-clipboard-download
-(require 'org-download)
+
+(after! 'org
+  (require 'org-download))
 
 
-;; Drag-and-drop to `dired`
-;; (add-hook 'dired-mode-hook 'org-download-enable)
 
-(defun org-clipboard-has-image-p ()
-  (interactive)
-  ;; timeout necessary so xclip doesn't hang
-  ;; this shell command is returning "" in emacs, though correct output if not
-  ;; an image/png is the given error message -- compare to the terminal output of
-  ;; the command.
-  ;; to get the correct output in emacs the shell command needs
-  ;; to be run async, which is more complicated to use here.
-  ;; I haven't bothered to figure out why, checking for "" or the Error message
-  ;; for stability
-  (if (eq system-type 'darwin)
-      (string-match-p "\\<PNG\\>" (shell-command-to-string "osascript -e 'clipboard info'"))
-    (let ((output (shell-command-to-string "timeout 0.01 xclip -selection clipboard -t image/png -o")))
-      (not (or (string-empty-p output)
-               (string-match-p "Error: target image/png not available" output))))))
+(after! 'org-download
+  (setq org-download-image-dir "./plots/org-download/")
+  (setq org-download-method 'directory)
 
-(defun org-clipboard-download-smart ()
-  (interactive)
-  (if (org-clipboard-has-image-p)
-      (org-download-clipboard)
-    (evil-paste-after 1)))
+  ;; Drag-and-drop to `dired`
+  ;; (add-hook 'dired-mode-hook 'org-download-enable)
 
-(map! :map org-mode-map
-      :n "p" #'org-clipboard-download-smart)
+  (defun org-clipboard-has-image-p ()
+    (interactive)
+    ;; timeout necessary so xclip doesn't hang
+    ;; this shell command is returning "" in emacs, though correct output if not
+    ;; an image/png is the given error message -- compare to the terminal output of
+    ;; the command.
+    ;; to get the correct output in emacs the shell command needs
+    ;; to be run async, which is more complicated to use here.
+    ;; I haven't bothered to figure out why, checking for "" or the Error message
+    ;; for stability
+    (if (eq system-type 'darwin)
+        (string-match-p "\\<PNG\\>" (shell-command-to-string "osascript -e 'clipboard info'"))
+      (let ((output (shell-command-to-string "timeout 0.01 xclip -selection clipboard -t image/png -o")))
+        (not (or (string-empty-p output)
+                 (string-match-p "Error: target image/png not available" output))))))
+
+  (defun org-clipboard-download-smart ()
+    (interactive)
+    (if (org-clipboard-has-image-p)
+        (org-download-clipboard)
+      (evil-paste-after 1)))
+
+  (map! :map org-mode-map
+        :n "p" #'org-clipboard-download-smart))
 
 (add-hook 'prog-mode-hook
           (lambda ()
