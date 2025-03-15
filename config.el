@@ -1156,7 +1156,7 @@ it."
 
 
 
-;;; quick lookup 
+;;;; quick lookup 
 ;; modified from the gptel wiki 
 
 (defvar gptel-lookup--history nil)
