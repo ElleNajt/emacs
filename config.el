@@ -1189,3 +1189,9 @@ it."
                                   magit-status-sections-hook)))))
 
   (add-hook 'magit-status-mode-hook #'my/maybe-modify-magit-sections))
+;;; avy
+
+(map! :nv "s" 'evil-avy-goto-char-2
+      :nv "S" (cmd! (let ((current-prefix-arg t))
+                      (evil-avy-goto-char-2))))
+
