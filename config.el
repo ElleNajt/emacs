@@ -1201,9 +1201,38 @@ it."
     (setq-local nix-format-on-save nil)))
 
 ;; (add-hook 'nix-mode-hook #'disable-all-formatting)
+
 ;;; avy
 
 (map! :nv "s" 'evil-avy-goto-char-2
       :nv "S" (cmd! (let ((current-prefix-arg t))
                       (evil-avy-goto-char-2))))
 
+
+;;; gptel chat logs
+
+(defcustom gptel-chat-logs-directory "~/gptel-logs"
+  "Directory to store GPTel conversation logs."
+  :type 'directory
+  :group 'gptel)
+
+(defun gptel-save-and-commit-log ()
+  "Save current GPTel buffer to ~/gptel-logs and commit with git."
+  (let* ((timestamp (format-time-string "%Y%m%d-%H%M%S"))
+         (filename (expand-file-name (concat (buffer-name) ".org")
+                                     "~/gptel-logs"))
+         (default-directory gptel-chat-logs-directory))
+    (make-directory "~/gptel-logs" t)
+    (write-region (point-min) (point-max) filename)
+    (unless (file-exists-p ".git")
+      (call-process "git" nil nil nil "init"))
+    (call-process "git" nil nil nil "add" filename)
+    (call-process "git" nil nil nil "commit" "-m" 
+                  (concat "Chat log: " timestamp))))
+
+(add-hook 'gptel-post-response-functions 
+          (lambda (beg end) (gptel-save-and-commit-log)))
+
+(add-hook 'gptel-post-stream-hook
+          (lambda ()
+            (lambda (beg end) (gptel-save-and-commit-log))))
