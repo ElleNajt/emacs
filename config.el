@@ -1267,7 +1267,7 @@ it."
          (filename (expand-file-name (concat (buffer-name) ".org")
                                      "~/gptel-logs"))
          (default-directory gptel-chat-logs-directory))
-    (make-directory "~/gptel-logs" t)
+    (make-directory gptel-chat-logs-directory t)
     (write-region (point-min) (point-max) filename)
     (unless (file-exists-p ".git")
       (call-process "git" nil nil nil "init"))
