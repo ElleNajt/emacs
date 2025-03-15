@@ -1154,6 +1154,51 @@ it."
 (use-package! oneko-macs)
 ;;; gptel
 
+
+
+;;; quick lookup 
+;; modified from the gptel wiki 
+
+(defvar gptel-lookup--history nil)
+
+
+(defun gptel-lookup (prompt)
+  (interactive (list (read-string "Ask ChatGPT: " nil gptel-lookup--history)))
+  (when (string= prompt "") (user-error "A prompt is required."))
+  (gptel-request
+      prompt
+    :callback
+    (lambda (response info)
+      (if (not response)
+          (message "gptel-lookup failed with message: %s" (plist-get info :status))
+        (with-current-buffer (get-buffer-create "*gptel-lookup*")
+          (let ((inhibit-read-only t))
+            (erase-buffer)
+            (insert response))
+          (special-mode)
+          (display-buffer (current-buffer)
+                          `((display-buffer-in-side-window)
+                            (side . bottom)
+                            (window-height . ,#'fit-window-to-buffer))))))))
+
+(defun close-gptel-lookup-buffer ()
+  "Close the gptel lookup buffer from anywhere."
+  (interactive)
+  (when-let ((buffer (get-buffer "*gptel-lookup*")))
+    (when-let ((window (get-buffer-window buffer t)))
+      (quit-window nil window))))
+
+(defadvice! my-gptel-esc-handler (&rest _)
+  :before #'keyboard-quit
+  (when (get-buffer-window "*gptel-lookup*" t)
+    (close-gptel-lookup-buffer)))
+
+(set-popup-rule! "^\\*gptel-lookup\\*$"
+  :side 'bottom
+  :size 0.3
+  :select nil
+  :quit t)
+
 (after! gptel
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
   (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
