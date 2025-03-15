@@ -1265,7 +1265,7 @@ it."
   "Save current GPTel buffer to ~/gptel-logs and commit with git."
   (let* ((timestamp (format-time-string "%Y%m%d-%H%M%S"))
          (filename (expand-file-name (concat (buffer-name) ".org")
-                                     "~/gptel-logs"))
+                                     gptel-chat-logs-directory))
          (default-directory gptel-chat-logs-directory))
     (make-directory gptel-chat-logs-directory t)
     (write-region (point-min) (point-max) filename)
