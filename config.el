@@ -1237,7 +1237,10 @@ it."
                           (remove 'magit-insert-tags-header
                                   magit-status-sections-hook)))))
 
-  (add-hook 'magit-status-mode-hook #'my/maybe-modify-magit-sections))
+  (add-hook 'magit-status-mode-hook #'my/maybe-modify-magit-sections)
+
+  (map! :nv "SPC g c a" 'magit-commit-amend))
+
 ;;; kill formatting
 
 (defun disable-all-formatting ()
