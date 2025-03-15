@@ -101,6 +101,9 @@
            ;; :branch "curl_noproxy_variable"
            :repo "karthink/gptel"))
 
+(package! gptel-quick
+  :recipe (:host github 
+           :repo "karthink/gptel-quick"))
 
 (package! jcfk
   :recipe (:host github :repo "ElleNajt/org-sliced-images"))

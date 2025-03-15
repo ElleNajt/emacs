@@ -1213,8 +1213,11 @@ it."
         gptel-rewrite-default-action 'ediff)
 
   (map! :nv "SPC o g g" 'gptel
+        :nv "SPC o g q" 'gptel-lookup
         :nv "SPC o g a" 'gptel-add 
         :nv "SPC o g r" 'gptel-rewrite))
+
+(use-package! gptel-quick)
 
 ;;; magit
 
