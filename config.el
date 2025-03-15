@@ -1189,6 +1189,18 @@ it."
                                   magit-status-sections-hook)))))
 
   (add-hook 'magit-status-mode-hook #'my/maybe-modify-magit-sections))
+;;; kill formatting
+
+(defun disable-all-formatting ()
+  "Disable all auto-formatting in nixpkgs repo."
+  (interactive)
+  (when (string-match-p "nixpkgs" (or (buffer-file-name) ""))
+    (apheleia-mode -1)
+    (setq-local before-save-hook nil)
+    (setq-local eglot-format-on-save nil)
+    (setq-local nix-format-on-save nil)))
+
+;; (add-hook 'nix-mode-hook #'disable-all-formatting)
 ;;; avy
 
 (map! :nv "s" 'evil-avy-goto-char-2
