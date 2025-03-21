@@ -51,6 +51,8 @@
 ;; Optional: if using CIDER
 (setq org-babel-clojure-backend 'cider)
 
+;;;; c/c++
+(add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
 ;;;; nix
 
 (with-eval-after-load 'eglot
