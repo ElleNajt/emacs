@@ -69,7 +69,11 @@
            :repo "ElleNajt/gpt-babel"
            :branch "main"
            :files ("*.el")))
+
 (package! ob-python-extras
+  ;; :recipe (:local-repo "home/code/ob-python-extras"
+  ;;          :files ("*.el" "bashscripts" "python")))
+
   :recipe (:host github
            :repo "ElleNajt/ob-python-extras"
            :branch "Development"
@@ -78,6 +82,7 @@
 (package! oneko-macs
   :recipe (:host github
            :repo "ElleNajt/oneko-macs"))
+
 (package! org-modern
   :recipe (:host github
            :repo "minad/org-modern"))

@@ -3,5 +3,5 @@
 # key: nixpropertyheader
 # condition: t
 # --
-#+PROPERTY: header-args:python :results output drawer :python "nix-shell --run python" :async t :tangle :session python_$1
-#+PROPERTY: header-args:bash :results output :async t :tangle :session bash_$1
+#+PROPERTY: header-args:python :results output drawer :python "nix-shell --run python" :async t :tangle yes :session python_$1
+#+PROPERTY: header-args:bash :results output :async t :tangle yes :session bash_$1 :prologue "trap 'echo Shell Error' ERR;"

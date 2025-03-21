@@ -15,6 +15,22 @@
 
   (setq gptel-use-curl t)
   (setq gptel-log-level 'debug)
+  (setq gptel-include-reasoning t)
+
+  ;; (unless gptel-anthropic-initialized
+  ;;   (setq gptel-backend (gptel-make-anthropic "Claude"
+  ;;                         :stream t 
+  ;;                         :key (string-trim (shell-command-to-string "pass api-keys/claude-api"))
+  ;;                         :models '(claude-3-7-sonnet-20250219)
+  ;;                         :header (lambda () (when-let* ((key (gptel--get-api-key)))
+  ;;                                              `(("x-api-key" . ,key)
+  ;;                                                ("anthropic-version" . "2023-06-01")
+  ;;                                                ("anthropic-beta" . "pdfs-2024-09-25")
+  ;;                                                ("anthropic-beta" . "output-128k-2025-02-19")
+  ;;                                                ("anthropic-beta" . "prompt-caching-2024-07-31"))))
+  ;;                         :request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+  ;;                                           :max_tokens 4096)))
+  ;;   (setq gptel-anthropic-initialized t))
 
   (setq gptel-log-level 'info)
 
@@ -27,6 +43,8 @@
   (setq
    gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
 
+
+   ;; gptel-model 'claude-3-7-sonnet-20250219 ;  "claude-3-opus-20240229" also available
    ;; gptel-backend (gptel-make-openai "OpenAI"
    ;;                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
 

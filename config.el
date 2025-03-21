@@ -193,9 +193,9 @@ it."
 ;;    (message "evil-shift-width changed to %s in %s by %s" newval where operation)))
 ;; (remove-variable-watcher 'evil-shift-width)
 
-(after! evil
-  (setq-default evil-shift-width 4)
-  (add-hook 'org-mode-hook (lambda () (setq-local evil-shift-width 4))))
+;; (after! evil
+;;   (setq-default evil-shift-width 4)
+;;   (add-hook 'org-mode-hook (lambda () (setq-local evil-shift-width 4))))
 
 (after! org
   (advice-add 'org-mode :after (lambda (&rest _) (setq-local evil-shift-width 4))))
@@ -372,6 +372,8 @@ it."
 ;; (setq-default tab-width 2) -- TODO the version of this that actually works
 ;;;; Org-babel Nix
 (add-hook 'org-mode  'org-nix-shell-mode)
+
+
 ;;; Outline mode
 ;;;;  Clean code folding via Outline minor mode.
 (add-hook 'prog-mode-hook 'outline-minor-mode)
@@ -1350,6 +1352,7 @@ Version 2022-05-21"
 
 (add-hook 'gptel-post-response-functions 
           (lambda (beg end) (gptel-save-and-commit-log)))
+
 
 (add-hook 'gptel-post-stream-hook
           (lambda ()
