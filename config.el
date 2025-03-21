@@ -34,6 +34,23 @@
  :n "] e" 'flycheck-next-error
  :n "[ e" 'flycheck-previous-error)
 
+;;;; clojure
+
+(nmap :keymaps 'clojure-mode-map
+  "c" (general-key-dispatch 'evil-change
+
+        "p" (general-key-dispatch 'cider-eval-region
+              "p" 'cider-eval-sexp-at-point  ; cpp
+              "c" 'cider-eval-last-sexp      ; cpc
+              "d" 'cider-eval-defun)))       ; cpd
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((clojure . t)))
+
+;; Optional: if using CIDER
+(setq org-babel-clojure-backend 'cider)
+
 ;;;; nix
 
 (with-eval-after-load 'eglot
