@@ -37,22 +37,45 @@
 ;;;; clojure
 
 (nmap :keymaps 'clojure-mode-map
+
+  "SPC m e b" 'cider-eval-buffer
+  "SPC c l" 'cider-ns-reload
+
   "c" (general-key-dispatch 'evil-change
 
         "p" (general-key-dispatch 'cider-eval-region
               "p" 'cider-eval-sexp-at-point  ; cpp
               "c" 'cider-eval-last-sexp      ; cpc
-              "d" 'cider-eval-defun)))       ; cpd
+              "d" 'cider-eval-defun-at-point)))       ; cpd
 
+;;;; org babel
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((clojure . t)))
 
-;; Optional: if using CIDER
 (setq org-babel-clojure-backend 'cider)
 
+;;;;; Formatting
+(require 'reformatter)
+
+(reformatter-define zprint-format
+  :program "zprint"
+  :lighter " ZPrint")
+
+(add-hook 'clojure-mode-hook #'zprint-format-on-save-mode)
+
+
+
+(add-hook 'clojure-mode-hook #'eglot-ensure)
+
+;; (add-to-list 'eglot-server-programs '(clojure-mode . ("clojure-lsp")))
+
+;; (add-to-list 'eglot-server-programs '((clojure-mode e) "clangd"))
+
+
 ;;;; c/c++
-(add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+
+;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
 ;;;; nix
 
 (with-eval-after-load 'eglot
