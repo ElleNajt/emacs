@@ -48,6 +48,15 @@
               "c" 'cider-eval-last-sexp      ; cpc
               "d" 'cider-eval-defun-at-point)))       ; cpd
 
+
+(map! :after clojure-mode
+      :map clojure-mode-map
+      "S-<return>" #'(lambda ()
+                       (interactive)
+                       (cider-eval-defun-at-point)
+                       (end-of-defun)
+                       (forward-sexp)))
+
 ;;;; org babel
 (org-babel-do-load-languages
  'org-babel-load-languages
