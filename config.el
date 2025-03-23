@@ -36,18 +36,22 @@
 
 ;;;; clojure
 
+
+(set-popup-rule! "^\\*eglot-help" :size 0.4 :side 'bottom :select t :modeline t)
+
+;;;;; keybindings
 (nmap :keymaps 'clojure-mode-map
 
   "SPC m e b" 'cider-eval-buffer
   "SPC c l" 'cider-ns-reload
+  "SPC c l" 'zprint-format-buffer
+
 
   "c" (general-key-dispatch 'evil-change
-
         "p" (general-key-dispatch 'cider-eval-region
               "p" 'cider-eval-sexp-at-point  ; cpp
               "c" 'cider-eval-last-sexp      ; cpc
               "d" 'cider-eval-defun-at-point)))       ; cpd
-
 
 (map! :after clojure-mode
       :map clojure-mode-map
@@ -57,7 +61,14 @@
                        (end-of-defun)
                        (forward-sexp)))
 
-;;;; org babel
+
+(setq  evil-cleverparens-use-s-and-S nil)
+
+;; (add-hook 'clojure-mode-hook #'evil-cleverparens-mode)
+;; (require 'evil-cleverparens-text-objects).
+
+
+;;;;; org babel
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((clojure . t)))
@@ -101,6 +112,9 @@
               "p" 'eval-sexp-at-point
               "c" 'eval-last-sexp
               "d" 'eval-defun)))
+
+;; (add-hook 'emacs-lisp-mode-hook #'evil-cleverparens-mode)
+
 
 ;;;;; Paxedit
 (load! "vendored/paxedit")
@@ -177,6 +191,11 @@
       (-> (buffer-file-name)
           (f-dirname)
           (dired)))))
+
+;; (use-package parinfer-rust-mode
+;;   :hook emacs-lisp-mode
+;;   :init
+;;   (setq parinfer-rust-auto-download t))
 
 (defun vterm-cd-to-dired-dir-and-switch ()
   "Change the current directory of the default vterm buffer (as opened with

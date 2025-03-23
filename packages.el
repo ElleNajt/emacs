@@ -128,3 +128,5 @@
 ;;
 ;;(package! ob-ipython
 ;;  :recipe (:host github :repo "gregsexton/ob-ipython"))
+
+(package! evil-cleverparens)
