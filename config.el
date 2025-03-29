@@ -64,8 +64,8 @@
 
 (setq  evil-cleverparens-use-s-and-S nil)
 
-;; (add-hook 'clojure-mode-hook #'evil-cleverparens-mode)
-;; (require 'evil-cleverparens-text-objects).
+(add-hook 'clojure-mode-hook #'evil-cleverparens-mode)
+(require 'evil-cleverparens-text-objects)
 
 
 ;;;;; org babel
@@ -85,12 +85,39 @@
 (add-hook 'clojure-mode-hook #'zprint-format-on-save-mode)
 
 
+;; (after! eglot
+;;   (setq eglot-stay-out-of '()  ; Allow eglot to provide more info
+;;         eglot-extend-to-xref t))
+
+;; Custom function that prefers CIDER docs but falls back to LSP
+(defun my/preferred-clojure-docs ()
+  "Use CIDER docs when available, fallback to LSP."
+  (interactive)
+  (save-excursion
+    (if (and (bound-and-true-p cider-mode)
+             (cider-connected-p))
+        (cider-doc)
+      (+lookup/documentation))))
+
+(map! :after clojure-mode
+      :map clojure-mode-map
+      :n "K" #'my/preferred-clojure-docs)
+
+(map! :map cider-repl-mode-map
+      :i "<up>"   #'cider-repl-previous-input
+      :i "<down>" #'cider-repl-next-input)
+
 
 (add-hook 'clojure-mode-hook #'eglot-ensure)
 
 ;; (add-to-list 'eglot-server-programs '(clojure-mode . ("clojure-lsp")))
 
-;; (add-to-list 'eglot-server-programs '((clojure-mode e) "clangd"))
+
+(after! 'eglot
+  (add-to-list 'eglot-server-programs
+               '((clojure-mode clojurescript-mode) . 
+                 ("clojure-lsp"))))
+
 
 
 ;;;; c/c++
