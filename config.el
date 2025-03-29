@@ -1408,3 +1408,83 @@ Version 2022-05-21"
 (add-hook 'gptel-post-stream-hook
           (lambda ()
             (lambda (beg end) (gptel-save-and-commit-log))))
+
+;;; Tidal cycles
+
+;; (defun org-babel-execute:tidal (body params)
+;;   "Execute a block of Tidal code with org-babel."
+;;   (require 'tidal)
+;;   (let ((session (cdr (assq :session params))))
+;;     (when session
+;;       (unless (and (get-process "tidal") (process-live-p (get-process "tidal")))
+;;         (tidal-start-haskell))
+;;       (tidal-send-string body))))
+
+;; (eval-after-load 'org
+;;   '(org-babel-do-load-languages
+;;     'org-babel-load-languages
+;;     '((tidal . t))))
+
+;; (after! org
+;;   (add-to-list 'org-babel-load-languages '(tidal . t))
+;;   (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
+
+;;   (defun org-babel-execute:tidal (body params)
+;;     (require 'tidal)
+;;     (let ((session (cdr (assq :session params))))
+;;       (when session
+;;         (unless (and (get-process "tidal") (process-live-p (get-process "tidal")))
+;;           (tidal-start-haskell))
+;;         (tidal-send-string body)))))
+
+
+(setq completion-at-point-functions
+      (remove 'ispell-completion-at-point completion-at-point-functions))
+(add-hook 'org-mode-hook
+          (lambda ()
+            (remove-hook 'completion-at-point-functions #'ispell-completion-at-point t)))
+
+
+;; Add a minor mode for tidal org mode
+(define-minor-mode org-tidal-mode
+  "Minor mode for Tidal hush in org-mode"
+  :lighter " OrgTidal")
+
+(map! :map tidal-mode-map
+      :localleader
+      "h" #'tidal-hush
+      "s" #'tidal-start-haskell
+      "v" #'tidal-see-output
+      "q" #'tidal-quit-haskell
+      "c" #'tidal-run-line
+      "e" #'tidal-run-multiple-lines
+      "r" #'tidal-run-region
+      "l" #'tidal-load-buffer
+      "i" #'tidal-interrupt-haskell
+      "m" #'tidal-run-main
+
+      ;; Racks
+      "1" #'tidal-run-d1
+      "2" #'tidal-run-d2
+      "3" #'tidal-run-d3
+      "4" #'tidal-run-d4
+      "5" #'tidal-run-d5
+      "6" #'tidal-run-d6
+      "7" #'tidal-run-d7
+      "8" #'tidal-run-d8
+      "9" #'tidal-run-d9
+      "0" #'tidal-run-d10
+
+      ;; Stop racks
+      "!" #'tidal-stop-d1
+      "@" #'tidal-stop-d2
+      "#" #'tidal-stop-d3
+      "$" #'tidal-stop-d4
+      "%" #'tidal-stop-d5
+      "^" #'tidal-stop-d6
+      "&" #'tidal-stop-d7
+      "*" #'tidal-stop-d8
+      "(" #'tidal-stop-d9
+      ")" #'tidal-stop-d10)
+
+(add-hook 'org-mode-hook 'org-tidal-mode)

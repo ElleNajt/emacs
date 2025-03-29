@@ -130,3 +130,5 @@
 ;;  :recipe (:host github :repo "gregsexton/ob-ipython"))
 
 (package! evil-cleverparens)
+
+(package! tidal)
