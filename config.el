@@ -1515,3 +1515,46 @@ Version 2022-05-21"
       ")" #'tidal-stop-d10)
 
 (add-hook 'org-mode-hook 'org-tidal-mode)
+
+;;; git
+(defun get-github-branch-link ()
+  "Get GitHub link for current file/directory and line on current branch."
+  (interactive)
+  (let* ((remote-url (string-trim (shell-command-to-string "git remote get-url origin")))
+         (git-root (string-trim (shell-command-to-string "git rev-parse --show-toplevel")))
+         (branch (string-trim (shell-command-to-string "git rev-parse --abbrev-ref HEAD")))
+         (is-dired (eq major-mode 'dired-mode))
+         (current-path (if is-dired
+                           default-directory
+                         buffer-file-name))
+         (file-path (file-relative-name current-path git-root))
+         (line-num (unless is-dired (line-number-at-pos)))
+         (github-url (replace-regexp-in-string
+                      "\\(.*\\)@\\(.*\\):\\(.*\\)\\.git"
+                      "https://\\2/\\3"
+                      remote-url)))
+    (kill-new (if line-num
+                  (format "%s/blob/%s/%s#L%d" github-url branch file-path line-num)
+                (format "%s/tree/%s/%s" github-url branch file-path)))
+    (message "Copied branch link to clipboard")))
+
+(defun get-github-permalink ()
+  "Get GitHub permalink for current file/directory."
+  (interactive)
+  (let* ((remote-url (string-trim (shell-command-to-string "git remote get-url origin")))
+         (git-root (string-trim (shell-command-to-string "git rev-parse --show-toplevel")))
+         (commit (string-trim (shell-command-to-string "git rev-parse HEAD")))
+         (is-dired (eq major-mode 'dired-mode))
+         (current-path (if is-dired
+                           default-directory
+                         buffer-file-name))
+         (file-path (file-relative-name current-path git-root))
+         (line-num (unless is-dired (line-number-at-pos)))
+         (github-url (replace-regexp-in-string
+                      "\\(.*\\)@\\(.*\\):\\(.*\\)\\.git"
+                      "https://\\2/\\3"
+                      remote-url)))
+    (kill-new (if line-num
+                  (format "%s/blob/%s/%s#L%d" github-url commit file-path line-num)
+                (format "%s/tree/%s/%s" github-url commit file-path)))
+    (message "Copied permalink to clipboard")))
