@@ -34,10 +34,18 @@
 
   (setq gptel-log-level 'info)
 
+  (defun get-anthropic-api-key () 
+    "sometimes pass throws warnings, this ignores them"
+    (let ((output (shell-command-to-string "pass api-keys/claude-api")))
+      (if (string-match "\\(sk-ant[A-Za-z0-9_-]+\\)" output)
+          (match-string 1 output)
+        (error "Could not find API key starting with 'sk-ant' in the output"))))
+
+
   (unless gptel-anthropic-initialized
     (setq gptel-backend (gptel-make-anthropic "Claude"
                           :stream t 
-                          :key (string-trim (shell-command-to-string "pass api-keys/claude-api"))))
+                          :key (get-anthropic-api-key)))
     (setq gptel-anthropic-initialized t))
 
   (setq
