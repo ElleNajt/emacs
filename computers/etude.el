@@ -77,7 +77,7 @@
 (set-email-account! "gmail"
                     '((user-full-name . "Elle Najt")
                       (mu4e-drafts-folder     . "/[Gmail].Drafts")
-                      (mu4e-compose-signature . "--\n Elle Najt")
+                      (mu4e-compose-signature . "Elle Najt")
                       (user-mail-address . "lnajt4@gmail.com")
                       (smtpmail-servers-requiring-authorization . "smtp\\.gmail\\.com")
                       (smtpmail-smtp-user . "lnajt4@gmail.com")
