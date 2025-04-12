@@ -132,3 +132,10 @@
 (package! evil-cleverparens)
 
 (package! tidal)
+
+(package! org-inline-anim
+  :recipe (
+           :host github
+           :repo
+           "shg/org-inline-anim.el"
+           ))

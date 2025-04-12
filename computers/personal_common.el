@@ -57,6 +57,7 @@
    ;;                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
 
 
+   gptel-org-branching-context nil
    gptel-default-mode 'org-mode
    gptel-max-tokens 8192
    gptel-track-response t
