@@ -1374,7 +1374,7 @@ Version 2022-05-21"
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "* user\n")
   (setf (alist-get 'org-mode gptel-response-prefix-alist) "* assistant\n")
 
-  (setq gptel-org-branching-context t
+  (setq gptel-org-branching-context nil
         gptel-default-mode 'org-mode  
         gptel-max-tokens 8192
         gptel-rewrite-default-action 'ediff)
