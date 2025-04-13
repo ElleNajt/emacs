@@ -139,3 +139,8 @@
            :repo
            "shg/org-inline-anim.el"
            ))
+
+(package! aidermacs
+  :recipe (
+           :host github
+           :repo "MatthewZMD/aidermacs"))

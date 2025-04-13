@@ -153,12 +153,16 @@
 
 (add-hook 'python-mode-hook #'flymake-mode)
 (add-hook 'python-ts-mode-hook #'flymake-mode)
-(after! apheleia
-  (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
-  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
 
-(require 'py-isort)
+;; (after! apheleia
+;;   (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
+;;   (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
+
+;; (require 'py-isort)
 ;; (add-hook 'before-save-hook 'py-isort-before-save)
+(after! python
+  (add-hook! 'python-mode-hook
+    (add-hook #'before-save-hook #'py-isort-before-save nil t )))
 
 (defun vterm-run-and-return (command)
   (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" command )))
@@ -1129,7 +1133,7 @@ it."
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
-  (modus-themes-load-operandi)
+  ;; (modus-themes-load-operandi)
 
   ;; Choose some fonts
   ;; (set-face-attribute 'default nil :family "Iosevka")
@@ -1247,7 +1251,9 @@ it."
         :nm "[" #'doc-view-scroll-down-or-previous-page))
 
 
+;; TODO A command that switches them
 (setq display-line-numbers-type 'relative)
+(setq display-line-numbers-type 't)
 
 (require 'ob-jupyter)
 
@@ -1316,8 +1322,24 @@ Version 2022-05-21"
       prompt
     :callback
     (lambda (response info)
-      (if (not response)
-          (message "gptel-lookup failed with message: %s" (plist-get info :status))
+      (cond
+       ((not response)
+        (message "gptel-lookup failed with message: %s"
+                 (plist-get info :status)))
+
+       ((and (consp response)
+             (eq (car response) 'reasoning))
+        (with-current-buffer (get-buffer-create "*gptel-reasoning*")
+          (let ((inhibit-read-only t))
+            (erase-buffer)
+            (insert (format "Reasoning:\n%s" (cdr response))))
+          (special-mode)
+          (display-buffer (current-buffer)
+                          `((display-buffer-in-side-window)
+                            (side . bottom)
+                            (window-height . ,#'fit-window-to-buffer)))))
+
+       ((stringp response)
         (with-current-buffer (get-buffer-create "*gptel-lookup*")
           (let ((inhibit-read-only t))
             (erase-buffer)
@@ -1326,7 +1348,7 @@ Version 2022-05-21"
           (display-buffer (current-buffer)
                           `((display-buffer-in-side-window)
                             (side . bottom)
-                            (window-height . ,#'fit-window-to-buffer))))))))
+                            (window-height . ,#'fit-window-to-buffer)))))))))
 
 (defun close-gptel-lookup-buffer ()
   "Close the gptel lookup buffer from anywhere."
@@ -1609,3 +1631,5 @@ Version 2022-05-21"
 
 ;;; animations
 
+
+(require 'aidermacs)

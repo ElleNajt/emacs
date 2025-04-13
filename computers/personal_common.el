@@ -204,3 +204,15 @@
   (set-default 'tramp-auto-save-directory "~/.emacs.d/.tramp-autosave")
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
+
+;;; aider
+
+(use-package aidermacs
+  :bind (("C-c a" . aidermacs-transient-menu))
+  :config
+                                        ; Set API_KEY in .bashrc, that will automatically picked up by aider or in elisp
+  (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
+  :custom
+                                        ; See the Configuration section below
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "sonnet"))
