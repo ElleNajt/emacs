@@ -1487,89 +1487,90 @@ Version 2022-05-21"
 ;;         (tidal-send-string body)))))
 
 
-(setq completion-at-point-functions
-      (remove 'ispell-completion-at-point completion-at-point-functions))
-(add-hook 'org-mode-hook
-          (lambda ()
-            (remove-hook 'completion-at-point-functions #'ispell-completion-at-point t)))
+(after! tidal
+  (setq completion-at-point-functions
+        (remove 'ispell-completion-at-point completion-at-point-functions))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (remove-hook 'completion-at-point-functions #'ispell-completion-at-point t)))
 
 
 
-(map! :leader
-      (:prefix-map ("l" . "tidal")
-       ;; :desc "Start Tidal" "s" #'tidal-start-haskell
-       :desc "Quit Tidal" "q" #'tidal-quit-haskell
-       :desc "Hush" "h" #'tidal-hush
-       :desc "Show output" "v" #'tidal-see-output
-       :desc "Interrupt" "i" #'tidal-interrupt-haskell
+  (map! :leader
+        (:prefix-map ("l" . "tidal")
+         ;; :desc "Start Tidal" "s" #'tidal-start-haskell
+         :desc "Quit Tidal" "q" #'tidal-quit-haskell
+         :desc "Hush" "h" #'tidal-hush
+         :desc "Show output" "v" #'tidal-see-output
+         :desc "Interrupt" "i" #'tidal-interrupt-haskell
 
-       (:prefix ("e" . "eval")
-        :desc "Eval line" "l" #'tidal-run-line
-        :desc "Eval multi-line" "m" #'tidal-run-multiple-lines
-        :desc "Eval region" "r" #'tidal-run-region
-        :desc "Load buffer" "b" #'tidal-load-buffer)
+         (:prefix ("e" . "eval")
+          :desc "Eval line" "l" #'tidal-run-line
+          :desc "Eval multi-line" "m" #'tidal-run-multiple-lines
+          :desc "Eval region" "r" #'tidal-run-region
+          :desc "Load buffer" "b" #'tidal-load-buffer)
 
-       :desc "d1" "1" #'tidal-run-d1
-       :desc "d2" "2" #'tidal-run-d2
-       :desc "d3" "3" #'tidal-run-d3
-       :desc "d4" "4" #'tidal-run-d4
-       :desc "d5" "5" #'tidal-run-d5
-       :desc "d6" "6" #'tidal-run-d6
-       :desc "d7" "7" #'tidal-run-d7
-       :desc "d8" "8" #'tidal-run-d8
-       :desc "d9" "9" #'tidal-run-d9
-       :desc "d10" "0" #'tidal-run-d10
+         :desc "d1" "1" #'tidal-run-d1
+         :desc "d2" "2" #'tidal-run-d2
+         :desc "d3" "3" #'tidal-run-d3
+         :desc "d4" "4" #'tidal-run-d4
+         :desc "d5" "5" #'tidal-run-d5
+         :desc "d6" "6" #'tidal-run-d6
+         :desc "d7" "7" #'tidal-run-d7
+         :desc "d8" "8" #'tidal-run-d8
+         :desc "d9" "9" #'tidal-run-d9
+         :desc "d10" "0" #'tidal-run-d10
 
-       (:prefix ("s" . "stop")
-        :desc "stop d1" "1" #'tidal-stop-d1
-        :desc "stop d2" "2" #'tidal-stop-d2
-        :desc "stop d3" "3" #'tidal-stop-d3
-        :desc "stop d4" "4" #'tidal-stop-d4
-        :desc "stop d5" "5" #'tidal-stop-d5
-        :desc "stop d6" "6" #'tidal-stop-d6
-        :desc "stop d7" "7" #'tidal-stop-d7
-        :desc "stop d8" "8" #'tidal-stop-d8
-        :desc "stop d9" "9" #'tidal-stop-d9
-        :desc "stop d10" "0" #'tidal-stop-d10)))
+         (:prefix ("s" . "stop")
+          :desc "stop d1" "1" #'tidal-stop-d1
+          :desc "stop d2" "2" #'tidal-stop-d2
+          :desc "stop d3" "3" #'tidal-stop-d3
+          :desc "stop d4" "4" #'tidal-stop-d4
+          :desc "stop d5" "5" #'tidal-stop-d5
+          :desc "stop d6" "6" #'tidal-stop-d6
+          :desc "stop d7" "7" #'tidal-stop-d7
+          :desc "stop d8" "8" #'tidal-stop-d8
+          :desc "stop d9" "9" #'tidal-stop-d9
+          :desc "stop d10" "0" #'tidal-stop-d10)))
 
-;; (map! :map org-tidal-mode-map
-;;       :localleader
-;;       "h" #'tidal-hush
-;;       "s" #'tidal-start-haskell
-;;       "v" #'tidal-see-output
-;;       "q" #'tidal-quit-haskell
-;;       "c" #'tidal-run-line
-;;       "e" #'tidal-run-multiple-lines
-;;       "r" #'tidal-run-region
-;;       "l" #'tidal-load-buffer
-;;       "i" #'tidal-interrupt-haskell
-;;       "m" #'tidal-run-main
+  ;; (map! :map org-tidal-mode-map
+  ;;       :localleader
+  ;;       "h" #'tidal-hush
+  ;;       "s" #'tidal-start-haskell
+  ;;       "v" #'tidal-see-output
+  ;;       "q" #'tidal-quit-haskell
+  ;;       "c" #'tidal-run-line
+  ;;       "e" #'tidal-run-multiple-lines
+  ;;       "r" #'tidal-run-region
+  ;;       "l" #'tidal-load-buffer
+  ;;       "i" #'tidal-interrupt-haskell
+  ;;       "m" #'tidal-run-main
 
-;;       ;; Racks
-;;       "1" #'tidal-run-d1
-;;       "2" #'tidal-run-d2
-;;       "3" #'tidal-run-d3
-;;       "4" #'tidal-run-d4
-;;       "5" #'tidal-run-d5
-;;       "6" #'tidal-run-d6
-;;       "7" #'tidal-run-d7
-;;       "8" #'tidal-run-d8
-;;       "9" #'tidal-run-d9
-;;       "0" #'tidal-run-d10
+  ;;       ;; Racks
+  ;;       "1" #'tidal-run-d1
+  ;;       "2" #'tidal-run-d2
+  ;;       "3" #'tidal-run-d3
+  ;;       "4" #'tidal-run-d4
+  ;;       "5" #'tidal-run-d5
+  ;;       "6" #'tidal-run-d6
+  ;;       "7" #'tidal-run-d7
+  ;;       "8" #'tidal-run-d8
+  ;;       "9" #'tidal-run-d9
+  ;;       "0" #'tidal-run-d10
 
-;;       ;; Stop racks
-;;       "!" #'tidal-stop-d1
-;;       "@" #'tidal-stop-d2
-;;       "#" #'tidal-stop-d3
-;;       "$" #'tidal-stop-d4
-;;       "%" #'tidal-stop-d5
-;;       "^" #'tidal-stop-d6
-;;       "&" #'tidal-stop-d7
-;;       "*" #'tidal-stop-d8
-;;       "(" #'tidal-stop-d9
-;;       ")" #'tidal-stop-d10)
+  ;;       ;; Stop racks
+  ;;       "!" #'tidal-stop-d1
+  ;;       "@" #'tidal-stop-d2
+  ;;       "#" #'tidal-stop-d3
+  ;;       "$" #'tidal-stop-d4
+  ;;       "%" #'tidal-stop-d5
+  ;;       "^" #'tidal-stop-d6
+  ;;       "&" #'tidal-stop-d7
+  ;;       "*" #'tidal-stop-d8
+  ;;       "(" #'tidal-stop-d9
+  ;;       ")" #'tidal-stop-d10)
 
-(add-hook 'org-mode-hook 'org-tidal-mode)
+  (add-hook 'org-mode-hook 'org-tidal-mode))
 
 ;;; git
 (defun get-github-branch-link ()

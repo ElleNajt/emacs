@@ -131,7 +131,10 @@
 
 (package! evil-cleverparens)
 
-(package! tidal)
+(package! tidal
+  :recipe (:host github
+           :branch "add_org_mode_support"
+           :repo "ElleNajt/Tidal"))
 
 (package! org-inline-anim
   :recipe (
