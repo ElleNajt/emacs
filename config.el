@@ -1369,8 +1369,8 @@ Version 2022-05-21"
   :quit t)
 
 (after! gptel
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "* user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "* assistant\n")
 
   (setq gptel-org-branching-context t
         gptel-default-mode 'org-mode  
