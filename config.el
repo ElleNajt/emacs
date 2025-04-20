@@ -213,6 +213,8 @@
         (vterm-run-and-return (concat "chmod +x " file-name))
         (vterm-run-and-return file-name)))))
 
+;;;; java
+(add-to-list 'auto-mode-alist '("\\.gm\\'" . groovy-mode))
 ;;; Dired
 
 (defun dired-mode-p () (eq 'dired-mode major-mode))
@@ -1464,14 +1466,7 @@ Version 2022-05-21"
                   (concat "Chat log: " timestamp))))
 
 (add-hook 'gptel-post-response-functions 
-          (lambda (beg end) (gptel-save-and-commit-log)))
-
-
-
-
-
-
-
+          (lambda (beg end) (when (not (= beg end)) (gptel-save-and-commit-log))))
 
 ;;; Tidal cycles
 
@@ -1648,6 +1643,7 @@ Version 2022-05-21"
 ;;; animations
 
 
+;;; aider
 (require 'aidermacs)
 (setq aidermacs-backend 'vterm)
 
