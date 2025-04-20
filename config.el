@@ -1081,12 +1081,23 @@ it."
 (after! (evil org ob-python-extras)
 
   (ob-python-extras-load-keybindings)
-
-  (ob-python-extras-load-alerts)
   (setq ob-python-extras/auto-format t)
-
   (setq ob-python-extras/allow-png-deletion t))
 
+
+;;; use org-babel-alerts
+
+(use-package! org-babel-alerts)
+
+(after! 'org-babel-alerts
+
+  (setq ob-babel-alerts/notification-command "notify-send -i emacs \"Org Block Finished\" \"Block in %b completed with result: %r\""
+        "Command to run when a code block finishes.
+Special format specifiers:
+%b - buffer name
+%f - buffer file name (or empty if no file)
+%r - result content (or empty if no result)
+%l - line number"))
 
 ;;; use gpt-babel
 
@@ -1456,9 +1467,11 @@ Version 2022-05-21"
           (lambda (beg end) (gptel-save-and-commit-log)))
 
 
-(add-hook 'gptel-post-stream-hook
-          (lambda ()
-            (lambda (beg end) (gptel-save-and-commit-log))))
+
+
+
+
+
 
 ;;; Tidal cycles
 
@@ -1637,8 +1650,10 @@ Version 2022-05-21"
 
 (require 'aidermacs)
 (setq aidermacs-backend 'vterm)
+
 (global-set-key (kbd "C-a") 'aidermacs-transient-menu)
 (setq aidermacs-vterm-multiline-newline-key "S-<return>")
 (setq aidermacs-watch-files t)
 (setq aidermacs-show-diff-after-change nil)
-(setq aidermacs-auto-commits nil)
+(setq aidermacs-auto-commits t)
+

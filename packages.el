@@ -131,6 +131,8 @@
 
 (package! evil-cleverparens)
 
+
+
 (package! tidal
   :recipe (:host github
            :branch "add_org_mode_support"
@@ -147,3 +149,7 @@
   :recipe (
            :host github
            :repo "MatthewZMD/aidermacs"))
+
+(package! org-babel-alert
+  :recipe ( :host github :repo "ElleNajt/org-babel-alerts")
+  )
