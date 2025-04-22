@@ -164,9 +164,10 @@
 
 ;; (require 'py-isort)
 ;; (add-hook 'before-save-hook 'py-isort-before-save)
-(after! python
-  (add-hook! 'python-mode-hook
-    (add-hook #'before-save-hook #'py-isort-before-save nil t )))
+
+;; (after! python
+;;   (add-hook! 'python-mode-hook
+;;     (add-hook #'before-save-hook #'py-isort-before-save nil t )))
 
 (defun vterm-run-and-return (command)
   (let* ((buffer-name (concat "vterm-" (replace-regexp-in-string " " "-" command )))

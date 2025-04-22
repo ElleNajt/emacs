@@ -179,7 +179,7 @@
        (python
         +lsp
         +pyright
-        +isort
+        ;; +isort
         +tree-sitter
         )            ; beautiful is better than ugly
        ;;qt                ; the 'cutest' gui framework ever
