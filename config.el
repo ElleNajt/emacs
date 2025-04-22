@@ -1331,6 +1331,8 @@ Version 2022-05-21"
 ;;; gptel
 
 
+(setq gptel-display-buffer-action '(display-buffer-same-window))
+
 
 ;;;; quick lookup 
 ;; modified from the gptel wiki 
