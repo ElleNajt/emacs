@@ -158,9 +158,9 @@
 (add-hook 'python-mode-hook #'flymake-mode)
 (add-hook 'python-ts-mode-hook #'flymake-mode)
 
-;; (after! apheleia
-;;   (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
-;;   (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
+(after! apheleia
+  (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
 
 ;; (require 'py-isort)
 ;; (add-hook 'before-save-hook 'py-isort-before-save)
@@ -187,6 +187,15 @@
           (vterm-send-string command)
           (vterm-send-return))))))
 
+(defun debug/python ()
+  (interactive)
+  (vterm-run-and-return (concat "nix-shell --run 'python -m pdb" buffer-file-name "'")))
+
+(defun run/python ()
+  (interactive)
+  (vterm-run-and-return (concat "nix-shell --run 'python " buffer-file-name "'")))
+
+;;;  rust
 (defun rust/run ()
   (interactive)
   (save-buffer)
@@ -198,13 +207,6 @@
   (save-buffer)
   (vterm-run-and-return (concat (format  "cd %s & clear & cargo check" (file-name-directory buffer-file-name)))))
 
-(defun debug/python ()
-  (interactive)
-  (vterm-run-and-return (concat "nix-shell --run 'python -m pdb" buffer-file-name "'")))
-
-(defun run/python ()
-  (interactive)
-  (vterm-run-and-return (concat "nix-shell --run 'python " buffer-file-name "'")))
 
 (defun run/generic ()
   "Make the current buffer file executable and run it in vterm."
@@ -1249,9 +1251,12 @@ Special format specifiers:
         :n "p" #'org-clipboard-download-smart))
 
 ;;; prog
-(add-hook 'prog-mode-hook
-          (lambda ()
-            (add-hook 'before-save-hook 'eglot-format nil t)))
+
+
+;; this is much too general. I dont wnat this for python, fo rinstance.
+;; (add-hook 'prog-mode-hook
+;;           (lambda ()
+;;             (add-hook 'before-save-hook 'eglot-format nil t)))
 
 
 ;;; narrowing
@@ -1663,3 +1668,6 @@ Version 2022-05-21"
 
 (setq dired-listing-switches "-ahtl -v --group-directories-first")
 
+
+;; (require 'ruff-format)
+;; (add-hook 'python-mode-hook 'ruff-format-on-save-mode)

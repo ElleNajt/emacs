@@ -151,5 +151,7 @@
            :repo "MatthewZMD/aidermacs"))
 
 (package! org-babel-alert
-  :recipe ( :host github :repo "ElleNajt/org-babel-alerts")
-  )
+  :recipe ( :host github :repo "ElleNajt/org-babel-alerts"))
+
+;; (package! emacs-ruff-format
+;;   :recipe (:host github :repo  "JoshHayes/emacs-ruff-format"))
