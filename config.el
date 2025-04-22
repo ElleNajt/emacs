@@ -15,6 +15,8 @@
 
 (setq doom-theme 'modus-vivendi)
 
+(map! :leader "h T" 'modus-themes-toggle)
+
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq doom-theme 'doom-feather-dark)
 ;;; Evil
@@ -1652,4 +1654,11 @@ Version 2022-05-21"
 (setq aidermacs-watch-files t)
 (setq aidermacs-show-diff-after-change nil)
 (setq aidermacs-auto-commits t)
+
+
+
+;;;  
+
+
+(setq dired-listing-switches "-ahtl -v --group-directories-first")
 
