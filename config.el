@@ -1661,7 +1661,7 @@ Version 2022-05-21"
 (setq aidermacs-vterm-multiline-newline-key "S-<return>")
 (setq aidermacs-watch-files t)
 (setq aidermacs-show-diff-after-change nil)
-(setq aidermacs-auto-commits t)
+(setq aidermacs-auto-commits nil)
 
 
 
