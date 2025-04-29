@@ -695,14 +695,8 @@ it."
 ;;       :gi "C-y" #'corfu-complete
 ;;       "C-d" #'corfu-info-location
 ;;       "C-h" #'corfu-info-documentation)
-;;; Colors for tags
 
-;; (after! hl-todo
-;;   (setq hl-todo-keyword-faces
-;;         `(("TODO"  . (:foreground "red" :weight bold))
-;;           ;; You can customize other keywords here
-;;           ("FIXME" . (:foreground "orange" :weight bold))
-;;           ("NOTE"  . (:foreground "green" :weight bold)))))
+;;; Colors for tags
 
 (after! org
   (setq org-todo-keyword-faces
@@ -905,37 +899,6 @@ it."
     (when should-skip-entry
       (or (outline-next-heading)
           (goto-char (point-max))))))
-
-;; (defun org-current-is-todo ()
-;;   (string= "TODO" (org-get-todo-state)))
-;; (org-agenda-custom-commands
-;;  '(
-;;    ("N" "Next Actions"
-;;     ((agenda)
-;;      (tags-todo "@work"
-;;                 ((org-agenda-overriding-header "Work")
-;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
-;;      (tags-todo "@home"
-;;                 ((org-agenda-overriding-header "Home")
-;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
-;;      ))
-;;    ("h" "At home" tags-todo "@home"
-;;     ((org-agenda-overriding-header "Home")
-;;      (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
-;;    ("w" "Work" tags-todo "@work"
-;;     ((org-agenda-overriding-header "Work")
-;;      (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))
-;;    ("F" "First Action"
-;;     ((tags-todo "@first"
-;;                 ((org-agenda-overriding-header "First Action")
-;;                  (org-agenda-skip-function #'my-org-agenda-skip-all-siblings-but-first)))))
-;;    ("W" "Waiting" todo "WAITING")
-;;    ))
-;; (org-stuck-projects '("+LEVEL>=2+LEVEL<=3-@notstuck/-CANCELLED-DONE"
-;;                       ("TODO" "WAITING")
-;;                       nil
-;;                       ""))
-
 
 ;;; Turning off tree sitter
 
@@ -1673,3 +1636,89 @@ Version 2022-05-21"
 
 ;; (require 'ruff-format)
 ;; (add-hook 'python-mode-hook 'ruff-format-on-save-mode)
+
+;;; MCP
+
+;;; Gathering Todos
+
+(defun collect-todos-and-add-to-code-todos ()
+  (when (derived-mode-p 'prog-mode)
+    (save-excursion
+      (let ((file-path (buffer-file-name))
+            (comment-start (string-trim comment-start))
+            todos)
+        ;; Handle regular comments
+        (goto-char (point-min))
+        (while (re-search-forward (format "%s.*\\(TODO\\)\\s-*\\(.*\\)" (regexp-quote comment-start)) nil t)
+          (let* ((line-number (line-number-at-pos))
+                 (todo-text (string-trim (match-string-no-properties 2)))
+                 (file-name (replace-regexp-in-string "[.-]" "_"
+                                                      (file-name-nondirectory file-path)))
+                 (entry (format "* TODO %s :%s:\n[[%s::%d][%s]]\n"
+                                todo-text
+                                file-name
+                                file-path
+                                line-number
+                                todo-text)))
+            (push entry todos)))
+
+        ;; Handle string literals
+        (goto-char (point-min))
+        (while (re-search-forward "\\(\"\"\"\\|'''\\)\\(\\(?:.\\|\n\\)*?\\)\\1" nil t)
+          (let ((string-text (match-string-no-properties 2)))
+            (with-temp-buffer
+              (insert string-text)
+              (goto-char (point-min))
+              (while (re-search-forward "TODO\\s-*\\(.*\\)" nil t)
+                (let* ((todo-text (string-trim (match-string 1)))
+                       (original-line (line-number-at-pos (match-beginning 0)))
+                       (file-name (replace-regexp-in-string "[.-]" "_"
+                                                            (file-name-nondirectory file-path)))
+                       (entry (format "* TODO %s :%s:\n[[%s::%d][%s]]\n"
+                                      todo-text
+                                      file-name
+                                      file-path
+                                      original-line
+                                      todo-text)))
+                  (push entry todos))))))
+
+        (when todos
+          (with-current-buffer (find-file-noselect "~/code-todos.org")
+            (goto-char (point-max))
+            (dolist (todo todos)
+              (unless (save-excursion
+                        (goto-char (point-min))
+                        (search-forward todo nil t))
+                (insert "\n" todo)))
+            (save-buffer)))))))
+
+
+(add-hook 'after-save-hook #'collect-todos-and-add-to-code-todos)
+
+(defun mark-source-todo-state ()
+  "Update TODO/DONE state in source file when changed in code-todos.org."
+  (when (and (eq major-mode 'org-mode)
+             (string= (buffer-file-name) (expand-file-name "~/code-todos.org"))
+             (member org-state '("TODO" "DONE")))
+    (save-excursion
+      (org-back-to-heading t)
+      (let ((heading-content (buffer-substring-no-properties
+                              (point)
+                              (save-excursion
+                                (outline-next-heading)
+                                (point)))))
+        (message "Heading content: %s" heading-content)
+        (when (string-match "\\[\\[\\(.+?\\)::\\([0-9]+\\)\\]" heading-content)
+          (let ((path (match-string 1 heading-content))
+                (line (match-string 2 heading-content)))
+            (message "Found link - Path: %s, Line: %s" path line)
+            (with-current-buffer (find-file-noselect path)
+              (goto-char (point-min))
+              (forward-line (1- (string-to-number line)))
+
+              (when (re-search-forward "\\(TODO\\|DONE\\)" (line-end-position) t)
+                (replace-match org-state)
+                (save-buffer)
+                ))))))))
+
+(add-hook 'org-after-todo-state-change-hook #'mark-source-todo-state)
