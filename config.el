@@ -385,7 +385,7 @@ it."
                                  "* TODO %?\n%i%U" )
                                 ("T" "Todo with link" entry
                                  (file +org-capture-todo-file)
-                                 "* TODO %?\n%i\n%a%U" )
+                                 "* TODO %?\n%i\n%a\n%U" )  ; Changed order and spacing
                                 ("n" "Inbox-Note" entry
                                  (file+headline +org-capture-todo-file  "Inbox Notes")
                                  "* %?\n%i%T" )
@@ -393,9 +393,11 @@ it."
                                 ("j" "Journal entry" entry
                                  (file+olp+datetree +org-capture-journal-file)
                                  "* %U %?\n%i" :prepend t)
+
                                 ("J" "Journal entry with link" entry
                                  (file+olp+datetree +org-capture-journal-file)
-                                 "* %U %?\n%i\n%a" :prepend t))
+                                 "* %U %?\n%i\n%a" :prepend t)  ; Removed redundant newline
+                                )
         org-archive-location (concat org-directory "/trash::* from %s")
         org-todo-keywords '((sequence "TODO(t)" "ACTIVE(a)" "|" "DONE(d)" "RUNNING(r)")
                             (sequence "NEXT(n)" "WAITING(w)" "LATER(l)" "|" "CANCELLED(c)"))
@@ -525,7 +527,7 @@ it."
     (while (re-search-forward "\\(\\w+\\)\\([,\\)]\\)" (+ 10 end ) t)
       (replace-match "\\1=\\1\\2" nil nil)))
   )
-;; TODO This runs into an 'invalid search bound: wrong side of point" error, but works otherwise
+;; TODO[uZkGGYEgen] This runs into an 'invalid search bound: wrong side of point" error, but works otherwise
 (defun positional-to-keyword (&optional beg end)
   "Converts positional arguments to keyword arguments within the selected region."
   (interactive "r")
