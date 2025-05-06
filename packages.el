@@ -159,3 +159,10 @@
 (package! mcp-el
   :recipe (:host github
            :repo "lizqwerscott/mcp.el"))
+
+(package! ob-typescript
+  :recipe (:host github
+           :repo "lurdan/ob-typescript"))
+
+(package! org-collect-code-todos
+  :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
