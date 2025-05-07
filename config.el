@@ -257,7 +257,9 @@ it."
 
 (map!
  (:map dired-mode-map                   ;; TODO[W6DKx0fHae] Why does this work?
+       ;; SCHEDULED: <2025-05-06 Tue>
        (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
+
 
 
 ;; (add-hook 'dired-mode-hook 'dired-hide-details-mode)
@@ -393,6 +395,7 @@ it."
                                 ("j" "Journal entry" entry
                                  (file+olp+datetree +org-capture-journal-file)
                                  "* %U %?\n%i" :prepend t)
+
 
                                 ("J" "Journal entry with link" entry
                                  (file+olp+datetree +org-capture-journal-file)
@@ -1651,9 +1654,7 @@ Version 2022-05-21"
 
 (add-hook! 'doom-init-ui-hook #'org-collect-code-todos-mode)
 
-
-
-(map! :map prog-mode-map
+(map! :map org-collect-code-todos-buffer-mode-map
       :n "C-c C-t" #'org-collect-code-todos-toggle-todo-state
       :n "C-c C-s" #'org-collect-code-todos-schedule
       :n "C-c C-d" #'org-collect-code-todos-deadline
@@ -1664,3 +1665,17 @@ Version 2022-05-21"
  'org-babel-load-languages
  '((typescript . t)
    ))
+
+
+;;;  agenda optimization
+
+
+(advice-add 'org-agenda :around
+            (lambda (orig-fun &rest args)
+              (let ((was-enabled envrc-global-mode))
+                (when was-enabled
+                  (envrc-global-mode -1))
+                (unwind-protect
+                    (apply orig-fun args)
+                  (when was-enabled
+                    (envrc-global-mode 1))))))
