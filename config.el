@@ -915,7 +915,7 @@ it."
 (after! latex
   (setq TeX-auto-save t
         TeX-parse-self t
-        TeX-syntactic-comment t
+        ;; TeX-syntactic-comment t
         ;; Synctex support
         TeX-source-correlate-start-server nil
         ;; Don't insert line-break at inline math
