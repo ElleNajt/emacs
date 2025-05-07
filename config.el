@@ -1670,12 +1670,15 @@ Version 2022-05-21"
 ;;;  agenda optimization
 
 
-(advice-add 'org-agenda :around
-            (lambda (orig-fun &rest args)
-              (let ((was-enabled envrc-global-mode))
-                (when was-enabled
-                  (envrc-global-mode -1))
-                (unwind-protect
-                    (apply orig-fun args)
-                  (when was-enabled
-                    (envrc-global-mode 1))))))
+(add-hook 'org-agenda-mode-hook (lambda ()
+                                  (when (eq major-mode 'org-agenda-mode)
+                                    (envrc-mode -1))))
+
+;;; Collect todo settings
+
+(setq org-collect-code-todos-file "~/org/code-todos.org")
+
+
+;; (with-eval-after-load 'org-agenda
+;;   (add-to-list 'org-agenda-inhibit-startup envrc-mode))
+
