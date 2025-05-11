@@ -43,6 +43,7 @@
 
 
   (unless gptel-anthropic-initialized
+    (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
     (setq gptel-backend (gptel-make-anthropic "Claude"
                           :stream t 
                           :key (get-anthropic-api-key)))
@@ -207,12 +208,16 @@
 
 ;;; aider
 
+
 (use-package aidermacs
   :bind (("C-c a" . aidermacs-transient-menu))
   :config
-                                        ; Set API_KEY in .bashrc, that will automatically picked up by aider or in elisp
-  (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
   :custom
                                         ; See the Configuration section below
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "sonnet"))
+
+
+;;; mcp
+
+(load! (concat "mcp" ))
