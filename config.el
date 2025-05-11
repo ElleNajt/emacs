@@ -1645,8 +1645,6 @@ Version 2022-05-21"
 ;; (require 'ruff-format)
 ;; (add-hook 'python-mode-hook 'ruff-format-on-save-mode)
 
-;;; MCP
-
 ;;; Gathering Todos
 
 (require
@@ -1682,3 +1680,6 @@ Version 2022-05-21"
 ;; (with-eval-after-load 'org-agenda
 ;;   (add-to-list 'org-agenda-inhibit-startup envrc-mode))
 
+
+(map! :mode gptel-mode "C-c m" #'gptel-menu)
+(map! :mode gptel-mode "C-c t" #'gptel-tools)
