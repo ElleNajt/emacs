@@ -308,7 +308,15 @@ it."
 ;; https://discourse.doomemacs.org/t/common-config-anti-patterns/119
 (add-hook! 'org-mode-hook 'org-evil-mode)
 
-(undefine-key! evil-motion-state-map "[ s" "] s")
+;; (undefine-key! evil-motion-state-map "[ s" "] s")
+
+(map! :map evil-motion-state-map
+      "[ s" nil
+      "] s" nil)
+
+(map! :map org-mode-map
+      :n "[[" nil
+      :n "]]" nil)
 
 (map! (:mode org-mode
        :n "] r" #'org-babel-goto-src-block-results
@@ -1621,3 +1629,16 @@ Version 2022-05-21"
                                                        (gptel-tool-name tool))))
                                       gptel-tools))))
             tools)))
+
+;;; remove spell completions
+
+(remove-hook 'completion-at-point-functions #'ispell-completion-at-point)
+
+
+(setq completion-at-point-functions
+      (remove 'ispell-completion-at-point completion-at-point-functions))
+
+(add-hook 'after-save-hook
+          (lambda ()
+            (when (eq major-mode 'latex-mode)
+              (TeX-command-run-all nil))))
