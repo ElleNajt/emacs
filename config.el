@@ -308,11 +308,11 @@ it."
 ;; https://discourse.doomemacs.org/t/common-config-anti-patterns/119
 (add-hook! 'org-mode-hook 'org-evil-mode)
 
-;; (undefine-key! evil-motion-state-map "[ s" "] s")
+(undefine-key! evil-motion-state-map "[ [" "] ]")
 
-(map! :map evil-motion-state-map
-      "[ s" nil
-      "] s" nil)
+;; (map! :map evil-motion-state-map
+;;       :n "[ s" nil
+;;       :n "] s" nil)
 
 (map! :map org-mode-map
       :n "[[" nil
@@ -1642,3 +1642,8 @@ Version 2022-05-21"
           (lambda ()
             (when (eq major-mode 'latex-mode)
               (TeX-command-run-all nil))))
+
+
+(use-package claude-code
+  :config
+  (map! "C-c c" claude-code-command-map))

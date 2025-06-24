@@ -166,3 +166,6 @@
 
 (package! org-collect-code-todos
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
+
+(package! claude-code
+  :recipe (:host github :repo "stevemolitor/claude-code.el" ))
