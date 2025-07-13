@@ -1647,3 +1647,5 @@ Version 2022-05-21"
 (use-package claude-code
   :config
   (map! "C-c c" claude-code-command-map))
+
+(map! :map gptel-mode-map "C-c m" #'gptel-menu)
