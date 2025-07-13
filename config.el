@@ -598,11 +598,11 @@ it."
     (magit-reset-mixed "HEAD@{1}"))
   (transient-append-suffix
     #'magit-reset
-    ["f"]
+    "f"
     (list "b" "Reset HEAD~"    #'magit-reset-head-back))
   (transient-append-suffix
     #'magit-reset
-    ["f"]
+    "f"
     (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
 
 ;;;; Outline
@@ -915,7 +915,7 @@ it."
 (after! latex
   (setq TeX-auto-save t
         TeX-parse-self t
-        TeX-syntactic-comment t
+        ;; TeX-syntactic-comment t
         ;; Synctex support
         TeX-source-correlate-start-server nil
         ;; Don't insert line-break at inline math
@@ -1670,12 +1670,15 @@ Version 2022-05-21"
 ;;;  agenda optimization
 
 
-(advice-add 'org-agenda :around
-            (lambda (orig-fun &rest args)
-              (let ((was-enabled envrc-global-mode))
-                (when was-enabled
-                  (envrc-global-mode -1))
-                (unwind-protect
-                    (apply orig-fun args)
-                  (when was-enabled
-                    (envrc-global-mode 1))))))
+(add-hook 'org-agenda-mode-hook (lambda ()
+                                  (when (eq major-mode 'org-agenda-mode)
+                                    (envrc-mode -1))))
+
+;;; Collect todo settings
+
+(setq org-collect-code-todos-file "~/org/code-todos.org")
+
+
+;; (with-eval-after-load 'org-agenda
+;;   (add-to-list 'org-agenda-inhibit-startup envrc-mode))
+
