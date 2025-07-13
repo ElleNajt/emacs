@@ -1649,3 +1649,10 @@ Version 2022-05-21"
   (map! "C-c c" claude-code-command-map))
 
 (map! :map gptel-mode-map "C-c m" #'gptel-menu)
+
+
+(map! :after vterm
+      :map vterm-mode-map
+      "C-c C-k" #'vterm-send-escape)
+
+(setq claude-code-terminal-backend 'vterm)
