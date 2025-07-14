@@ -168,4 +168,4 @@
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
 
 (package! claude-code
-  :recipe (:host github :repo "stevemolitor/claude-code.el" ))
+  :recipe (:host github :repo "ElleNajt/claude-code.el"))

@@ -1656,3 +1656,7 @@ Version 2022-05-21"
       "C-c C-k" #'vterm-send-escape)
 
 (setq claude-code-terminal-backend 'vterm)
+
+;;; Emacs Server
+(unless (server-running-p)
+  (server-start))
