@@ -1658,5 +1658,6 @@ Version 2022-05-21"
 (setq claude-code-terminal-backend 'vterm)
 
 ;;; Emacs Server
-(unless (server-running-p)
-  (server-start))
+(after! server
+  (unless (server-running-p)
+    (server-start)))
