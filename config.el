@@ -1657,6 +1657,10 @@ Version 2022-05-21"
 
 (setq claude-code-terminal-backend 'vterm)
 
+(use-package! eat
+  :config
+  (setq eat-term-name "xterm-256color"))
+
 ;;; Emacs Server
 (after! server
   (unless (server-running-p)
