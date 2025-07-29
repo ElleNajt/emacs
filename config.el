@@ -1257,7 +1257,7 @@ Special format specifiers:
 (setq display-line-numbers-type 't)
 
 
-(require 'ob-jupyter)
+;; (require 'ob-jupyter)  ; Disabled - no Jupyter installed
 
 
 (require 'cl-lib)
@@ -1630,13 +1630,20 @@ Version 2022-05-21"
                                       gptel-tools))))
             tools)))
 
-;;; remove spell completions
+;;; remove spell completions and limit org pcomplete
 
 (remove-hook 'completion-at-point-functions #'ispell-completion-at-point)
 
-
 (setq completion-at-point-functions
       (remove 'ispell-completion-at-point completion-at-point-functions))
+
+;; Remove overly aggressive pcomplete in org-mode  
+(after! org
+  (remove-hook 'completion-at-point-functions #'pcomplete-completions-at-point t)
+  (add-hook 'org-mode-hook 
+            (lambda () 
+              (setq-local completion-at-point-functions 
+                         (remove 'pcomplete-completions-at-point completion-at-point-functions)))))
 
 (add-hook 'after-save-hook
           (lambda ()
@@ -1654,6 +1661,15 @@ Version 2022-05-21"
 (map! :after vterm
       :map vterm-mode-map
       "C-c C-k" #'vterm-send-escape)
+
+;;; MisTTY configuration
+(use-package! mistty
+  :bind (("C-c s" . mistty)
+         :map mistty-prompt-map
+         ("M-<up>" . mistty-send-key)
+         ("M-<down>" . mistty-send-key))
+  :config
+  (map! :leader "o s" #'mistty))
 
 (setq claude-code-terminal-backend 'vterm)
 

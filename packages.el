@@ -171,3 +171,5 @@
   :recipe (:host github :repo "ElleNajt/claude-code.el" :branch "feature/multi-instance-command-station"))
 
 (package! eat)
+
+(package! mistty)

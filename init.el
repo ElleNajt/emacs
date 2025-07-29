@@ -169,7 +169,6 @@
        (org
         +pandoc
         +present
-        +jupyter
         +dragndrop
         +pretty
         +latex)               ; organize your plain life in plain text
