@@ -791,7 +791,6 @@ it."
 ;; Optionally, bind this function to a key in dired-mode
 (map! :after dired
       :map dired-mode-map
-      "C-c c" #'doom/directory-as-text
       :n "L" #'dired-do-symlink
 
       :n "W" #'dired-do-eww)
