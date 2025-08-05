@@ -1680,3 +1680,6 @@ Version 2022-05-21"
 (after! server
   (unless (server-running-p)
     (server-start)))
+
+
+(claude-code-org-notifications-setup)
