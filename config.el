@@ -1683,3 +1683,10 @@ Version 2022-05-21"
 
 
 (claude-code-org-notifications-setup)
+
+;;; Emacs MCP Server
+(use-package! claude-code-mcp-server
+  :after claude-code
+  :config
+  (claude-code-mcp-load-examples)
+  (claude-code-start-mcp-server))

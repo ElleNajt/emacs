@@ -173,3 +173,8 @@
 (package! eat)
 
 (package! mistty)
+
+(package! emacsmcp
+  :recipe (:host github
+           :repo "ElleNajt/emacsmcp.el"
+           :files ("*.el")))
