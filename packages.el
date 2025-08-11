@@ -168,13 +168,11 @@
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
 
 (package! claude-code
-  :recipe (:host github :repo "ElleNajt/claude-code.el" :branch "feature/multi-instance-command-station"))
+  :recipe (:host github :repo "stevemolitor/claude-code.el"))
 
 (package! eat)
 
 (package! mistty)
-
-:recipe (:host github :repo "ElleNajt/claude-code.el" :branch "feature/supportClaudeCodeHooks"))
 
 (package! emacs-mcp
   :recipe (:host github :repo "ElleNajt/emacs-mcp"
