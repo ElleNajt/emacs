@@ -174,7 +174,12 @@
 
 (package! mistty)
 
-(package! emacsmcp
-  :recipe (:host github
-           :repo "ElleNajt/emacsmcp.el"
-           :files ("*.el")))
+:recipe (:host github :repo "ElleNajt/claude-code.el" :branch "feature/supportClaudeCodeHooks"))
+
+(package! emacs-mcp
+  :recipe (:host github :repo "ElleNajt/emacs-mcp"
+           :files ("*.el" "example/*.el" "mcp-proxy.sh")
+           :post-build (lambda ()
+                         (let ((proxy-path (expand-file-name "mcp-proxy.sh"
+                                                             (straight--repos-dir "emacs-mcp"))))
+                           (shell-command (format "claude mcp add -s user emacs %s" proxy-path))))))

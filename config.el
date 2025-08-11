@@ -1682,11 +1682,12 @@ Version 2022-05-21"
     (server-start)))
 
 
-(claude-code-org-notifications-setup)
-
-;;; Emacs MCP Server
-(use-package! claude-code-mcp-server
-  :after claude-code
+;;; MCP Server Configuration
+(use-package! emacs-mcp
   :config
-  (claude-code-mcp-load-examples)
-  (claude-code-start-mcp-server))
+  ;; Optionally load example tools
+  (require 'mcp-tools)
+  
+  ;; Start the MCP server
+  (claude-code-mcp-start-server)
+  )
