@@ -174,7 +174,7 @@
   :recipe (
            :host github :repo "ElleNajt/claude-command.el"
            :files ("claude-command.el"
-                   "claude-command.el"
+                   "claude-command-keybindings.el"
                    "mcp-tools.el")))
 
 (package! eat)
