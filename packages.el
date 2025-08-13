@@ -174,7 +174,7 @@
   :recipe (
            :host github :repo "ElleNajt/claude-command.el"
            :files ("claude-command.el"
-                   "claude-command-keybindings.el"
+                   "claude-command.el"
                    "mcp-tools.el")))
 
 (package! eat)
@@ -183,8 +183,12 @@
 
 (package! emacs-mcp
   :recipe (:host github :repo "ElleNajt/emacs-mcp"
-           :files ("*.el" "example/*.el" "mcp-proxy.sh")
-           :post-build (lambda ()
-                         (let ((proxy-path (expand-file-name "mcp-proxy.sh"
-                                                             (straight--repos-dir "emacs-mcp"))))
-                           (shell-command (format "claude mcp add -s user emacs %s" proxy-path))))))
+           :files ("*.el" "example/*.el" "mcp-proxy.sh")))
+
+(add-hook 'straight-use-package-post-build-functions
+          (lambda (package)
+            (when (string= package "emacs-mcp")
+              (let ((proxy-path (expand-file-name "mcp-proxy.sh" 
+                                                  (straight--build-dir package))))
+                (set-file-modes proxy-path #o755)
+                (shell-command (format "claude mcp add -s user emacs %s" proxy-path))))))

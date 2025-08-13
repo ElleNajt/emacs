@@ -1591,8 +1591,9 @@ Version 2022-05-21"
 
 
 ;;; mcp
-(add-hook 'after-init-hook
-          #'mcp-hub-start-all-server)
+(with-eval-after-load 'mcp-hub
+  (add-hook 'after-init-hook
+            #'mcp-hub-start-all-server))
 
 (defun gptel-mcp-register-tool ()
   (interactive)
