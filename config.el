@@ -1666,7 +1666,7 @@ Version 2022-05-21"
   ;; (setq claude-command-auto-advance-queue t)
   
   ;; Load keybindings
-  (require 'claude-command-org-notifications-keybindings))
+  (require 'claude-command-keybindings))
 
 (map! :map gptel-mode-map "C-c m" #'gptel-menu)
 
