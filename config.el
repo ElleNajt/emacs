@@ -1652,7 +1652,21 @@ Version 2022-05-21"
 
 (use-package claude-code
   :config
-  (map! "C-c c" claude-code-command-map))
+  (map! "C-c c" claude-code-command-map)
+  ;; Set sandbox program path
+  (setq claude-code-sandbox-program "/Users/elle/code/claude-code/.devcontainer/scripts/claudebox"))
+
+(use-package claude-command
+  :after claude-code
+  :config
+  ;; Set up the org notifications listener
+  (claude-command-setup)
+  
+  ;; Optional: Enable auto-advance queue mode
+  ;; (setq claude-command-auto-advance-queue t)
+  
+  ;; Load keybindings
+  (require 'claude-command-org-notifications-keybindings))
 
 (map! :map gptel-mode-map "C-c m" #'gptel-menu)
 

@@ -170,6 +170,13 @@
 (package! claude-code
   :recipe (:host github :repo "stevemolitor/claude-code.el"))
 
+(package! claude-command
+  :recipe (
+           :host github :repo "ElleNajt/claude-command.el"
+           :files ("claude-command-org-notifications.el"
+                   "claude-command-org-notifications-keybindings.el"
+                   "mcp-tools.el")))
+
 (package! eat)
 
 (package! mistty)
