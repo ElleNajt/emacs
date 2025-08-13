@@ -1703,5 +1703,5 @@ Version 2022-05-21"
   (require 'mcp-tools)
   
   ;; Start the MCP server
-  (claude-code-mcp-start-server)
+  (emacs-mcp-start-server)
   )
