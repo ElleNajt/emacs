@@ -1655,7 +1655,10 @@ Version 2022-05-21"
   :config
   (map! "C-c c" claude-code-command-map)
   ;; Set sandbox program path
-  (setq claude-code-sandbox-program "/Users/elle/code/claude-code/.devcontainer/scripts/claudebox"))
+  (setq claude-code-sandbox-program "/Users/elle/code/claude-code/.devcontainer/scripts/claudebox")
+  ;; Load and setup auto-revert hook
+  (load! "mcp/claude-code-auto-revert-hook")
+  (setup-claude-auto-revert))
 
 (use-package claude-command
   :after claude-code
