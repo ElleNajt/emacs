@@ -183,12 +183,14 @@
 
 (package! emacs-mcp
   :recipe (:host github :repo "ElleNajt/emacs-mcp"
-           :files ("*.el" "example/*.el" "mcp-proxy.sh")))
+           :files ("*.el" "example/*.el" "mcp-proxy.sh" "agents/*.md" "post-build-hook.el")))
 
+;; Post-build hook that loads the actual hook implementation after download
 (add-hook 'straight-use-package-post-build-functions
           (lambda (package)
             (when (string= package "emacs-mcp")
-              (let ((proxy-path (expand-file-name "mcp-proxy.sh" 
-                                                  (straight--build-dir package))))
-                (set-file-modes proxy-path #o755)
-                (shell-command (format "claude mcp add -s user emacs %s" proxy-path))))))
+              (let ((hook-file (expand-file-name "post-build-hook.el" 
+                                                (straight--build-dir package))))
+                (when (file-exists-p hook-file)
+                  (load hook-file nil nil t)
+                  (message "emacs-mcp: Post-build setup completed"))))))
