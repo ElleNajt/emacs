@@ -116,58 +116,64 @@
 (defun new-python-project (project-name)
   "Create a new Python project folder with a specified structure in the current dired directory."
   (interactive "sProject name: ")
-  (let* ((default-directory (dired-current-directory))
-         (project-dir (concat default-directory project-name "/"))
-         (defaults-dir (concat doom-user-dir "python/nix_project_defaults/"))
-         (shell-nix (concat defaults-dir "shell.nix"))
-         (test-org (concat defaults-dir "scratch.org"))
-         (.dir-locals (concat defaults-dir ".dir-locals.el"))
-         (.envrc (concat defaults-dir ".envrc"))
+  (let* ((current-dir (dired-current-directory))
+         (project-dir (concat current-dir project-name "/"))
+         (defaults-dir (concat doom-user-dir "python/project_defaults/"))
          (current-datetime (format-time-string "%Y-%m-%d %H:%M:%S")))
 
-    (message "Defaults directory: %s" defaults-dir)
-    (message "Checking files existence:")
-    (message "shell.nix exists: %s" (file-exists-p shell-nix))
-    (message "test.org exists: %s" (file-exists-p test-org))
-    (message ".dir-locals.el exists: %s" (file-exists-p .dir-locals))
-    (message ".envrc exists: %s" (file-exists-p .envrc))
+    (make-directory project-dir t)
+    (message "Created directory: %s" project-dir)
 
-    (make-directory project-dir)
-    (message "Created project directory: %s" project-dir)
+    ;; Copy everything from defaults directory except .direnv
+    (dolist (item (directory-files defaults-dir nil "^[^.]\\|^\\."))
+      (unless (member item '("." ".." ".direnv"))
+        (let ((source (concat defaults-dir item))
+              (dest (concat project-dir item)))
+          (cond
+           ;; Handle directories
+           ((file-directory-p source)
+            (copy-directory source dest nil t t)
+            (message "Copied directory: %s" item))
 
-    (condition-case err
-        (copy-file shell-nix (concat project-dir "shell.nix"))
-      (error (message "Error copying shell.nix: %s" err)))
+           ;; Handle scratch.org with datetime substitution
+           ((string= item "scratch.org")
+            (write-region (with-temp-buffer
+                            (insert-file-contents source)
+                            (replace-regexp-in-string "\\$CURRENT_DATETIME"
+                                                     current-datetime
+                                                     (buffer-string)))
+                          nil dest)
+            (message "Copied and processed: %s" item))
 
-    (condition-case err
-        (write-region (with-temp-buffer
-                        (insert-file-contents test-org)
-                        (replace-regexp-in-string "\\$CURRENT_DATETIME" current-datetime (buffer-string)))
-                      nil
-                      (concat project-dir "test.org"))
-      (error (message "Error copying test.org: %s" err)))
+           ;; Handle regular files
+           (t
+            (copy-file source dest)
+            (message "Copied file: %s" item))))))
 
-    (condition-case err
-        (copy-file .dir-locals (concat project-dir ".dir-locals.el"))
-      (error (message "Error copying .dir-locals.el: %s" err)))
-
-    (condition-case err
-        (copy-file .envrc (concat project-dir ".envrc"))
-      (error (message "Error copying .envrc: %s" err)))
-
-    (message "Checking for additional files in defaults directory...")
-    (dolist (file (directory-files defaults-dir t "^[^.]+"))
-      (message "Found file: %s" file)
-      (unless (member (file-name-nondirectory file) '("shell.nix" "test.org" ".dir-locals.el" ".envrc"))
-        (condition-case err
-            (copy-file file project-dir)
-          (error (message "Error copying %s: %s" file err)))))
-
+    ;; Run direnv allow in background with correct directory
     (let ((default-directory project-dir))
-      (message "Running direnv allow in %s" default-directory)
-      (start-process "direnv" nil "direnv" "allow"))
+      (make-process
+       :name "direnv-allow"
+       :command (list "direnv" "allow" ".")
+       :buffer nil
+       :connection-type 'pipe
+       :noquery t
+       :sentinel (lambda (proc event)
+                   (when (string-match-p "finished" event)
+                     (message "direnv allow completed")))))
 
-    (message "Python project '%s' created successfully." project-name)))
+    ;; Create venv in background
+    (make-process
+     :name "python-venv"
+     :command (list "python" "-m" "venv" (concat project-dir "venv"))
+     :buffer nil
+     :connection-type 'pipe
+     :noquery t
+     :sentinel (lambda (proc event)
+                 (when (string-match-p "finished" event)
+                   (message "Python project '%s' created successfully." project-name))))
+
+    (message "Python project '%s' setup started..." project-name))))
 
 
 ;;; pdf tools
