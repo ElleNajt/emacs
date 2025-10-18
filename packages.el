@@ -168,7 +168,11 @@
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
 
 (package! claude-code
-  :recipe (:host github :repo "stevemolitor/claude-code.el"))
+  :recipe (:host github :repo "stevemolitor/claude-code.el"
+           :files ("*.el" "examples/hooks/*.el")
+
+
+           ))
 
 (package! claude-command
   :recipe (
@@ -176,6 +180,9 @@
            :files ("claude-command.el"
                    "claude-command-keybindings.el"
                    "mcp-tools.el")))
+
+(package! monet
+  :recipe (:host github :repo "stevemolitor/monet"))
 
 (package! eat)
 
@@ -190,7 +197,7 @@
           (lambda (package)
             (when (string= package "emacs-mcp")
               (let ((hook-file (expand-file-name "post-build-hook.el" 
-                                                (straight--build-dir package))))
+                                                 (straight--build-dir package))))
                 (when (file-exists-p hook-file)
                   (load hook-file nil nil t)
                   (message "emacs-mcp: Post-build setup completed"))))))

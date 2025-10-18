@@ -5,6 +5,10 @@
 (require 'general)
 (require 'predd)
 (require 'yasnippet)
+
+;;; Claude Command
+;; Use modeline notifications instead of popups
+(setq claude-command-notification-style 'modeline)
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)

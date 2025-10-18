@@ -221,3 +221,40 @@
 ;;; mcp
 
 (load! (concat "mcp" ))
+
+;;; RunPod config updater
+
+(defun elle/update-runpod-config-from-clipboard ()
+  "Parse SSH command from clipboard and update .runpod_config.json in current buffer.
+Only updates host and port, preserving all other fields like ssh_key and remote_dir."
+  (interactive)
+  (let* ((clipboard (current-kill 0 t))
+         (ssh-regex "ssh \\(?:root@\\)?\\([0-9.]+\\) -p \\([0-9]+\\)")
+         host port)
+
+    (unless (string-match ssh-regex clipboard)
+      (user-error "Clipboard doesn't contain SSH command in expected format: ssh root@HOST -p PORT"))
+
+    (setq host (match-string 1 clipboard)
+          port (match-string 2 clipboard))
+
+    (unless (derived-mode-p 'json-mode 'js-mode)
+      (user-error "Current buffer is not in JSON mode"))
+
+    (save-excursion
+      (goto-char (point-min))
+      (let* ((json-object-type 'hash-table)
+             (json-array-type 'list)
+             (json-key-type 'string)
+             (config (json-read)))
+
+        ;; Update only host and port
+        (puthash "host" host config)
+        (puthash "port" port config)
+
+        ;; Replace buffer contents with updated JSON
+        (erase-buffer)
+        (insert (json-encode config))
+        (json-pretty-print-buffer)
+        (save-buffer)
+        (message "Updated and saved RunPod config: host=%s port=%s" host port)))))
