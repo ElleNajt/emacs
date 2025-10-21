@@ -57,12 +57,11 @@
     (gptel-make-claude-cli "Claude CLI"
       :model "claude-sonnet-4-5-20250929"
       :stream nil)  ; streaming not supported yet
+    (setq gptel-backend (alist-get "Claude CLI" gptel--known-backends nil nil #'equal))
     (setq gptel-claude-cli-initialized t))
 
-  ;; To switch to Claude CLI backend:
-  ;; M-x gptel-menu (C-c RET), then press 'b' to select backend, choose "Claude CLI"
-  ;; Or set it as default:
-  ;; (setq gptel-backend (alist-get "Claude CLI" gptel--known-backends nil nil #'equal))
+  ;; To switch back to Anthropic API backend:
+  ;; M-x gptel-menu (C-c RET), then press 'b' to select backend, choose "Claude"
 
   (setq
    gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
