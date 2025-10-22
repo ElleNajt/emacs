@@ -169,10 +169,7 @@
 
 (package! claude-code
   :recipe (:host github :repo "stevemolitor/claude-code.el"
-           :files ("*.el" "examples/hooks/*.el")
-
-
-           ))
+           :files ("*.el" "examples/hooks/*.el")))
 
 (package! claude-command
   :recipe (
@@ -201,3 +198,7 @@
                 (when (file-exists-p hook-file)
                   (load hook-file nil nil t)
                   (message "emacs-mcp: Post-build setup completed"))))))
+
+(package! shell-maker)
+(package! acp :recipe (:host github :repo "xenodium/acp.el"))
+(package! agent-shell :recipe (:local-repo "/Users/elle/code/agent-shell"))
