@@ -7,8 +7,8 @@
 (require 'yasnippet)
 
 ;;; Claude Command
-;; Use modeline notifications instead of popups
-(setq claude-command-notification-style 'modeline)
+;; Use minibuffer/echo area messages instead of popups
+(setq claude-command-notification-style 'message)
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
@@ -615,7 +615,19 @@ it."
   (transient-append-suffix
     #'magit-reset
     "f"
-    (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous)))
+    (list "o" "Reset HEAD@{1}" #'magit-reset-head-previous))
+
+  ;; Add diff unpushed command
+  (transient-define-suffix magit-diff-unpushed ()
+    "Show diff of unpushed commits (local vs push-remote)."
+    (interactive)
+    (if-let ((push-remote (magit-get-push-branch)))
+        (magit-diff-range (concat push-remote "..HEAD"))
+      (user-error "No push remote configured")))
+  (transient-append-suffix
+    #'magit-diff
+    "w"
+    (list "P" "Diff unpushed" #'magit-diff-unpushed)))
 
 ;;;; Outline
 (map!
@@ -1595,44 +1607,44 @@ Version 2022-05-21"
 
 
 ;;; mcp
-(with-eval-after-load 'mcp-hub
-  (add-hook 'after-init-hook
-            #'mcp-hub-start-all-server))
+;; (with-eval-after-load 'mcp-hub
+;;   (add-hook 'after-init-hook
+;;             #'mcp-hub-start-all-server))
 
-(defun gptel-mcp-register-tool ()
-  (interactive)
-  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-    (mapcar #'(lambda (tool)
-                (apply #'gptel-make-tool
-                       tool))
-            tools)))
-
-
-(defun gptel-mcp-use-tool ()
-  (interactive)
-  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-    (mapcar #'(lambda (tool)
-                (let ((path (list (plist-get tool :category)
-                                  (plist-get tool :name))))
-                  (push (gptel-get-tool path)
-                        gptel-tools)))
-            tools)))
+;; (defun gptel-mcp-register-tool ()
+;;   (interactive)
+;;   (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+;;     (mapcar #'(lambda (tool)
+;;                 (apply #'gptel-make-tool
+;;                        tool))
+;;             tools)))
 
 
+;; (defun gptel-mcp-use-tool ()
+;;   (interactive)
+;;   (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+;;     (mapcar #'(lambda (tool)
+;;                 (let ((path (list (plist-get tool :category)
+;;                                   (plist-get tool :name))))
+;;                   (push (gptel-get-tool path)
+;;                         gptel-tools)))
+;;             tools)))
 
-(defun gptel-mcp-close-use-tool ()
-  (interactive)
-  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-    (mapcar #'(lambda (tool)
-                (let ((path (list (plist-get tool :category)
-                                  (plist-get tool :name))))
-                  (setq gptel-tools
-                        (cl-remove-if #'(lambda (tool)
-                                          (equal path
-                                                 (list (gptel-tool-category tool)
-                                                       (gptel-tool-name tool))))
-                                      gptel-tools))))
-            tools)))
+
+
+;; (defun gptel-mcp-close-use-tool ()
+;;   (interactive)
+;;   (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+;;     (mapcar #'(lambda (tool)
+;;                 (let ((path (list (plist-get tool :category)
+;;                                   (plist-get tool :name))))
+;;                   (setq gptel-tools
+;;                         (cl-remove-if #'(lambda (tool)
+;;                                           (equal path
+;;                                                  (list (gptel-tool-category tool)
+;;                                                        (gptel-tool-name tool))))
+;;                                       gptel-tools))))
+;;             tools)))
 
 ;;; remove spell completions and limit org pcomplete
 
@@ -1647,7 +1659,7 @@ Version 2022-05-21"
   (add-hook 'org-mode-hook 
             (lambda () 
               (setq-local completion-at-point-functions 
-                         (remove 'pcomplete-completions-at-point completion-at-point-functions)))))
+                          (remove 'pcomplete-completions-at-point completion-at-point-functions)))))
 
 (add-hook 'after-save-hook
           (lambda ()
@@ -1659,7 +1671,7 @@ Version 2022-05-21"
   :config
   (map! "C-c c" claude-code-command-map)
   ;; Set sandbox program path
-  (setq claude-code-sandbox-program "/Users/elle/code/claude-code/.devcontainer/scripts/claudebox")
+  (setq claude-code-sandbox-program "/Users/elle/.nix-profile/bin/claudebox")
   ;; Load and setup auto-revert hook
   (load! "mcp/claude-code-auto-revert-hook")
   (setup-claude-auto-revert))
@@ -1684,13 +1696,13 @@ Version 2022-05-21"
       "C-c C-k" #'vterm-send-escape)
 
 ;;; MisTTY configuration
-(use-package! mistty
-  :bind (("C-c s" . mistty)
-         :map mistty-prompt-map
-         ("M-<up>" . mistty-send-key)
-         ("M-<down>" . mistty-send-key))
-  :config
-  (map! :leader "o s" #'mistty))
+;; (use-package! mistty
+;;   :bind (("C-c s" . mistty)
+;;          :map mistty-prompt-map
+;;          ("M-<up>" . mistty-send-key)
+;;          ("M-<down>" . mistty-send-key))
+;;   :config
+;;   (map! :leader "o s" #'mistty))
 
 (setq claude-code-terminal-backend 'vterm)
 
@@ -1705,11 +1717,24 @@ Version 2022-05-21"
 
 
 ;;; MCP Server Configuration
-(use-package! emacs-mcp
-  :config
-  ;; Optionally load example tools
-  (require 'mcp-tools)
-  
-  ;; Start the MCP server
-  (emacs-mcp-start-server)
-  )
+;; (use-package! emacs-mcp
+;;   :config
+;;   ;; Optionally load example tools
+;;   (require 'mcp-tools)
+
+;;   ;; Start the MCP server
+;;   (emacs-mcp-start-server)
+;;   )
+
+(monet-mode)
+(add-hook 'claude-code-process-environment-functions #'monet-start-server-function)
+
+;;; acp claude
+
+(require 'acp)
+(require 'agent-shell)
+
+(setq agent-shell-anthropic-authentication
+      (agent-shell-anthropic-make-authentication :login t))
+
+

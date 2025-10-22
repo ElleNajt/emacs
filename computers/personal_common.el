@@ -2,10 +2,10 @@
 
 ;;; Gptel
 
-(use-package! gptel)
+;; (use-package! gptel)
 
 ;; Load Claude CLI backend from patches
-(load! (concat doom-user-dir "patches/gptel-claude-cli.el"))
+;; (load! (concat doom-user-dir "patches/gptel-claude-cli.el"))
 
 ;; (use-package! org-ai)
 ;; (setq org-ai-openai-api-token (shell-command-to-string "pass api-keys/openai-api"))
@@ -745,7 +745,7 @@ Select GPU type and optionally customize the Docker image."
 ;;; agent-shell
 
 ;; Container configuration
-(setq agent-shell-container-wrapper '("claudebox" "exec"))
+(setq agent-shell-command-runner '("claudebox" "exec"))
 (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 (setq agent-shell-header-style nil)  ; No header - mode shown in modeline
 
@@ -755,7 +755,7 @@ Select GPU type and optionally customize the Docker image."
   "Set default-directory to project directory when creating client."
   (let ((default-directory (or (agent-shell-cwd) default-directory)))
     (message "DEBUG: Spawning agent from directory: %s" default-directory)
-    (message "DEBUG: container-wrapper: %s" agent-shell-container-wrapper)
+    (message "DEBUG: command-runner: %s" agent-shell-command-runner)
     (message "DEBUG: claude-command: %s" agent-shell-anthropic-claude-command)
     (let ((result (apply orig-fn args)))
       (message "DEBUG: Full command will be: %s %s"
@@ -767,20 +767,44 @@ Select GPU type and optionally customize the Docker image."
             #'my/agent-shell-set-project-directory-advice)
 
 ;; Path translation for containerized ACP
-;; - agent-shell-cwd returns the real project directory (for spawning the container)
-;; - agent-shell--resolve-path translates it to /workspace (for sending to ACP)
-(defun my/agent-shell-resolve-path-for-container (original-fn path)
-  "Resolve PATH, returning /workspace for containerized claude-code-acp."
-  (if agent-shell-container-wrapper
+;; Use the built-in agent-shell--resolve-devcontainer-path but override the config
+;; reading to return /workspace directly, avoiding .devcontainer/devcontainer.json.
+(defun my/agent-shell-override-devcontainer-workspace-path (original-fn cwd)
+  "Return /workspace directly if using container runner, otherwise call ORIGINAL-FN.
+CWD is ignored when using container runner."
+  (if agent-shell-command-runner
       "/workspace"
-    (funcall original-fn path)))
+    (funcall original-fn cwd)))
 
-(advice-add 'agent-shell--resolve-path :around #'my/agent-shell-resolve-path-for-container)
+(advice-add 'agent-shell--get-devcontainer-workspace-path :around
+            #'my/agent-shell-override-devcontainer-workspace-path)
+
+(setq agent-shell-path-resolver-function #'agent-shell--resolve-devcontainer-path)
+
+;; Wrapper functions with prefix arg support for running on host
+(defun my/agent-shell-insert-shell-command-output (force-local)
+  "Insert shell command output, optionally on host.
+With prefix arg FORCE-LOCAL, run on host (set agent-shell-command-runner to nil)."
+  (interactive "P")
+  (let ((agent-shell-command-runner (if force-local nil agent-shell-command-runner)))
+    (call-interactively #'agent-shell-insert-shell-command-output)))
+
+(defun my/agent-shell-anthropic-start-claude-code (force-local)
+  "Start Claude Code, optionally on host.
+With prefix arg FORCE-LOCAL, run on host (set agent-shell-command-runner to nil)."
+  (interactive "P")
+  (let ((agent-shell-command-runner (if force-local nil agent-shell-command-runner)))
+    (agent-shell-anthropic-start-claude-code)))
 
 ;; Keybindings
 (with-eval-after-load 'agent-shell
-  (define-key agent-shell-mode-map (kbd "C-c !") #'agent-shell-insert-shell-command-output)
+  ;; Inside agent-shell buffers
+  (define-key agent-shell-mode-map (kbd "C-c !") #'my/agent-shell-insert-shell-command-output)
   (define-key agent-shell-mode-map (kbd "C-c p") #'agent-shell-cycle-session-mode))
+
+;; Global keybinding for starting Claude Code (SPC o c)
+(map! :leader
+      :desc "Start Claude Code" "o c" #'my/agent-shell-anthropic-start-claude-code)
 
 ;; Display shell command output buffers at bottom in small window
 (defun my/agent-shell-display-buffer-advice (orig-fn buffer)
