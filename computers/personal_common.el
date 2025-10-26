@@ -19,30 +19,11 @@
   (setq gptel-log-level 'debug)
   (setq gptel-include-reasoning t)
 
-  ;; (unless gptel-anthropic-initialized
-  ;;   (setq gptel-backend (gptel-make-anthropic "Claude"
-  ;;                         :stream t 
-  ;;                         :key (string-trim (shell-command-to-string "pass api-keys/claude-api"))
-  ;;                         :models '(claude-3-7-sonnet-20250219)
-  ;;                         :header (lambda () (when-let* ((key (gptel--get-api-key)))
-  ;;                                              `(("x-api-key" . ,key)
-  ;;                                                ("anthropic-version" . "2023-06-01")
-  ;;                                                ("anthropic-beta" . "pdfs-2024-09-25")
-  ;;                                                ("anthropic-beta" . "output-128k-2025-02-19")
-  ;;                                                ("anthropic-beta" . "prompt-caching-2024-07-31"))))
-  ;;                         :request-params '(:thinking (:type "enabled" :budget_tokens 2048)
-  ;;                                           :max_tokens 4096)))
-  ;;   (setq gptel-anthropic-initialized t))
-
   (setq gptel-log-level 'info)
 
-  (defun get-anthropic-api-key () 
-    "sometimes pass throws warnings, this ignores them"
-    (let ((output (shell-command-to-string "pass api-keys/claude-api")))
-      (if (string-match "\\(sk-ant[A-Za-z0-9_-]+\\)" output)
-          (match-string 1 output)
-        (error "Could not find API key starting with 'sk-ant' in the output"))))
-
+  (defun get-anthropic-api-key ()
+    "Return dummy key - we use Claude CLI instead"
+    "sk-ant-dummy-key-not-used")
 
   (unless gptel-anthropic-initialized
     (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
@@ -53,25 +34,20 @@
 
   ;; Claude CLI backend setup (uses `claude -p` instead of API)
   ;; This uses your Claude subscription instead of API credits
-  (unless gptel-claude-cli-initialized
-    (gptel-make-claude-cli "Claude CLI"
-      :model "claude-sonnet-4-5-20250929"
-      :stream nil)  ; streaming not supported yet
-    (setq gptel-backend (alist-get "Claude CLI" gptel--known-backends nil nil #'equal))
-    (setq gptel-claude-cli-initialized t))
+  ;; Commented out - requires gptel-claude-cli patch
+  ;; (unless gptel-claude-cli-initialized
+  ;;   (gptel-make-claude-cli "Claude CLI"
+  ;;     :model "claude-sonnet-4-5-20250929"
+  ;;     :stream nil)  ; streaming not supported yet
+  ;;   (setq gptel-backend (alist-get "Claude CLI" gptel--known-backends nil nil #'equal))
+  ;;   (setq gptel-claude-cli-initialized t))
+
 
   ;; To switch back to Anthropic API backend:
   ;; M-x gptel-menu (C-c RET), then press 'b' to select backend, choose "Claude"
 
   (setq
    gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
-
-
-   ;; gptel-model 'claude-3-7-sonnet-20250219 ;  "claude-3-opus-20240229" also available
-   ;; gptel-backend (gptel-make-openai "OpenAI"
-   ;;                 :stream t :key (shell-command-to-string "pass api-keys/openai"))
-
-
    gptel-org-branching-context nil
    gptel-default-mode 'org-mode
    gptel-max-tokens 8192
@@ -80,17 +56,8 @@
    gptel-response-prefix-alist '((markdown-mode . "") (org-mode . "* CLAUDE\n") (text-mode . ""))
    gptel-post-response-hook nil)
 
-
   (setq gptel-expert-commands nil)
-
   (setq gptel-stream t)
-
-  ;; (add-hook 'gptel-post-response-functions
-  ;;           (lambda (beg end)
-  ;;             ;; (replace-stars-in-python-blocks)
-  ;;             (goto-char (point-max))
-  ;;             (newline)))
-
 
   (add-hook 'gptel-post-stream-hook
             (lambda ()
@@ -744,24 +711,40 @@ Select GPU type and optionally customize the Docker image."
 
 ;;; agent-shell
 
+;; Add nix-profile binaries to exec-path so Emacs can find claudebox
+(add-to-list 'exec-path "/Users/elle/.nix-profile/bin")
+;; Use Node v20 for claude-code-acp compatibility (v23 has issues)
+(add-to-list 'exec-path "/Users/elle/.nvm/versions/node/v20.19.5/bin")
+;; Also update PATH environment variable for spawned processes
+(setenv "PATH" (concat "/Users/elle/.nvm/versions/node/v20.19.5/bin:"
+                       "/Users/elle/.nix-profile/bin:"
+                       (getenv "PATH")))
+
+;; Enable ACP logging for debugging
+;; DISABLED: May cause threading issues with redisplay
+;; (setq acp-logging-enabled t)
+
 ;; Container configuration
-(setq agent-shell-command-runner '("claudebox" "exec"))
+(setq agent-shell-container-command-runner '("claudebox" "exec"))
 (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 (setq agent-shell-header-style nil)  ; No header - mode shown in modeline
+
+;; Simple welcome message without ASCII art
+(defun my/agent-shell-simple-welcome (config)
+  "Simple welcome message without banner."
+  "")
+
+;; Override the welcome function for Claude Code
+(with-eval-after-load 'agent-shell-anthropic
+  (advice-add 'agent-shell-anthropic--claude-code-welcome-message
+              :override #'my/agent-shell-simple-welcome))
 
 ;; Ensure agent process spawns in project directory (not home)
 ;; This is critical for claudebox to derive the correct container name from pwd
 (defun my/agent-shell-set-project-directory-advice (orig-fn &rest args)
   "Set default-directory to project directory when creating client."
   (let ((default-directory (or (agent-shell-cwd) default-directory)))
-    (message "DEBUG: Spawning agent from directory: %s" default-directory)
-    (message "DEBUG: command-runner: %s" agent-shell-command-runner)
-    (message "DEBUG: claude-command: %s" agent-shell-anthropic-claude-command)
-    (let ((result (apply orig-fn args)))
-      (message "DEBUG: Full command will be: %s %s"
-               (map-elt result :command)
-               (map-elt result :command-params))
-      result)))
+    (apply orig-fn args)))
 
 (advice-add 'agent-shell-anthropic-make-client :around
             #'my/agent-shell-set-project-directory-advice)
@@ -772,7 +755,7 @@ Select GPU type and optionally customize the Docker image."
 (defun my/agent-shell-override-devcontainer-workspace-path (original-fn cwd)
   "Return /workspace directly if using container runner, otherwise call ORIGINAL-FN.
 CWD is ignored when using container runner."
-  (if agent-shell-command-runner
+  (if agent-shell-container-command-runner
       "/workspace"
     (funcall original-fn cwd)))
 
@@ -784,17 +767,51 @@ CWD is ignored when using container runner."
 ;; Wrapper functions with prefix arg support for running on host
 (defun my/agent-shell-insert-shell-command-output (force-local)
   "Insert shell command output, optionally on host.
-With prefix arg FORCE-LOCAL, run on host (set agent-shell-command-runner to nil)."
+With prefix arg FORCE-LOCAL, run on host. Also respects buffer-local
+my/agent-shell--force-local setting from agent session."
   (interactive "P")
-  (let ((agent-shell-command-runner (if force-local nil agent-shell-command-runner)))
+  (let ((agent-shell-container-command-runner
+         (if (or force-local
+                 (and (local-variable-p 'my/agent-shell--force-local)
+                      my/agent-shell--force-local))
+             nil
+           agent-shell-container-command-runner)))
     (call-interactively #'agent-shell-insert-shell-command-output)))
+
+(defvar-local my/agent-shell--force-local nil
+  "When non-nil, disable container wrapper for this buffer.")
+
+(defun my/agent-shell--resolve-path-advice (original-fn path)
+  "Advice for `agent-shell--resolve-path' to disable resolver when force-local is set."
+  (if (and (local-variable-p 'my/agent-shell--force-local)
+           my/agent-shell--force-local)
+      path  ; Return path unchanged when running locally
+    (funcall original-fn path)))
+
+(advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
 (defun my/agent-shell-anthropic-start-claude-code (force-local)
   "Start Claude Code, optionally on host.
-With prefix arg FORCE-LOCAL, run on host (set agent-shell-command-runner to nil)."
+With prefix arg FORCE-LOCAL, run on host without container wrapper."
   (interactive "P")
-  (let ((agent-shell-command-runner (if force-local nil agent-shell-command-runner)))
-    (agent-shell-anthropic-start-claude-code)))
+  ;; Temporarily override the global variables
+  (let ((agent-shell-container-command-runner
+         (if force-local nil agent-shell-container-command-runner))
+        (agent-shell-path-resolver-function
+         (if force-local nil agent-shell-path-resolver-function)))
+    ;; Create config and start the shell
+    (let ((config (agent-shell-anthropic-make-claude-code-config)))
+      ;; Replace the client-maker with our own that respects force-local
+      (map-put! config :client-maker
+                (lambda (buffer)
+                  (with-current-buffer buffer
+                    (setq-local my/agent-shell--force-local force-local))
+                  (let ((agent-shell-container-command-runner
+                         (if force-local nil agent-shell-container-command-runner))
+                        (agent-shell-path-resolver-function
+                         (if force-local nil agent-shell-path-resolver-function)))
+                    (agent-shell-anthropic-make-claude-client :buffer buffer))))
+      (agent-shell-start :config config))))
 
 ;; Keybindings
 (with-eval-after-load 'agent-shell
@@ -818,3 +835,71 @@ With prefix arg FORCE-LOCAL, run on host (set agent-shell-command-runner to nil)
 
 (advice-add 'agent-shell--display-buffer :around
             #'my/agent-shell-display-buffer-advice)
+
+;; Agent-shell buffer truncation to prevent lag in long sessions
+;; Disabled for now - set comint-buffer-maximum-size if needed
+(add-hook 'agent-shell-mode-hook
+          (lambda ()
+            (setq-local comint-buffer-maximum-size 3000)
+            (add-hook 'comint-output-filter-functions 'comint-truncate-buffer nil t)))
+
+;; Disable auto-save transcript (live saving to .agents/transcripts/)
+(setq agent-shell-auto-save-transcript nil)
+
+;; Disable shell-maker's save-on-close prompt for agent-shell buffers
+(add-hook 'agent-shell-mode-hook
+          (lambda ()
+            (setq-local shell-maker-prompt-before-killing-buffer nil)))
+
+;; Keep-going mode: automatically send "continue" when agent finishes
+;; (defvar-local my/agent-shell-keep-going-mode nil
+;;   "When non-nil, automatically send 'continue' when agent finishes.")
+
+;; (defcustom my/agent-shell-keep-going-message "continue"
+;;   "Message to send when keep-going mode is active."
+;;   :type 'string
+;;   :group 'agent-shell)
+
+;; (defun my/agent-shell-auto-continue ()
+;;   "Automatically send continue message if keep-going mode is enabled."
+;;   (message "DEBUG auto-continue: keep-going=%s busy=%s buffer=%s"
+;;            my/agent-shell-keep-going-mode
+;;            (shell-maker-busy)
+;;            (buffer-name))
+;;   (when (and my/agent-shell-keep-going-mode
+;;              (not (shell-maker-busy)))
+;;     (message "DEBUG: Scheduling auto-continue timer...")
+;;     (let ((target-buffer (current-buffer)))  ; Capture the buffer
+;;       (run-with-timer 1.0 nil
+;;                       (lambda ()
+;;                         (message "DEBUG: Timer fired, checking conditions...")
+;;                         (message "DEBUG: target-buffer=%s buffer-live=%s"
+;;                                  target-buffer
+;;                                  (buffer-live-p target-buffer))
+;;                         (when (buffer-live-p target-buffer)
+;;                           (with-current-buffer target-buffer
+;;                             (message "DEBUG: In buffer: keep-going=%s busy=%s"
+;;                                      my/agent-shell-keep-going-mode
+;;                                      (shell-maker-busy))
+;;                             (when (and my/agent-shell-keep-going-mode
+;;                                        (not (shell-maker-busy)))
+;;                               (message "Keep-going: sending \"%s\"" my/agent-shell-keep-going-message)
+;;                               (shell-maker-submit :input my/agent-shell-keep-going-message)))))))))
+
+;; (defun my/agent-shell-toggle-keep-going ()
+;;   "Toggle keep-going mode for current agent-shell buffer."
+;;   (interactive)
+;;   (setq my/agent-shell-keep-going-mode (not my/agent-shell-keep-going-mode))
+;;   (message "Keep-going mode: %s" (if my/agent-shell-keep-going-mode "ON" "OFF")))
+
+;; ;; Hook into busy state changes to trigger auto-continue
+;; (defun my/agent-shell-watch-busy-for-keep-going (symbol newval operation where)
+;;   "Watch shell-maker--busy and trigger auto-continue when it becomes nil."
+;;   (when (and (eq operation 'set)
+;;              (not newval)  ; busy became nil (agent finished)
+;;              (buffer-live-p where))
+;;     (with-current-buffer where
+;;       (when (derived-mode-p 'agent-shell-mode)
+;;         (my/agent-shell-auto-continue)))))
+
+;; (add-variable-watcher 'shell-maker--busy #'my/agent-shell-watch-busy-for-keep-going)
