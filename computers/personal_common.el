@@ -708,3 +708,14 @@ Select GPU type and optionally customize the Docker image."
 
       (message "RunPod configuration updated: %s on %s" gpu-type image-name)
       (find-file-other-window config-path))))
+
+;;; macOS-specific paths for agent-shell
+
+;; Add nix-profile binaries to exec-path so Emacs can find claudebox
+(add-to-list 'exec-path "/Users/elle/.nix-profile/bin")
+;; Use Node v20 for claude-code-acp compatibility (v23 has issues)
+(add-to-list 'exec-path "/Users/elle/.nvm/versions/node/v20.19.5/bin")
+;; Also update PATH environment variable for spawned processes
+(setenv "PATH" (concat "/Users/elle/.nvm/versions/node/v20.19.5/bin:"
+                       "/Users/elle/.nix-profile/bin:"
+                       (getenv "PATH")))
