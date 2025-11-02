@@ -201,5 +201,5 @@
 
 (package! shell-maker)
 (package! acp :recipe (:host github :repo "xenodium/acp.el"))
-(package! agent-shell :recipe (:local-repo "/Users/elle/code/agent-shell"))
+(package! agent-shell :recipe (:host github :repo "xenodium/agent-shell"))
 (package! agent-shell-manager :recipe (:host github :repo "ElleNajt/agent-shell-manager"))
