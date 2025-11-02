@@ -1876,6 +1876,29 @@ With prefix arg FORCE-LOCAL, run on host without container wrapper."
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
+(defun my/agent-shell-google-start-gemini (force-local)
+  "Start Claude Code, optionally on host.
+With prefix arg FORCE-LOCAL, run on host without container wrapper."
+  (interactive "P")
+  ;; Temporarily override the global variables
+  (let ((agent-shell-container-command-runner
+         (if force-local nil agent-shell-container-command-runner))
+        (agent-shell-path-resolver-function
+         (if force-local nil agent-shell-path-resolver-function)))
+    ;; Create config and start the shell
+    (let ((config (agent-shell-google-make-gemini-config )))
+      ;; Replace the client-maker with our own that respects force-local
+      (map-put! config :client-maker
+                (lambda (buffer)
+                  (with-current-buffer buffer
+                    (setq-local my/agent-shell--force-local force-local))
+                  (let ((agent-shell-container-command-runner
+                         (if force-local nil agent-shell-container-command-runner))
+                        (agent-shell-path-resolver-function
+                         (if force-local nil agent-shell-path-resolver-function)))
+                    (agent-shell-google-make-gemini-client :buffer buffer))))
+      (agent-shell-start :config config))))
+
 ;; Keybindings
 (with-eval-after-load 'agent-shell
   ;; Inside agent-shell buffers
@@ -1884,6 +1907,7 @@ With prefix arg FORCE-LOCAL, run on host without container wrapper."
 
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
+      :desc "Start Gemini Code" "o g g" #'my/agent-shell-google-start-gemini
       :desc "Start Claude Code" "o c" #'my/agent-shell-anthropic-start-claude-code)
 
 ;; Display shell command output buffers at bottom in small window
