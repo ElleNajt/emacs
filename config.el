@@ -1011,7 +1011,7 @@ it."
 (after! org
   (setq org-startup-with-latex-preview t)
   (setq org-format-latex-options
-        (plist-put org-format-latex-options :scale .9))
+        (plist-put org-format-latex-options :scale 1.5))
   (setq org-latex-create-formula-image-program 'dvipng)
 
 
@@ -1788,7 +1788,9 @@ Version 2022-05-21"
 ;; (setq acp-logging-enabled t)
 
 ;; Container configuration
-(setq agent-shell-container-command-runner '("claudebox" "exec"))
+;; Set to nil to run locally by default - use prefix arg (C-u) to run in container
+(setq agent-shell-container-command-runner nil)
+(setq agent-shell-path-resolver-function nil)
 (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 (setq agent-shell-header-style nil)  ; No header - mode shown in modeline
 
@@ -1825,8 +1827,6 @@ CWD is ignored when using container runner."
 (advice-add 'agent-shell--get-devcontainer-workspace-path :around
             #'my/agent-shell-override-devcontainer-workspace-path)
 
-(setq agent-shell-path-resolver-function #'agent-shell--resolve-devcontainer-path)
-
 ;; Wrapper functions with prefix arg support for running on host
 (defun my/agent-shell-insert-shell-command-output (force-local)
   "Insert shell command output, optionally on host.
@@ -1853,49 +1853,49 @@ my/agent-shell--force-local setting from agent session."
 
 (advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
-(defun my/agent-shell-anthropic-start-claude-code (force-local)
-  "Start Claude Code, optionally on host.
-With prefix arg FORCE-LOCAL, run on host without container wrapper."
+(defun my/agent-shell-anthropic-start-claude-code (use-container)
+  "Start Claude Code, optionally in container.
+With prefix arg USE-CONTAINER, run in container with wrapper."
   (interactive "P")
   ;; Temporarily override the global variables
   (let ((agent-shell-container-command-runner
-         (if force-local nil agent-shell-container-command-runner))
+         (if use-container '("claudebox" "exec") nil))
         (agent-shell-path-resolver-function
-         (if force-local nil agent-shell-path-resolver-function)))
+         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
     ;; Create config and start the shell
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
-      ;; Replace the client-maker with our own that respects force-local
+      ;; Replace the client-maker with our own that respects use-container
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
-                    (setq-local my/agent-shell--force-local force-local))
+                    (setq-local my/agent-shell--use-container use-container))
                   (let ((agent-shell-container-command-runner
-                         (if force-local nil agent-shell-container-command-runner))
+                         (if use-container '("claudebox" "exec") nil))
                         (agent-shell-path-resolver-function
-                         (if force-local nil agent-shell-path-resolver-function)))
+                         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
-(defun my/agent-shell-google-start-gemini (force-local)
-  "Start Claude Code, optionally on host.
-With prefix arg FORCE-LOCAL, run on host without container wrapper."
+(defun my/agent-shell-google-start-gemini (use-container)
+  "Start Gemini, optionally in container.
+With prefix arg USE-CONTAINER, run in container with wrapper."
   (interactive "P")
   ;; Temporarily override the global variables
   (let ((agent-shell-container-command-runner
-         (if force-local nil agent-shell-container-command-runner))
+         (if use-container '("claudebox" "exec") nil))
         (agent-shell-path-resolver-function
-         (if force-local nil agent-shell-path-resolver-function)))
+         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
     ;; Create config and start the shell
     (let ((config (agent-shell-google-make-gemini-config )))
-      ;; Replace the client-maker with our own that respects force-local
+      ;; Replace the client-maker with our own that respects use-container
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
-                    (setq-local my/agent-shell--force-local force-local))
+                    (setq-local my/agent-shell--use-container use-container))
                   (let ((agent-shell-container-command-runner
-                         (if force-local nil agent-shell-container-command-runner))
+                         (if use-container '("claudebox" "exec") nil))
                         (agent-shell-path-resolver-function
-                         (if force-local nil agent-shell-path-resolver-function)))
+                         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
                     (agent-shell-google-make-gemini-client :buffer buffer))))
       (agent-shell-start :config config))))
 
@@ -1931,6 +1931,39 @@ With prefix arg FORCE-LOCAL, run on host without container wrapper."
 (add-hook 'agent-shell-mode-hook
           (lambda ()
             (setq-local shell-maker-prompt-before-killing-buffer nil)))
+
+;; Enable comint-mime in agent-shell buffers for rich content display
+;; (use-package! comint-mime
+;;   :after agent-shell
+;;   :config
+;;   (add-hook 'agent-shell-mode-hook #'comint-mime-setup))
+
+;;; LaTeX preview in agent-shell
+;; (use-package! texfrag
+;;   :after agent-shell
+;;   :config
+;;   ;; Define texfrag setup function for agent-shell-mode
+;;   (defun texfrag-agent-shell ()
+;;     "Texfrag setup for agent-shell-mode."
+;;     (setq-local texfrag-comments-only nil)  ; Enable LaTeX preview everywhere
+;;     (setq-local texfrag-preview-buffer-at-start nil)
+;;     (setq-local texfrag-frag-alist
+;;                 '(;; Display-style equations $$...$$
+;;                   ("\\$\\$" "\\$\\$" nil nil :display t)
+;;                   ;; Inline equations $...$
+;;                   ("\\$" "\\$" nil nil)
+;;                   ;; LaTeX bracket style \[...\]
+;;                   ("\\\\\\[" "\\\\\\]" nil nil :display t)
+;;                   ;; LaTeX paren style \(...\)
+;;                   ("\\\\(" "\\\\)" nil nil))))
+
+;; Register agent-shell-mode in texfrag-setup-alist
+;; (add-to-list 'texfrag-setup-alist '(texfrag-agent-shell agent-shell-mode))
+
+;; Enable texfrag-mode in agent-shell buffers
+;; (add-hook 'agent-shell-mode-hook #'texfrag-mode)
+;; This breaks stuff
+;; )
 
 ;; Keep-going mode: automatically send "continue" when agent finishes
 ;; (defvar-local my/agent-shell-keep-going-mode nil
@@ -1997,4 +2030,179 @@ With prefix arg FORCE-LOCAL, run on host without container wrapper."
 (setq agent-shell-anthropic-authentication
       (agent-shell-anthropic-make-authentication :login t))
 
+;;; Send org code block to agent shell
+
+(defun send-to-agent-shell (&optional prefix)
+  "Send content to visible agent shell in current workspace.
+If visual selection is active, sends the selected region (works in any buffer).
+In org-mode without selection:
+  - If in a source block, sends the block with results.
+  - Otherwise, sends the current org subtree.
+In non-org buffers without selection, sends the filename.
+Includes file path in the message.
+With prefix argument PREFIX (\\[universal-argument]), prompt for a custom message to send along with the content."
+  (interactive "P")
+  
+  (let* ((original-buffer (current-buffer))
+         (original-window (selected-window))
+         (file-path (buffer-file-name))
+         (custom-message (when prefix 
+                           (read-string "Message to send: ")))
+         (full-block nil))
+    
+    ;; Capture content based on context
+    (save-excursion
+      (if (use-region-p)
+          ;; Visual selection is active - send the selected region (works anywhere)
+          (let ((region-begin (region-beginning))
+                (region-end (region-end)))
+            (setq full-block (buffer-substring-no-properties region-begin region-end))
+            
+            ;; Format with clear header
+            (setq full-block 
+                  (concat 
+                   (when custom-message
+                     (concat custom-message "\n\n"))
+                   "Here's a selection"
+                   (when file-path
+                     (concat " from `" file-path "`"))
+                   ":\n\n```\n"
+                   full-block
+                   "```")))
+        
+        ;; No selection - behavior depends on major mode
+        (if (eq major-mode 'org-mode)
+            ;; In org-mode, try source block or subtree
+            (let ((element (org-element-at-point)))
+              (if (org-element-type-p element 'src-block)
+                  ;; Capture source block with results
+                  (let* ((block-begin (org-element-property :begin element))
+                         (block-end (org-element-property :end element))
+                         (lang (org-element-property :language element)))
+                    
+                    ;; Get the source block
+                    (goto-char block-begin)
+                    (setq full-block (buffer-substring-no-properties block-begin block-end))
+                    
+                    ;; Check if there's a results block immediately after
+                    (goto-char block-end)
+                    (when (looking-at "^[ \t]*#\\+RESULTS:")
+                      (let ((results-start (point)))
+                        (forward-line 1)
+                        ;; Find the end of the results block
+                        (cond
+                         ;; Drawer results (:results: ... :end:)
+                         ((looking-at "^[ \t]*:\\(\\w+\\):")
+                          (re-search-forward "^[ \t]*:end:" nil t)
+                          (forward-line 1))
+                         ;; Block results (#+begin_example ... #+end_example)
+                         ((looking-at "^[ \t]*#\\+begin")
+                          (re-search-forward "^[ \t]*#\\+end" nil t)
+                          (forward-line 1))
+                         ;; Table or colon results
+                         (t
+                          (while (and (not (eobp))
+                                      (or (looking-at "^[ \t]*:")  ; colon results
+                                          (looking-at "^[ \t]*|")  ; table results
+                                          (looking-at "^[ \t]*$")))  ; empty lines
+                            (forward-line 1))))
+                        (setq full-block (concat full-block 
+                                                 (buffer-substring-no-properties results-start (point))))))
+                    
+                    ;; Format with clear header including file path
+                    (setq full-block 
+                          (concat 
+                           (when custom-message
+                             (concat custom-message "\n\n"))
+                           "Here's an org-mode source block"
+                           (when file-path
+                             (concat " from `" file-path "`"))
+                           ":\n\n```\n"
+                           full-block
+                           "```")))
+                
+                ;; Not in a source block, capture org subtree
+                (org-back-to-heading t)
+                (let ((subtree-begin (point))
+                      (subtree-end (save-excursion (org-end-of-subtree t t) (point))))
+                  (setq full-block (buffer-substring-no-properties subtree-begin subtree-end))
+                  
+                  ;; Format with clear header
+                  (setq full-block 
+                        (concat 
+                         (when custom-message
+                           (concat custom-message "\n\n"))
+                         "Here's an org-mode subtree"
+                         (when file-path
+                           (concat " from `" file-path "`"))
+                         ":\n\n```\n"
+                         full-block
+                         "```")))))
+          
+          ;; Not in org-mode and no selection - send filename
+          (setq full-block 
+                (concat
+                 (when custom-message
+                   (concat custom-message "\n\n"))
+                 (if file-path
+                     (concat "Here's the file path: `" file-path "`")
+                   "Current buffer has no associated file"))))))
+    
+    (unless full-block
+      (user-error "Could not capture org content"))
+    
+    ;; Find the agent shell buffer (only visible in current frame)
+    (let ((agent-buffer 
+           (seq-find 
+            (lambda (buf)
+              (and (get-buffer-window buf (selected-frame))
+                   (with-current-buffer buf
+                     (derived-mode-p 'agent-shell-mode))))
+            (buffer-list))))
+      
+      (unless agent-buffer
+        (user-error "No agent-shell buffer found. Start Claude Code with SPC o c first"))
+      
+      ;; Copy to clipboard
+      (kill-new full-block)
+      
+      ;; Switch to agent shell and paste
+      (select-window (or (get-buffer-window agent-buffer)
+                         (display-buffer agent-buffer)))
+      
+      ;; Paste and send
+      (goto-char (point-max))
+      (yank)
+      (shell-maker-submit)
+      
+      ;; Return to original buffer
+      (select-window original-window))))
+
+(map! :leader
+      :desc "Send to agent shell" "c s" #'send-to-agent-shell)
+
+
+
+;;; Improving org fonticiation speeds
+
+
+;; ;; Improve org-mode caching (global settings are fine for these)
+;; (setq org-element-use-cache t)
+;; (setq org-element-cache-persistent t)
+
+;; ;; Don't refontify the whole block on every change (org-specific variable)
+;; (setq org-fontify-whole-block-delimiter-line nil)
+
+;; ;; Prevent vc-mode and projectile from scanning Trash directory (causes permission errors)
+;; ;; (add-to-list 'vc-directory-exclusion-list ".Trash")
+;; ;; (add-to-list 'projectile-globally-ignored-directories ".Trash")
+
+;; ;; Make jit-lock less aggressive in org-mode only
+;; (defun elle/org-mode-jit-lock-settings ()
+;;   "Configure JIT lock settings for Org mode to improve performance."
+;;   (setq-local jit-lock-defer-time 0.5)     ; Wait before fontifying
+;;   (setq-local jit-lock-stealth-time nil)    ; Don't fontify invisible parts
+;;   (setq-local jit-lock-context-time 0.5))   ; Reduce context refontification
+
+;; (add-hook 'org-mode-hook #'elle/org-mode-jit-lock-settings)
 
