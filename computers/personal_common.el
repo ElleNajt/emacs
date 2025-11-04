@@ -116,13 +116,18 @@
             (copy-directory source dest nil t t)
             (message "Copied directory: %s" item))
 
-           ;; Handle scratch.org with datetime substitution
+           ;; Handle scratch.org with datetime and project name substitution
            ((string= item "scratch.org")
             (write-region (with-temp-buffer
                             (insert-file-contents source)
-                            (replace-regexp-in-string "\\$CURRENT_DATETIME"
-                                                      current-datetime
-                                                      (buffer-string)))
+                            (let ((content (buffer-string)))
+                              (setq content (replace-regexp-in-string "\\$CURRENT_DATETIME"
+                                                                      current-datetime
+                                                                      content))
+                              (setq content (replace-regexp-in-string "\\$PROJECT_NAME"
+                                                                      project-name
+                                                                      content))
+                              content))
                           nil dest)
             (message "Copied and processed: %s" item))
 
@@ -131,40 +136,42 @@
             (copy-file source dest)
             (message "Copied file: %s" item))))))
 
-    ;; Run direnv allow in background with correct directory
-    (let ((default-directory project-dir))
-      (make-process
-       :name "direnv-allow"
-       :command (list "direnv" "allow" ".")
-       :buffer nil
-       :connection-type 'pipe
-       :noquery t
-       :sentinel (lambda (proc event)
-                   (when (string-match-p "finished" event)
-                     (message "direnv allow completed")))))
-
-    ;; Create venv in background
+    ;; Create venv with uv and install requirements in background
     (make-process
-     :name "python-venv"
-     :command (list "python" "-m" "venv" (concat project-dir "venv"))
+     :name "python-uv-setup"
+     :command (list "sh" "-c" 
+                    (format "cd %s && uv venv venv && uv pip install -r requirements.txt"
+                            (shell-quote-argument project-dir)))
      :buffer nil
      :connection-type 'pipe
      :noquery t
      :sentinel (lambda (proc event)
                  (when (string-match-p "finished" event)
-                   ;; After venv is created, initialize git repo and commit
+                   (message "UV setup completed, running direnv allow...")
+                   ;; After venv and packages are installed, run direnv allow
                    (let ((default-directory project-dir))
                      (make-process
-                      :name "git-init-commit"
-                      :command (list "sh" "-c" "git init && git add . && git commit -m 'Initial commit'")
+                      :name "direnv-allow"
+                      :command (list "direnv" "allow" ".")
                       :buffer nil
                       :connection-type 'pipe
                       :noquery t
                       :sentinel (lambda (proc event)
                                   (when (string-match-p "finished" event)
-                                    (message "Python project '%s' created successfully with initial commit." project-name))))))))
+                                    (message "direnv allow completed, initializing git...")
+                                    ;; After direnv is configured, initialize git repo and commit
+                                    (let ((default-directory project-dir))
+                                      (make-process
+                                       :name "git-init-commit"
+                                       :command (list "sh" "-c" "git init && git add . && git commit -m 'Initial commit'")
+                                       :buffer nil
+                                       :connection-type 'pipe
+                                       :noquery t
+                                       :sentinel (lambda (proc event)
+                                                   (when (string-match-p "finished" event)
+                                                     (message "Python project '%s' created successfully with initial commit." project-name))))))))))
 
-    (message "Python project '%s' setup started..." project-name)))
+                 (message "Python project '%s' setup started..." project-name)))))
 
 
 ;;; pdf tools
@@ -720,6 +727,7 @@ Select GPU type and optionally customize the Docker image."
                        "/Users/elle/.nix-profile/bin:"
                        (getenv "PATH")))
 
+(after! agent-shell 
 
-(setq agent-shell-anthropic-authentication
-      (agent-shell-anthropic-make-authentication :login t))
+  (setq agent-shell-anthropic-authentication
+        (agent-shell-anthropic-make-authentication :login t)))

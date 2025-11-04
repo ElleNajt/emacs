@@ -14,6 +14,35 @@
 (defvar emacs-mcp-port nil
   "Port for Emacs MCP server. Not used but prevents errors in subprocess calls.")
 
+;; ;;; ACP Point Preservation
+;; ;; Preserve cursor position when ACP MCP server saves files
+;; (defvar-local acp--saved-point nil
+;;   "Saved point position before save.")
+
+;; (defvar-local acp--saved-window-start nil
+;;   "Saved window start position before save.")
+
+;; (defun acp--save-point-before-save ()
+;;   "Save point and window position before save."
+;;   (setq acp--saved-point (point))
+;;   (when (get-buffer-window (current-buffer))
+;;     (setq acp--saved-window-start (window-start (get-buffer-window (current-buffer)))))
+;;   (message "[ACP] Saved point before save: %d" acp--saved-point))
+
+;; (defun acp--restore-point-after-save ()
+;;   "Restore point and window position after save."
+;;   (when acp--saved-point
+;;     (goto-char (min acp--saved-point (point-max)))
+;;     (message "[ACP] Restored point after save: %d (was %d, max %d)" 
+;;              (point) acp--saved-point (point-max))
+;;     (when (and acp--saved-window-start (get-buffer-window (current-buffer)))
+;;       (set-window-start (get-buffer-window (current-buffer)) acp--saved-window-start))
+;;     (setq acp--saved-point nil
+;;           acp--saved-window-start nil)))
+
+;; (add-hook 'before-save-hook #'acp--save-point-before-save)
+;; (add-hook 'after-save-hook #'acp--restore-point-after-save)
+
 ;;; Agent Shell Manager
 ;; Bind s-b to toggle agent-shell-manager
 (map! :n "s-b" #'agent-shell-manager-toggle)
@@ -760,7 +789,19 @@ it."
   (setq corfu-popupinfo-delay 0)
   (setq corfu-auto t)
   (setq corfu-preselect t)
-  )
+
+  ;; Disable word/buffer completions in org-mode to prioritize yasnippets
+  (add-hook 'org-mode-hook
+            (lambda ()
+              ;; Remove dabbrev (word completion) from org-mode
+              (setq-local completion-at-point-functions
+                          (delq 'cape-dabbrev completion-at-point-functions))
+              ;; Remove file completion which can be noisy
+              (setq-local completion-at-point-functions
+                          (delq 'cape-file completion-at-point-functions))
+              ;; Remove ispell completion (spell-check suggestions)
+              (setq-local completion-at-point-functions
+                          (delq 'ispell-completion-at-point completion-at-point-functions)))))
 
 
 ;;   ;; (setq! corfu-preview-current nil
@@ -1015,7 +1056,7 @@ it."
   (setq org-latex-create-formula-image-program 'dvipng)
 
 
-  (add-hook 'org-mode-hook 'org-fragtog-mode)
+  ;; (add-hook 'org-mode-hook 'org-fragtog-mode)
   (add-hook 'org-mode-hook 'org-toggle-pretty-entities)
   (add-hook 'latex-mode 'prettify-symbols-mode)
 
@@ -1038,9 +1079,9 @@ it."
   (setq-default preview-scale 1))  ; Adjust this value as needed
 
 ;; Load org-fragtog package
-(use-package! org-fragtog
-  :after org
-  :hook (org-mode . org-fragtog-mode))
+;; (use-package! org-fragtog
+;;   :after org
+;;   :hook (org-mode . org-fragtog-mode))
 
 
 (add-hook 'org-mode-hook 'org-latex-preview)
