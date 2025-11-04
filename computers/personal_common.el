@@ -719,3 +719,7 @@ Select GPU type and optionally customize the Docker image."
 (setenv "PATH" (concat "/Users/elle/.nvm/versions/node/v20.19.5/bin:"
                        "/Users/elle/.nix-profile/bin:"
                        (getenv "PATH")))
+
+
+(setq agent-shell-anthropic-authentication
+      (agent-shell-anthropic-make-authentication :login t))

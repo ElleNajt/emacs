@@ -2027,8 +2027,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 (require 'acp)
 (require 'agent-shell)
 
-(setq agent-shell-anthropic-authentication
-      (agent-shell-anthropic-make-authentication :login t))
 
 ;;; Send org code block to agent shell
 
