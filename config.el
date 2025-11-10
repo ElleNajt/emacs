@@ -1174,7 +1174,17 @@ it."
 
   (ob-python-extras-load-keybindings)
   (setq ob-python-extras/auto-format t)
-  (setq ob-python-extras/allow-png-deletion t))
+  (setq ob-python-extras/allow-png-deletion t)
+
+  ;; Bind SPC o s to open session buffer in org-mode
+  (map! :map org-mode-map
+        :leader
+        (:prefix "o"
+         :desc "Open Python session buffer" "s" #'ob-python-extras/open-session-buffer))
+
+  ;; Unbind macOS s-s (save) in org-mode to avoid conflicts
+  (map! :map org-mode-map
+        "s-s" nil))
 
 
 ;;; use org-babel-alerts
@@ -2086,7 +2096,7 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
          (original-window (selected-window))
          (file-path (buffer-file-name))
          (custom-message (when prefix 
-                           (read-string "Message to send: ")))
+                           (my/read-string-in-normal-mode "Message to send: ")))
          (full-block nil))
     
     ;; Capture content based on context
@@ -2160,23 +2170,34 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
                            full-block
                            "```")))
                 
-                ;; Not in a source block, capture org subtree
-                (org-back-to-heading t)
-                (let ((subtree-begin (point))
-                      (subtree-end (save-excursion (org-end-of-subtree t t) (point))))
-                  (setq full-block (buffer-substring-no-properties subtree-begin subtree-end))
-                  
-                  ;; Format with clear header
-                  (setq full-block 
-                        (concat 
-                         (when custom-message
-                           (concat custom-message "\n\n"))
-                         "Here's an org-mode subtree"
-                         (when file-path
-                           (concat " from `" file-path "`"))
-                         ":\n\n```\n"
-                         full-block
-                         "```")))))
+                ;; Not in a source block, try to capture org subtree
+                (condition-case nil
+                    (progn
+                      (org-back-to-heading t)
+                      (let ((subtree-begin (point))
+                            (subtree-end (save-excursion (org-end-of-subtree t t) (point))))
+                        (setq full-block (buffer-substring-no-properties subtree-begin subtree-end))
+                        
+                        ;; Format with clear header
+                        (setq full-block 
+                              (concat 
+                               (when custom-message
+                                 (concat custom-message "\n\n"))
+                               "Here's an org-mode subtree"
+                               (when file-path
+                                 (concat " from `" file-path "`"))
+                               ":\n\n```\n"
+                               full-block
+                               "```"))))
+                  ;; If we can't find a heading, send the file path
+                  (error
+                   (setq full-block 
+                         (concat
+                          (when custom-message
+                            (concat custom-message "\n\n"))
+                          (if file-path
+                              (concat "Here's the file path (not at an org heading): `" file-path "`")
+                            "Current buffer has no associated file")))))))
           
           ;; Not in org-mode and no selection - send filename
           (setq full-block 
@@ -2219,6 +2240,18 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
 
 (map! :leader
       :desc "Send to agent shell" "c s" #'send-to-agent-shell)
+
+;; Force override after doom loads
+(after! doom
+  (map! :leader
+        :desc "Send to agent shell" "c s" #'send-to-agent-shell))
+
+;; Custom read-string that starts in evil normal mode for multiline editing
+(defun my/read-string-in-normal-mode (prompt &optional initial-input)
+  "Read string with minibuffer starting in evil normal mode for vim editing."
+  (minibuffer-with-setup-hook
+      #'evil-normal-state
+    (read-string prompt initial-input)))
 
 
 
