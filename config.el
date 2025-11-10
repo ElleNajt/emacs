@@ -2253,6 +2253,53 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
       #'evil-normal-state
     (read-string prompt initial-input)))
 
+;;; Shell/Eshell popup functions (shell instead of vterm)
+
+(defun +shell/toggle (&optional arg)
+  "Toggle a shell popup window at project root.
+If prefix ARG is non-nil, recreate shell buffer in the current project's root."
+  (interactive "P")
+  (let* ((buffer-name (format "*doom:shell-popup:%s*"
+                              (if (bound-and-true-p persp-mode)
+                                  (safe-persp-name (get-current-persp))
+                                "main")))
+         (default-directory (or (doom-project-root) default-directory)))
+    (if arg
+        (when-let ((buf (get-buffer buffer-name)))
+          (kill-buffer buf)))
+    (pop-to-buffer
+     (get-buffer-create buffer-name))
+    (unless (derived-mode-p 'shell-mode)
+      (shell (current-buffer)))))
+
+(defun shell-cd-to-dired-dir-and-switch ()
+  "CD the shell popup to the directory of the current dired buffer, then switch to it.
+Similar to `vterm-cd-to-dired-dir-and-switch' but for shell."
+  (interactive)
+  (let ((dir (if (eq major-mode 'dired-mode)
+                 (dired-current-directory)
+               default-directory)))
+    (if-let* ((shell-buffer-name
+               (format "*doom:shell-popup:%s*"
+                       (if (bound-and-true-p persp-mode)
+                           (safe-persp-name (get-current-persp))
+                         "main")))
+              (shell-buffer (get-buffer shell-buffer-name)))
+        (progn
+          (pop-to-buffer shell-buffer)
+          (goto-char (point-max))
+          (insert (format "cd \"%s\"" dir))
+          (comint-send-input))
+      (message "No currently open shell (press SPC o t)"))))
+
+;; Override vterm keybindings to use shell instead
+(map! :leader
+      :desc "Toggle shell popup" "o t" #'+shell/toggle)
+
+(map! :map dired-mode-map
+      :leader
+      :desc "CD shell to dired dir" "d t" #'shell-cd-to-dired-dir-and-switch)
+
 
 
 ;;; Improving org fonticiation speeds
