@@ -2304,9 +2304,19 @@ Similar to `vterm-cd-to-dired-dir-and-switch' but for eshell."
           (eshell-send-input))
       (message "No currently open eshell (press SPC o t)"))))
 
+(defun +eshell/here (&optional arg)
+  "Open an eshell buffer in the current window at project root.
+If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
+  (interactive "P")
+  (let* ((default-directory (if arg
+                                default-directory
+                              (or (doom-project-root) default-directory))))
+    (eshell 'new)))
+
 ;; Override vterm keybindings to use eshell instead
 (map! :leader
-      :desc "Toggle eshell popup" "o t" #'+eshell/toggle)
+      :desc "Toggle eshell popup" "o t" #'+eshell/toggle
+      :desc "Open eshell here" "o T" #'+eshell/here)
 
 (map! :map dired-mode-map
       :leader
