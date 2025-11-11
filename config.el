@@ -2253,13 +2253,13 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
       #'evil-normal-state
     (read-string prompt initial-input)))
 
-;;; Shell/Eshell popup functions (shell instead of vterm)
+;;; Eshell popup functions (eshell instead of vterm)
 
-(defun +shell/toggle (&optional arg)
-  "Toggle a shell popup window at project root.
-If prefix ARG is non-nil, recreate shell buffer in the current project's root."
+(defun +eshell/toggle (&optional arg)
+  "Toggle an eshell popup window at project root.
+If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
   (interactive "P")
-  (let* ((buffer-name (format "*doom:shell-popup:%s*"
+  (let* ((buffer-name (format "*doom:eshell-popup:%s*"
                               (if (bound-and-true-p persp-mode)
                                   (safe-persp-name (get-current-persp))
                                 "main")))
@@ -2269,36 +2269,37 @@ If prefix ARG is non-nil, recreate shell buffer in the current project's root."
           (kill-buffer buf)))
     (pop-to-buffer
      (get-buffer-create buffer-name))
-    (unless (derived-mode-p 'shell-mode)
-      (shell (current-buffer)))))
+    (unless (derived-mode-p 'eshell-mode)
+      (eshell-mode)
+      (eshell))))
 
-(defun shell-cd-to-dired-dir-and-switch ()
-  "CD the shell popup to the directory of the current dired buffer, then switch to it.
-Similar to `vterm-cd-to-dired-dir-and-switch' but for shell."
+(defun eshell-cd-to-dired-dir-and-switch ()
+  "CD the eshell popup to the directory of the current dired buffer, then switch to it.
+Similar to `vterm-cd-to-dired-dir-and-switch' but for eshell."
   (interactive)
   (let ((dir (if (eq major-mode 'dired-mode)
                  (dired-current-directory)
                default-directory)))
-    (if-let* ((shell-buffer-name
-               (format "*doom:shell-popup:%s*"
+    (if-let* ((eshell-buffer-name
+               (format "*doom:eshell-popup:%s*"
                        (if (bound-and-true-p persp-mode)
                            (safe-persp-name (get-current-persp))
                          "main")))
-              (shell-buffer (get-buffer shell-buffer-name)))
+              (eshell-buffer (get-buffer eshell-buffer-name)))
         (progn
-          (pop-to-buffer shell-buffer)
+          (pop-to-buffer eshell-buffer)
           (goto-char (point-max))
           (insert (format "cd \"%s\"" dir))
-          (comint-send-input))
-      (message "No currently open shell (press SPC o t)"))))
+          (eshell-send-input))
+      (message "No currently open eshell (press SPC o t)"))))
 
-;; Override vterm keybindings to use shell instead
+;; Override vterm keybindings to use eshell instead
 (map! :leader
-      :desc "Toggle shell popup" "o t" #'+shell/toggle)
+      :desc "Toggle eshell popup" "o t" #'+eshell/toggle)
 
 (map! :map dired-mode-map
       :leader
-      :desc "CD shell to dired dir" "d t" #'shell-cd-to-dired-dir-and-switch)
+      :desc "CD eshell to dired dir" "d t" #'eshell-cd-to-dired-dir-and-switch)
 
 
 
