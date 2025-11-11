@@ -2313,10 +2313,13 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
                               (or (doom-project-root) default-directory))))
     (eshell 'new)))
 
-;; Override vterm keybindings to use eshell instead
+;; Eshell keybindings (override vterm defaults)
 (map! :leader
       :desc "Toggle eshell popup" "o t" #'+eshell/toggle
-      :desc "Open eshell here" "o T" #'+eshell/here)
+      :desc "Open eshell here" "o T" #'+eshell/here
+      ;; Keep vterm available too
+      :desc "Toggle vterm popup" "o v" #'+vterm/toggle
+      :desc "Open vterm here" "o V" #'+vterm/here)
 
 (map! :map dired-mode-map
       :leader
