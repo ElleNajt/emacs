@@ -2263,15 +2263,26 @@ If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
                               (if (bound-and-true-p persp-mode)
                                   (safe-persp-name (get-current-persp))
                                 "main")))
-         (default-directory (or (doom-project-root) default-directory)))
+         (default-directory (or (doom-project-root) default-directory))
+         (buffer (get-buffer buffer-name))
+         (window (and buffer (get-buffer-window buffer))))
+    
     (if arg
-        (when-let ((buf (get-buffer buffer-name)))
-          (kill-buffer buf)))
-    (pop-to-buffer
-     (get-buffer-create buffer-name))
-    (unless (derived-mode-p 'eshell-mode)
-      (eshell-mode)
-      (eshell))))
+        ;; With prefix arg, kill and recreate
+        (when buffer
+          (kill-buffer buffer)
+          (setq buffer nil
+                window nil)))
+    
+    (if (and window (eq (selected-window) window))
+        ;; If eshell window is selected, hide it
+        (delete-window window)
+      ;; Otherwise, show/create eshell
+      (let ((buf (or buffer (get-buffer-create buffer-name))))
+        (pop-to-buffer buf)
+        (unless (derived-mode-p 'eshell-mode)
+          (eshell-mode)
+          (eshell))))))
 
 (defun eshell-cd-to-dired-dir-and-switch ()
   "CD the eshell popup to the directory of the current dired buffer, then switch to it.
