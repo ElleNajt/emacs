@@ -2295,17 +2295,13 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
 ;; Fix eshell-up package hijacking 'bd' command
 (after! eshell-up
   ;; Remove the bd alias that eshell-up creates, so the real bd binary is used
-  (defun eshell-up-remove-bd-alias ()
-    "Remove bd alias and create 'up' alias for eshell-up instead."
-    ;; First remove ALL instances of 'bd' and 'up' to avoid duplicates
-    (setq eshell-command-aliases-list
-          (cl-remove-if (lambda (alias)
-                          (member (car alias) '("bd" "up")))
-                        eshell-command-aliases-list))
-    ;; Now add single 'up' alias
-    (push '("up" "eshell-up $1") eshell-command-aliases-list))
-  
-  (add-hook 'eshell-mode-hook #'eshell-up-remove-bd-alias))
+  ;; Remove ALL instances of 'bd' and 'up' to avoid duplicates
+  (setq eshell-command-aliases-list
+        (cl-remove-if (lambda (alias)
+                        (member (car alias) '("bd" "up")))
+                      eshell-command-aliases-list))
+  ;; Add single 'up' alias for eshell-up functionality
+  (push '("up" "eshell-up $1") eshell-command-aliases-list))
 
 ;;; Eshell popup functions (eshell instead of vterm)
 
