@@ -472,6 +472,27 @@ it."
   ;;                 person)))
 
   )
+
+;;;; Org Capture Frame Configuration
+;; Make org-capture work nicely when called from global hotkey
+(defun org-capture-finalize-and-close ()
+  "Finalize capture and close frame if it was created for capture."
+  (when (and (equal (frame-parameter nil 'name) "org-capture")
+             (not (eq this-command 'org-capture-refile)))
+    (delete-frame)))
+
+(add-hook 'org-capture-after-finalize-hook #'org-capture-finalize-and-close)
+
+;; Configure frame parameters for org-capture
+(defadvice! my/org-capture-in-frame (orig-fun &rest args)
+  :around #'org-capture
+  (if (and (not (frame-parameter nil 'unsplittable))
+           (equal (frame-parameter nil 'name) "org-capture"))
+      ;; We're already in a capture frame, just do the capture
+      (apply orig-fun args)
+    ;; Not in capture frame - proceed normally
+    (apply orig-fun args)))
+
 (with-eval-after-load 'org (add-to-list 'org-modules 'org-habit t))
 
 ;;;; Agenda
@@ -2253,6 +2274,24 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
       #'evil-normal-state
     (read-string prompt initial-input)))
 
+;;; Eshell configuration
+
+;; Load bash aliases into eshell
+(after! eshell
+  (defun eshell-load-bash-aliases ()
+    "Load bash aliases from .bashrc into eshell."
+    (interactive)
+    (with-temp-buffer
+      (insert-file-contents "~/.bashrc")
+      (goto-char (point-min))
+      (while (re-search-forward "alias \\(.+\\)=[\"']\\(.+\\)[\"']$" nil t)
+        (let ((alias-name (match-string 1))
+              (alias-value (match-string 2)))
+          (eshell/alias alias-name alias-value)))))
+  
+  ;; Load aliases when eshell starts
+  (add-hook 'eshell-mode-hook #'eshell-load-bash-aliases))
+
 ;;; Eshell popup functions (eshell instead of vterm)
 
 (defun +eshell/toggle (&optional arg)
@@ -2279,10 +2318,10 @@ If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
         (delete-window window)
       ;; Otherwise, show/create eshell
       (let ((buf (or buffer (get-buffer-create buffer-name))))
-        (pop-to-buffer buf)
-        (unless (derived-mode-p 'eshell-mode)
-          (eshell-mode)
-          (eshell))))))
+        (with-current-buffer buf
+          (unless (derived-mode-p 'eshell-mode)
+            (eshell-mode)))
+        (pop-to-buffer buf)))))
 
 (defun eshell-cd-to-dired-dir-and-switch ()
   "CD the eshell popup to the directory of the current dired buffer, then switch to it.
