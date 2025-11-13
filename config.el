@@ -1887,11 +1887,9 @@ Version 2022-05-21"
             #'my/agent-shell-set-project-directory-advice)
 
 ;; Path translation for containerized ACP
-;; Use the built-in agent-shell--resolve-devcontainer-path but override the config
-;; reading to return /workspace directly, avoiding .devcontainer/devcontainer.json.
+;; Override to return /workspace directly when using container, avoiding .devcontainer/devcontainer.json
 (defun my/agent-shell-override-devcontainer-workspace-path (original-fn cwd)
-  "Return /workspace directly if using container runner, otherwise call ORIGINAL-FN.
-CWD is ignored when using container runner."
+  "Return /workspace directly if using container runner, otherwise call ORIGINAL-FN."
   (if agent-shell-container-command-runner
       "/workspace"
     (funcall original-fn cwd)))
@@ -1929,22 +1927,26 @@ my/agent-shell--force-local setting from agent session."
   "Start Claude Code, optionally in container.
 With prefix arg USE-CONTAINER, run in container with wrapper."
   (interactive "P")
-  ;; Temporarily override the global variables
-  (let ((agent-shell-container-command-runner
-         (if use-container '("claudebox" "exec") nil))
-        (agent-shell-path-resolver-function
-         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
+  ;; Capture the values in lexical variables for the lambda closure
+  (let* ((container-runner (if use-container '("claudebox" "exec") nil))
+         (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
+         ;; Bind dynamic variables when creating the config
+         (agent-shell-container-command-runner container-runner)
+         (agent-shell-path-resolver-function path-resolver))
     ;; Create config and start the shell
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
-      ;; Replace the client-maker with our own that respects use-container
+      ;; Replace the client-maker with our own that uses lexical closure
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
-                    (setq-local my/agent-shell--use-container use-container))
-                  (let ((agent-shell-container-command-runner
-                         (if use-container '("claudebox" "exec") nil))
-                        (agent-shell-path-resolver-function
-                         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
+                    (setq-local my/agent-shell--use-container use-container)
+                    ;; Set buffer-local variables for the agent shell
+                    (when use-container
+                      (setq-local agent-shell-container-command-runner container-runner)
+                      (setq-local agent-shell-path-resolver-function path-resolver)))
+                  ;; Use lexically captured values and rebind dynamically
+                  (let ((agent-shell-container-command-runner container-runner)
+                        (agent-shell-path-resolver-function path-resolver))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
@@ -1952,22 +1954,22 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   "Start Gemini, optionally in container.
 With prefix arg USE-CONTAINER, run in container with wrapper."
   (interactive "P")
-  ;; Temporarily override the global variables
-  (let ((agent-shell-container-command-runner
-         (if use-container '("claudebox" "exec") nil))
-        (agent-shell-path-resolver-function
-         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
+  ;; Capture the values in lexical variables for the lambda closure
+  (let* ((container-runner (if use-container '("claudebox" "exec") nil))
+         (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
+         ;; Bind dynamic variables when creating the config
+         (agent-shell-container-command-runner container-runner)
+         (agent-shell-path-resolver-function path-resolver))
     ;; Create config and start the shell
-    (let ((config (agent-shell-google-make-gemini-config )))
-      ;; Replace the client-maker with our own that respects use-container
+    (let ((config (agent-shell-google-make-gemini-config)))
+      ;; Replace the client-maker with our own that uses lexical closure
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
                     (setq-local my/agent-shell--use-container use-container))
-                  (let ((agent-shell-container-command-runner
-                         (if use-container '("claudebox" "exec") nil))
-                        (agent-shell-path-resolver-function
-                         (if use-container #'agent-shell--resolve-devcontainer-path nil)))
+                  ;; Use lexically captured values and rebind dynamically
+                  (let ((agent-shell-container-command-runner container-runner)
+                        (agent-shell-path-resolver-function path-resolver))
                     (agent-shell-google-make-gemini-client :buffer buffer))))
       (agent-shell-start :config config))))
 
