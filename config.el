@@ -1925,7 +1925,7 @@ my/agent-shell--force-local setting from agent session."
 
 (defun my/agent-shell-anthropic-start-claude-code (use-container)
   "Start Claude Code, optionally in container.
-With prefix arg USE-CONTAINER, run in container with wrapper."
+With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissions mode."
   (interactive "P")
   ;; Capture the values in lexical variables for the lambda closure
   (let* ((container-runner (if use-container '("claudebox" "exec") nil))
@@ -1948,6 +1948,34 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
                   (let ((agent-shell-container-command-runner container-runner)
                         (agent-shell-path-resolver-function path-resolver))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
+      ;; Add hook to set bypass permissions mode after session creation for container mode
+      (when use-container
+        (let ((original-welcome (map-elt config :welcome-function)))
+          (map-put! config :welcome-function
+                    (lambda (_config)
+                      ;; Set bypass permissions mode after session is created (as side effect)
+                      (run-with-timer
+                       0.5 nil
+                       (lambda ()
+                         (when (and (derived-mode-p 'agent-shell-mode)
+                                    (map-nested-elt (agent-shell--state) '(:session :id)))
+                           (acp-send-request
+                            :client (map-elt (agent-shell--state) :client)
+                            :request (acp-make-session-set-mode-request
+                                      :session-id (map-nested-elt (agent-shell--state) '(:session :id))
+                                      :mode-id "bypassPermissions")
+                            :on-success (lambda (_response)
+                                          (let ((updated-session (map-elt (agent-shell--state) :session)))
+                                            (map-put! updated-session :mode-id "bypassPermissions")
+                                            (map-put! (agent-shell--state) :session updated-session)
+                                            (message "Session mode set to: Bypass Permissions")
+                                            (agent-shell--update-header-and-mode-line)))
+                            :on-failure (lambda (error _raw-message)
+                                          (message "Failed to set bypass permissions mode: %s" error))))))
+                      ;; Return the welcome message string
+                      (if original-welcome
+                          (funcall original-welcome _config)
+                        nil)))))
       (agent-shell-start :config config))))
 
 (defun my/agent-shell-google-start-gemini (use-container)
