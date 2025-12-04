@@ -824,6 +824,30 @@ it."
               (setq-local completion-at-point-functions
                           (delq 'ispell-completion-at-point completion-at-point-functions)))))
 
+;;; Minuet AI
+
+(use-package! minuet
+  :config
+  ;; Load the claude-cli extension
+  (require 'minuet-claude-cli)
+  
+  ;; Use Claude CLI provider (uses `claude -p` instead of API)
+  (setq minuet-provider 'claude-cli)
+  
+  ;; Use Haiku model (smallest/fastest)
+  (plist-put minuet-claude-cli-options :model "claude-haiku-4-5-20251001")
+  
+  ;; Keybindings for overlay ghost text UI (like GitHub Copilot)
+  (map! :i "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
+        :i "M-]" #'minuet-next-suggestion          ; Cycle to next suggestion
+        :i "M-[" #'minuet-previous-suggestion      ; Cycle to previous suggestion
+        :i "C-g" #'minuet-dismiss                  ; Dismiss current suggestion
+        :i "C-<return>" #'minuet-accept-suggestion ; Accept and insert full suggestion
+        :i "C-e" #'minuet-accept-suggestion-line)  ; Accept one line of suggestion
+  
+  ;; Alternative: minibuffer-based completion
+  (map! :nvi "C-c C-n" #'minuet-complete-with-minibuffer))
+
 
 ;;   ;; (setq! corfu-preview-current nil
 ;;   ;;        corfu-preselect 'first
@@ -1952,29 +1976,34 @@ With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissi
       (when use-container
         (let ((original-welcome (map-elt config :welcome-function)))
           (map-put! config :welcome-function
-                    (lambda (_config)
+                    (lambda (config)
                       ;; Set bypass permissions mode after session is created (as side effect)
+                      ;; Use longer delay to ensure session is fully initialized
                       (run-with-timer
-                       0.5 nil
+                       2.0 nil
                        (lambda ()
-                         (when (and (derived-mode-p 'agent-shell-mode)
-                                    (map-nested-elt (agent-shell--state) '(:session :id)))
-                           (acp-send-request
-                            :client (map-elt (agent-shell--state) :client)
-                            :request (acp-make-session-set-mode-request
-                                      :session-id (map-nested-elt (agent-shell--state) '(:session :id))
-                                      :mode-id "bypassPermissions")
-                            :on-success (lambda (_response)
-                                          (let ((updated-session (map-elt (agent-shell--state) :session)))
-                                            (map-put! updated-session :mode-id "bypassPermissions")
-                                            (map-put! (agent-shell--state) :session updated-session)
-                                            (message "Session mode set to: Bypass Permissions")
-                                            (agent-shell--update-header-and-mode-line)))
-                            :on-failure (lambda (error _raw-message)
-                                          (message "Failed to set bypass permissions mode: %s" error))))))
+                         (message "[Bypass] Timer fired, checking session...")
+                         (if (and (derived-mode-p 'agent-shell-mode)
+                                  (map-nested-elt (agent-shell--state) '(:session :id)))
+                             (progn
+                               (message "[Bypass] Session found, setting mode...")
+                               (acp-send-request
+                                :client (map-elt (agent-shell--state) :client)
+                                :request (acp-make-session-set-mode-request
+                                          :session-id (map-nested-elt (agent-shell--state) '(:session :id))
+                                          :mode-id "bypassPermissions")
+                                :on-success (lambda (_response)
+                                              (let ((updated-session (map-elt (agent-shell--state) :session)))
+                                                (map-put! updated-session :mode-id "bypassPermissions")
+                                                (map-put! (agent-shell--state) :session updated-session)
+                                                (message "✓ Session mode set to: Bypass Permissions")
+                                                (agent-shell--update-header-and-mode-line)))
+                                :on-failure (lambda (error _raw-message)
+                                              (message "✗ Failed to set bypass permissions mode: %s" error))))
+                           (message "[Bypass] Session not ready yet"))))
                       ;; Return the welcome message string
                       (if original-welcome
-                          (funcall original-welcome _config)
+                          (funcall original-welcome config)
                         nil)))))
       (agent-shell-start :config config))))
 
