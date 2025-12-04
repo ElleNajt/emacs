@@ -828,22 +828,19 @@ it."
 
 (use-package! minuet
   :config
-  ;; Load the claude-cli extension
-  (require 'minuet-claude-cli)
+  ;; Load the ACP extension
+  (require 'minuet-acp)
   
-  ;; Use Claude CLI provider (uses `claude -p` instead of API)
-  (setq minuet-provider 'claude-cli)
-  
-  ;; Use Haiku model (smallest/fastest)
-  (plist-put minuet-claude-cli-options :model "claude-haiku-4-5-20251001")
+  ;; Use ACP provider (persistent session via claude-code-acp)
+  (setq minuet-provider 'acp)
   
   ;; Keybindings for overlay ghost text UI (like GitHub Copilot)
-  (map! :i "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
-        :i "M-]" #'minuet-next-suggestion          ; Cycle to next suggestion
-        :i "M-[" #'minuet-previous-suggestion      ; Cycle to previous suggestion
-        :i "C-g" #'minuet-dismiss                  ; Dismiss current suggestion
-        :i "C-<return>" #'minuet-accept-suggestion ; Accept and insert full suggestion
-        :i "C-e" #'minuet-accept-suggestion-line)  ; Accept one line of suggestion
+  (map! :in "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
+        :in "M-]" #'minuet-next-suggestion          ; Cycle to next suggestion
+        :in "M-[" #'minuet-previous-suggestion      ; Cycle to previous suggestion
+        :in "C-g" #'minuet-dismiss                  ; Dismiss current suggestion
+        :in "C-<return>" #'minuet-accept-suggestion ; Accept and insert full suggestion
+        :in "C-e" #'minuet-accept-suggestion-line)  ; Accept one line of suggestion
   
   ;; Alternative: minibuffer-based completion
   (map! :nvi "C-c C-n" #'minuet-complete-with-minibuffer))
