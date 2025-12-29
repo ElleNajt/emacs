@@ -10,10 +10,6 @@
 ;; Use minibuffer/echo area messages instead of popups
 (setq claude-command-notification-style 'message)
 
-;; Define emacs-mcp-port if not already defined (prevents errors in subprocesses)
-(defvar emacs-mcp-port nil
-  "Port for Emacs MCP server. Not used but prevents errors in subprocess calls.")
-
 ;; ;;; ACP Point Preservation
 ;; ;; Preserve cursor position when ACP MCP server saves files
 ;; (defvar-local acp--saved-point nil
@@ -275,6 +271,15 @@
       (-> (buffer-file-name)
           (f-dirname)
           (dired)))))
+
+;; Configure default programs for file types in Dired
+(after! dired
+  ;; Set default programs for shell commands (!)
+  (setq dired-guess-shell-alist-user
+        '(("\\.html?\\'" "open -a Firefox")
+          ("\\.pdf\\'" "open -a Preview")
+          ("\\.\\(?:mp3\\|m4a\\|flac\\|wav\\|ogg\\)\\'" "open -g -a VLC")
+          ("\\.\\(?:mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
 
 ;; (use-package parinfer-rust-mode
 ;;   :hook emacs-lisp-mode
@@ -1563,6 +1568,28 @@ Version 2022-05-21"
 ;; make magit bearable in nixpkgs
 ;; (setq magit-refresh-verbose t)
 
+;;; Open audio/video files in VLC
+(defun open-in-vlc (file)
+  "Open FILE in VLC without stealing focus."
+  (interactive "fFile: ")
+  (start-process "vlc" nil "open" "-g" "-a" "VLC" (expand-file-name file)))
+
+;; Auto-open .wav and other media files in VLC when opening in Emacs
+(add-to-list 'auto-mode-alist '("\\.wav\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.m3u\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.flac\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.ogg\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.m4a\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.mp4\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.mkv\\'" . open-in-vlc))
+(add-to-list 'auto-mode-alist '("\\.avi\\'" . open-in-vlc))
+
+;; Configure dired ! command to use VLC for media files
+(after! dired-aux
+  (setq dired-guess-shell-alist-user
+        '(("\\.\\(wav\\|mp3\\|flac\\|m3u\\|ogg\\|m4a\\|mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
+
 (with-eval-after-load 'magit
   (defvar my/big-repos '("nixpkgs" )
     "List of strings identifying large repositories for magit optimization.")
@@ -1862,14 +1889,14 @@ Version 2022-05-21"
 
 
 ;;; MCP Server Configuration
-;; (use-package! emacs-mcp
-;;   :config
-;;   ;; Optionally load example tools
-;;   (require 'mcp-tools)
+(use-package! emacs-mcp
+  :config
+  ;; Optionally load example tools
+  (require 'mcp-tools)
 
-;;   ;; Start the MCP server
-;;   (emacs-mcp-start-server)
-;;   )
+  ;; Start the MCP server
+  (emacs-mcp-start-server)
+  )
 
 (monet-mode)
 (add-hook 'claude-code-process-environment-functions #'monet-start-server-function)
@@ -1878,7 +1905,7 @@ Version 2022-05-21"
 
 ;; Enable ACP logging for debugging
 ;; DISABLED: May cause threading issues with redisplay
-;; (setq acp-logging-enabled t)
+(setq acp-logging-enabled t)
 
 ;; Container configuration
 ;; Set to nil to run locally by default - use prefix arg (C-u) to run in container
@@ -1949,7 +1976,7 @@ my/agent-shell--force-local setting from agent session."
 With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissions mode."
   (interactive "P")
   ;; Capture the values in lexical variables for the lambda closure
-  (let* ((container-runner (if use-container '("claudebox" "exec") nil))
+  (let* ((container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
          ;; Bind dynamic variables when creating the config
          (agent-shell-container-command-runner container-runner)
@@ -1957,6 +1984,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissi
     ;; Create config and start the shell
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
       ;; Replace the client-maker with our own that uses lexical closure
+      ;; IMPORTANT: Must bind variables AROUND the call to make-claude-client
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
@@ -1965,43 +1993,50 @@ With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissi
                     (when use-container
                       (setq-local agent-shell-container-command-runner container-runner)
                       (setq-local agent-shell-path-resolver-function path-resolver)))
-                  ;; Use lexically captured values and rebind dynamically
+                  ;; Dynamically bind the variables during client creation
+                  ;; This is critical - agent-shell-container-command-runner must be bound
+                  ;; when agent-shell--make-acp-client is called
                   (let ((agent-shell-container-command-runner container-runner)
-                        (agent-shell-path-resolver-function path-resolver))
+                        (agent-shell-path-resolver-function path-resolver)
+                        (default-directory (or (agent-shell-cwd) default-directory)))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
       ;; Add hook to set bypass permissions mode after session creation for container mode
       (when use-container
         (let ((original-welcome (map-elt config :welcome-function)))
           (map-put! config :welcome-function
                     (lambda (config)
-                      ;; Set bypass permissions mode after session is created (as side effect)
-                      ;; Use longer delay to ensure session is fully initialized
-                      (run-with-timer
-                       2.0 nil
-                       (lambda ()
-                         (message "[Bypass] Timer fired, checking session...")
-                         (if (and (derived-mode-p 'agent-shell-mode)
-                                  (map-nested-elt (agent-shell--state) '(:session :id)))
-                             (progn
-                               (message "[Bypass] Session found, setting mode...")
-                               (acp-send-request
-                                :client (map-elt (agent-shell--state) :client)
-                                :request (acp-make-session-set-mode-request
-                                          :session-id (map-nested-elt (agent-shell--state) '(:session :id))
-                                          :mode-id "bypassPermissions")
-                                :on-success (lambda (_response)
-                                              (let ((updated-session (map-elt (agent-shell--state) :session)))
-                                                (map-put! updated-session :mode-id "bypassPermissions")
-                                                (map-put! (agent-shell--state) :session updated-session)
-                                                (message "✓ Session mode set to: Bypass Permissions")
-                                                (agent-shell--update-header-and-mode-line)))
-                                :on-failure (lambda (error _raw-message)
-                                              (message "✗ Failed to set bypass permissions mode: %s" error))))
-                           (message "[Bypass] Session not ready yet"))))
-                      ;; Return the welcome message string
+                      ;; Capture the current buffer for the timer
+                      (let ((target-buffer (current-buffer)))
+                        ;; Set bypass permissions mode after session is created (as side effect)
+                        ;; Use longer delay to ensure session is fully initialized
+                        (run-with-timer
+                         2.0 nil
+                         (lambda ()
+                           (message "[Bypass] Timer fired, checking session...")
+                           (when (buffer-live-p target-buffer)
+                             (with-current-buffer target-buffer
+                               (if (and (derived-mode-p 'agent-shell-mode)
+                                        (map-nested-elt (agent-shell--state) '(:session :id)))
+                                   (progn
+                                     (message "[Bypass] Session found, setting mode...")
+                                     (acp-send-request
+                                      :client (map-elt (agent-shell--state) :client)
+                                      :request (acp-make-session-set-mode-request
+                                                :session-id (map-nested-elt (agent-shell--state) '(:session :id))
+                                                :mode-id "bypassPermissions")
+                                      :on-success (lambda (_response)
+                                                    (let ((updated-session (map-elt (agent-shell--state) :session)))
+                                                      (map-put! updated-session :mode-id "bypassPermissions")
+                                                      (map-put! (agent-shell--state) :session updated-session)
+                                                      (message "✓ Session mode set to: Bypass Permissions")
+                                                      (agent-shell--update-header-and-mode-line)))
+                                      :on-failure (lambda (error _raw-message)
+                                                    (message "✗ Failed to set bypass permissions mode: %s" error))))
+                                 (message "[Bypass] Session not ready yet")))))))
+                      ;; Return the welcome message string - must return a string!
                       (if original-welcome
                           (funcall original-welcome config)
-                        nil)))))
+                        "")))))
       (agent-shell-start :config config))))
 
 (defun my/agent-shell-google-start-gemini (use-container)
@@ -2165,7 +2200,7 @@ In org-mode without selection:
   - If in a source block, sends the block with results.
   - Otherwise, sends the current org subtree.
 In non-org buffers without selection, sends the filename.
-Includes file path in the message.
+Includes file path and line numbers in the message.
 With prefix argument PREFIX (\\[universal-argument]), prompt for a custom message to send along with the content."
   (interactive "P")
   
@@ -2181,17 +2216,22 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
       (if (use-region-p)
           ;; Visual selection is active - send the selected region (works anywhere)
           (let ((region-begin (region-beginning))
-                (region-end (region-end)))
+                (region-end (region-end))
+                (start-line (line-number-at-pos (region-beginning)))
+                (end-line (line-number-at-pos (region-end))))
             (setq full-block (buffer-substring-no-properties region-begin region-end))
             
-            ;; Format with clear header
+            ;; Format with clear header including line numbers
             (setq full-block 
                   (concat 
                    (when custom-message
                      (concat custom-message "\n\n"))
                    "Here's a selection"
                    (when file-path
-                     (concat " from `" file-path "`"))
+                     (concat " from `" file-path ":" (number-to-string start-line) 
+                             (when (/= start-line end-line)
+                               (concat "-" (number-to-string end-line)))
+                             "`"))
                    ":\n\n```\n"
                    full-block
                    "```")))
@@ -2204,6 +2244,7 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
                   ;; Capture source block with results
                   (let* ((block-begin (org-element-property :begin element))
                          (block-end (org-element-property :end element))
+                         (block-line (line-number-at-pos block-begin))
                          (lang (org-element-property :language element)))
                     
                     ;; Get the source block
@@ -2235,14 +2276,14 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
                         (setq full-block (concat full-block 
                                                  (buffer-substring-no-properties results-start (point))))))
                     
-                    ;; Format with clear header including file path
+                    ;; Format with clear header including file path and line number
                     (setq full-block 
                           (concat 
                            (when custom-message
                              (concat custom-message "\n\n"))
                            "Here's an org-mode source block"
                            (when file-path
-                             (concat " from `" file-path "`"))
+                             (concat " from `" file-path ":" (number-to-string block-line) "`"))
                            ":\n\n```\n"
                            full-block
                            "```")))
@@ -2252,37 +2293,40 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
                     (progn
                       (org-back-to-heading t)
                       (let ((subtree-begin (point))
+                            (subtree-line (line-number-at-pos (point)))
                             (subtree-end (save-excursion (org-end-of-subtree t t) (point))))
                         (setq full-block (buffer-substring-no-properties subtree-begin subtree-end))
                         
-                        ;; Format with clear header
+                        ;; Format with clear header including line number
                         (setq full-block 
                               (concat 
                                (when custom-message
                                  (concat custom-message "\n\n"))
                                "Here's an org-mode subtree"
                                (when file-path
-                                 (concat " from `" file-path "`"))
+                                 (concat " from `" file-path ":" (number-to-string subtree-line) "`"))
                                ":\n\n```\n"
                                full-block
                                "```"))))
-                  ;; If we can't find a heading, send the file path
+                  ;; If we can't find a heading, send the file path with cursor line
                   (error
                    (setq full-block 
                          (concat
                           (when custom-message
                             (concat custom-message "\n\n"))
                           (if file-path
-                              (concat "Here's the file path (not at an org heading): `" file-path "`")
+                              (concat "Here's the file path (not at an org heading): `" file-path 
+                                      ":" (number-to-string (line-number-at-pos)) "`")
                             "Current buffer has no associated file")))))))
           
-          ;; Not in org-mode and no selection - send filename
+          ;; Not in org-mode and no selection - send filename with cursor line
           (setq full-block 
                 (concat
                  (when custom-message
                    (concat custom-message "\n\n"))
                  (if file-path
-                     (concat "Here's the file path: `" file-path "`")
+                     (concat "Here's the file path: `" file-path ":" 
+                             (number-to-string (line-number-at-pos)) "`")
                    "Current buffer has no associated file"))))))
     
     (unless full-block
@@ -2456,3 +2500,125 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 
 ;; (add-hook 'org-mode-hook #'elle/org-mode-jit-lock-settings)
 
+
+(global-auto-revert-mode 1)
+(setq global-auto-revert-non-file-buffers t)
+
+;;; Obsidian.el configuration with org-mode integration
+(use-package! obsidian
+  :config
+  ;; Set your vault path - customize this to your actual vault location
+  (setq obsidian-directory "~/obsidian"
+        ;; Optional: set a default directory for new notes (inbox pattern)
+        obsidian-inbox-directory "~/obsidian/inbox")
+  
+  ;; Enable wiki-style links in markdown
+  (setq markdown-enable-wiki-links t)
+  
+  ;; Start global obsidian mode
+  (global-obsidian-mode t)
+  
+  ;; Make Obsidian vault files visible to org-agenda
+  ;; Add this after customizing obsidian-directory
+  (after! org-agenda
+    (when (file-exists-p obsidian-directory)
+      (add-to-list 'org-agenda-files obsidian-directory)))
+  
+  ;; Function to convert org subtree to Obsidian note
+  (defun org-subtree-to-obsidian ()
+    "Export current org subtree as an Obsidian markdown note."
+    (interactive)
+    (let* ((heading (org-get-heading t t t t))
+           (filename (concat obsidian-directory "/" 
+                             (replace-regexp-in-string "[^[:alnum:] ]" "" heading)
+                             ".md"))
+           (content (save-excursion
+                      (org-back-to-heading t)
+                      (let ((begin (point))
+                            (end (progn (org-end-of-subtree t t) (point))))
+                        (buffer-substring-no-properties begin end)))))
+      ;; Convert org to markdown (basic conversion)
+      (with-temp-buffer
+        (insert content)
+        (org-mode)
+        (org-md-export-as-markdown)
+        (write-file filename))
+      (message "Exported to %s" filename)
+      (find-file filename)))
+  
+  ;; Function to create org link to Obsidian note
+  (defun org-insert-obsidian-link ()
+    "Insert an org-mode link to an Obsidian note."
+    (interactive)
+    (let* ((note-files (directory-files obsidian-directory nil "\\.md$"))
+           (note (completing-read "Link to note: " note-files))
+           (note-path (concat obsidian-directory "/" note))
+           (title (file-name-sans-extension note)))
+      (insert (format "[[file:%s][%s]]" note-path title))))
+  
+  ;; Function to open Obsidian notes in org-mode if they contain org syntax
+  (defun obsidian-open-in-org-mode ()
+    "Open current Obsidian markdown file in org-mode."
+    (interactive)
+    (when (and buffer-file-name
+               (string-prefix-p (expand-file-name obsidian-directory) 
+                                (expand-file-name buffer-file-name)))
+      (org-mode)))
+  
+  ;; Sync org TODO items to Obsidian vault
+  (defun org-sync-todos-to-obsidian ()
+    "Create/update an Obsidian note with all TODO items from org-agenda."
+    (interactive)
+    (let ((todo-file (concat obsidian-directory "/TODOs.md"))
+          (todos '()))
+      (org-map-entries
+       (lambda ()
+         (let ((heading (org-get-heading t t t t))
+               (state (org-get-todo-state))
+               (tags (org-get-tags))
+               (file (buffer-file-name)))
+           (when state
+             (push (format "- [%s] %s %s `%s`\n"
+                           (if (string= state "DONE") "x" " ")
+                           heading
+                           (if tags (concat "(" (string-join tags ", ") ")") "")
+                           (file-name-nondirectory file))
+                   todos))))
+       "TODO|DONE|ACTIVE|NEXT|WAITING"
+       'agenda)
+      (with-temp-file todo-file
+        (insert "# All TODOs from Org-Mode\n\n")
+        (insert "Last synced: " (format-time-string "%Y-%m-%d %H:%M:%S") "\n\n")
+        (dolist (todo (nreverse todos))
+          (insert todo)))
+      (message "Synced %d todos to %s" (length todos) todo-file)))
+  
+  ;; Function to reference Obsidian notes from org-roam style
+  (defun obsidian-insert-wikilink-as-org ()
+    "Insert Obsidian-style [[wikilink]] that works in org-mode."
+    (interactive)
+    (let* ((note-files (directory-files obsidian-directory nil "\\.md$"))
+           (note (completing-read "Link to note: " note-files))
+           (title (file-name-sans-extension note)))
+      (insert (format "[[%s]]" title))))
+  
+  ;; Keybindings under SPC n o (notes > obsidian)
+  ;; (map! :leader
+  ;;       (:prefix ("n o" . "obsidian")
+  ;;        :desc "Capture new note" "c" #'obsidian-capture
+  ;;        :desc "Insert link to note" "l" #'obsidian-insert-link
+  ;;        :desc "Jump to note" "j" #'obsidian-jump
+  ;;        :desc "Search notes" "s" #'obsidian-search
+  ;;        :desc "Find by tag" "t" #'obsidian-tag-find
+  ;;        :desc "Follow link at point" "f" #'obsidian-follow-link-at-point
+  ;;        :desc "Backlinks panel" "b" #'obsidian-backlinks-mode
+  ;;        ;; Org integration commands
+  ;;        :desc "Export org subtree to Obsidian" "e" #'org-subtree-to-obsidian
+  ;;        :desc "Insert org link to note" "i" #'org-insert-obsidian-link
+  ;;        :desc "Sync TODOs to Obsidian" "S" #'org-sync-todos-to-obsidian
+  ;;        :desc "Open note in org-mode" "o" #'obsidian-open-in-org-mode))
+  
+  ;; Optional: Use org-mode for .md files in Obsidian vault
+  ;; Comment out if you prefer markdown-mode
+  (add-to-list 'auto-mode-alist 
+               `(,(concat (regexp-quote (expand-file-name obsidian-directory)) "/.*\\.md\\'") . org-mode)))
