@@ -54,6 +54,7 @@
 
 (map! :leader "h T" 'modus-themes-toggle)
 
+
 ;; (setq doom-theme 'doom-shades-of-purple)
 ;; (setq doom-theme 'doom-feather-dark)
 ;;; Evil
@@ -1848,17 +1849,17 @@ Version 2022-05-21"
   (load! "mcp/claude-code-auto-revert-hook")
   (setup-claude-auto-revert))
 
-(use-package claude-command
-  :after claude-code
-  :config
-  ;; Set up the org notifications listener
-  (claude-command-setup)
-  
-  ;; Optional: Enable auto-advance queue mode
-  ;; (setq claude-command-auto-advance-queue t)
-  
-  ;; Load keybindings
-  (require 'claude-command-keybindings))
+;; (use-package claude-command
+;;   :after claude-code
+;;   :config
+;;   ;; Set up the org notifications listener
+;;   (claude-command-setup)
+
+;;   ;; Optional: Enable auto-advance queue mode
+;;   ;; (setq claude-command-auto-advance-queue t)
+
+;;   ;; Load keybindings
+;;   (require 'claude-command-keybindings))
 
 (map! :map gptel-mode-map "C-c m" #'gptel-menu)
 
@@ -1891,9 +1892,6 @@ Version 2022-05-21"
 ;;; MCP Server Configuration
 (use-package! emacs-mcp
   :config
-  ;; Optionally load example tools
-  (require 'mcp-tools)
-
   ;; Start the MCP server
   (emacs-mcp-start-server)
   )
@@ -2070,7 +2068,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
-      :desc "Start Gemini Code" "o g g" #'my/agent-shell-google-start-gemini
+      :desc "Start Gemini Code" "o g m" #'my/agent-shell-google-start-gemini
       :desc "Start Claude Code" "o c" #'my/agent-shell-anthropic-start-claude-code)
 
 ;; Display shell command output buffers at bottom in small window
@@ -2182,7 +2180,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;; (add-variable-watcher 'shell-maker--busy #'my/agent-shell-watch-busy-for-keep-going)
 
 (with-eval-after-load 'agent-shell
-  (setq agent-shell--transcript-file-path-function
+  (setq agent-shell-transcript-file-path-function
         #'agent-shell--default-transcript-file-path))
 
 ;;; acp claude

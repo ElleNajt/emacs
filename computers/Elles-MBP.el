@@ -193,3 +193,10 @@
   ;;       ")" #'tidal-stop-d10)
 
   (add-hook 'org-mode-hook 'org-tidal-mode))
+;;; Frame Settings
+
+;; Use maximized instead of native fullscreen to avoid macOS freeze issues
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+;; Remap fullscreen toggle to use maximized (avoids macOS animation freezes)
+(map! "M-<f10>" #'toggle-frame-maximized
+      "s-<return>" #'toggle-frame-maximized)

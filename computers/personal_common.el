@@ -22,8 +22,13 @@
   (setq gptel-log-level 'info)
 
   (defun get-anthropic-api-key ()
-    "Return dummy key - we use Claude CLI instead"
-    "sk-ant-dummy-key-not-used")
+    "Read API key from ~/.config/anthropic/api_key"
+    (let ((api-key-file (expand-file-name "~/.config/anthropic/api_key")))
+      (if (file-exists-p api-key-file)
+          (string-trim (with-temp-buffer
+                         (insert-file-contents api-key-file)
+                         (buffer-string)))
+        (error "API key file not found: %s" api-key-file))))
 
   (unless gptel-anthropic-initialized
     (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
@@ -47,7 +52,7 @@
   ;; M-x gptel-menu (C-c RET), then press 'b' to select backend, choose "Claude"
 
   (setq
-   gptel-model 'claude-3-5-sonnet-20241022 ;  "claude-3-opus-20240229" also available
+   gptel-model 'claude-opus-4-20250514 ; Latest Opus 4 model (also available: 'claude-sonnet-4-20250514, 'claude-3-5-sonnet-20241022)
    gptel-org-branching-context nil
    gptel-default-mode 'org-mode
    gptel-max-tokens 8192
@@ -208,7 +213,26 @@
 
 (after! tramp
   (set-default 'tramp-auto-save-directory "~/.emacs.d/.tramp-autosave")
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  
+  ;; Performance improvements
+  (setq remote-file-name-inhibit-cache nil)
+  (setq tramp-verbose 1)  ; Reduce logging overhead
+  
+  ;; Reuse connections across programs (git, ls, etc.)
+  (setq tramp-use-connection-share t)
+  
+  ;; Keep connections alive for 4 hours
+  (setq tramp-connection-timeout 14400))
+
+(defun tramp/afp-runpod ()
+  "Connect to AFP RunPod cluster via TRAMP.
+Uses SSH config entry 'afp-runpod' from ~/.ssh/config"
+  (interactive)
+  (find-file "/ssh:afp-runpod:/workspace-vast/lnajt/"))
+
+(map! :leader
+      :desc "TRAMP to AFP RunPod" "f a" #'tramp/afp-runpod)
 
 
 ;;; aider
@@ -730,4 +754,10 @@ Select GPU type and optionally customize the Docker image."
 (after! agent-shell 
 
   (setq agent-shell-anthropic-authentication
-        (agent-shell-anthropic-make-authentication :login t)))
+        (agent-shell-anthropic-make-authentication :api-key (get-anthropic-api-key)))
+  
+  ;; Set default model to Opus
+  ;; It may be opus by default already?
+  ;; (setq agent-shell-anthropic-default-model-id "claude-opus-4-20250514")
+
+  )

@@ -1,5 +1,5 @@
 #+title: Scratch
-#+PROPERTY: header-args:python :results output drawer :python "./venv/bin/python3" :async t :tangle yes :session $PROJECT_NAME_ScratchPython
+#+PROPERTY: header-args:python :results output drawer :python "./.venv/bin/python3" :async t :tangle yes :session $PROJECT_NAME_ScratchPython
 
 #+begin_src python
 
