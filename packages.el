@@ -208,7 +208,7 @@
 (package! agent-shell-manager :recipe (:host github :repo "ElleNajt/agent-shell-manager"))
 
 (package! minuet
-  :recipe (:local-repo "~/code/minuet-ai.el"))
+  :recipe (:host github :repo "ElleNajt/minuet-ai.el"))
 
 (package! obsidian
   :recipe (:host github :repo "licht1stein/obsidian.el"))
