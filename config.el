@@ -5,6 +5,11 @@
 (require 'general)
 (require 'predd)
 (require 'yasnippet)
+(require 'spray)
+
+;;; Spray Configuration
+(after! spray
+  (setq spray-wpm 900))
 
 ;;; Claude Command
 ;; Use minibuffer/echo area messages instead of popups
@@ -1971,70 +1976,29 @@ my/agent-shell--force-local setting from agent session."
 
 (defun my/agent-shell-anthropic-start-claude-code (use-container)
   "Start Claude Code, optionally in container.
-With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissions mode."
+With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissions mode.
+Container mode uses bypassPermissions, normal mode uses acceptEdits."
   (interactive "P")
-  ;; Capture the values in lexical variables for the lambda closure
   (let* ((container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
-         ;; Bind dynamic variables when creating the config
+         (session-mode-id (if use-container "bypassPermissions" "acceptEdits"))
          (agent-shell-container-command-runner container-runner)
          (agent-shell-path-resolver-function path-resolver))
-    ;; Create config and start the shell
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
+      ;; Set the default session mode based on container vs normal
+      (map-put! config :default-session-mode-id (lambda () session-mode-id))
       ;; Replace the client-maker with our own that uses lexical closure
-      ;; IMPORTANT: Must bind variables AROUND the call to make-claude-client
       (map-put! config :client-maker
                 (lambda (buffer)
                   (with-current-buffer buffer
                     (setq-local my/agent-shell--use-container use-container)
-                    ;; Set buffer-local variables for the agent shell
                     (when use-container
                       (setq-local agent-shell-container-command-runner container-runner)
                       (setq-local agent-shell-path-resolver-function path-resolver)))
-                  ;; Dynamically bind the variables during client creation
-                  ;; This is critical - agent-shell-container-command-runner must be bound
-                  ;; when agent-shell--make-acp-client is called
                   (let ((agent-shell-container-command-runner container-runner)
                         (agent-shell-path-resolver-function path-resolver)
                         (default-directory (or (agent-shell-cwd) default-directory)))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
-      ;; Add hook to set bypass permissions mode after session creation for container mode
-      (when use-container
-        (let ((original-welcome (map-elt config :welcome-function)))
-          (map-put! config :welcome-function
-                    (lambda (config)
-                      ;; Capture the current buffer for the timer
-                      (let ((target-buffer (current-buffer)))
-                        ;; Set bypass permissions mode after session is created (as side effect)
-                        ;; Use longer delay to ensure session is fully initialized
-                        (run-with-timer
-                         2.0 nil
-                         (lambda ()
-                           (message "[Bypass] Timer fired, checking session...")
-                           (when (buffer-live-p target-buffer)
-                             (with-current-buffer target-buffer
-                               (if (and (derived-mode-p 'agent-shell-mode)
-                                        (map-nested-elt (agent-shell--state) '(:session :id)))
-                                   (progn
-                                     (message "[Bypass] Session found, setting mode...")
-                                     (acp-send-request
-                                      :client (map-elt (agent-shell--state) :client)
-                                      :request (acp-make-session-set-mode-request
-                                                :session-id (map-nested-elt (agent-shell--state) '(:session :id))
-                                                :mode-id "bypassPermissions")
-                                      :on-success (lambda (_response)
-                                                    (let ((updated-session (map-elt (agent-shell--state) :session)))
-                                                      (map-put! updated-session :mode-id "bypassPermissions")
-                                                      (map-put! (agent-shell--state) :session updated-session)
-                                                      (message "✓ Session mode set to: Bypass Permissions")
-                                                      (agent-shell--update-header-and-mode-line)))
-                                      :on-failure (lambda (error _raw-message)
-                                                    (message "✗ Failed to set bypass permissions mode: %s" error))))
-                                 (message "[Bypass] Session not ready yet")))))))
-                      ;; Return the welcome message string - must return a string!
-                      (if original-welcome
-                          (funcall original-welcome config)
-                        "")))))
       (agent-shell-start :config config))))
 
 (defun my/agent-shell-google-start-gemini (use-container)
@@ -2365,6 +2329,8 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
   (map! :leader
         :desc "Send to agent shell" "c s" #'send-to-agent-shell))
 
+
+(setq agent-shell-anthropic-default-model-id "opus")
 ;; Custom read-string that starts in evil normal mode for multiline editing
 (defun my/read-string-in-normal-mode (prompt &optional initial-input)
   "Read string with minibuffer starting in evil normal mode for vim editing."
@@ -2620,3 +2586,4 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
   ;; Comment out if you prefer markdown-mode
   (add-to-list 'auto-mode-alist 
                `(,(concat (regexp-quote (expand-file-name obsidian-directory)) "/.*\\.md\\'") . org-mode)))
+
