@@ -11,9 +11,15 @@
 (after! spray
   (setq spray-wpm 900))
 
-;;; Claude Command
-;; Use minibuffer/echo area messages instead of popups
-(setq claude-command-notification-style 'message)
+;;; Automatically create parent directories when saving files
+(add-hook 'before-save-hook
+          (lambda ()
+            (when buffer-file-name
+              (let ((dir (file-name-directory buffer-file-name)))
+                (when (and dir (not (file-exists-p dir)))
+                  (make-directory dir t))))))
+
+
 
 ;; ;;; ACP Point Preservation
 ;; ;; Preserve cursor position when ACP MCP server saves files
@@ -840,10 +846,10 @@ it."
 (use-package! minuet
   :config
   ;; Load the ACP extension
-  (require 'minuet-acp)
+  ;; (require 'minuet-acp)
   
   ;; Use ACP provider (persistent session via claude-code-acp)
-  (setq minuet-provider 'acp)
+  ;; (setq minuet-provider 'acp)
   
   ;; Keybindings for overlay ghost text UI (like GitHub Copilot)
   (map! :in "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
@@ -1297,6 +1303,10 @@ Special format specifiers:
 ;;; org
 ;; Minimal UI
 (after! org-modern
+  ;; Use only triangles that render in Menlo (avoid U+2BC8, U+2BC6)
+  (setq org-modern-fold-stars
+        '(("▶" . "▼") ("▷" . "▽") ("▸" . "▾") ("▹" . "▿") ("▸" . "▾")))
+
   (package-initialize)
   (menu-bar-mode -1)
   (tool-bar-mode -1)
@@ -1543,19 +1553,22 @@ Version 2022-05-21"
   :quit t)
 
 (after! gptel
-  (let ((eldritch-names '("Nyarlathotep" "Yog-Sothoth" "Azathoth" "Shub-Niggurath" "Cthulhu"
-                          "Hastur" "Dagon" "Yig" "Tsathoggua" "Ithaqua" "Abhoth" "Atlach-Nacha"
-                          "Cyäegha" "Ghatanothoa" "Mordiggian" "Nug" "Yeb" "Zoth-Ommog"))
-        (mortal-titles '("Seeker of Forbidden Knowledge" "Disciple of Chaos" "Cultist"
-                         "Paranormal Investigator" "Occult Scholar" "Keeper of Ancient Tomes"
-                         "Dweller in Darkness" "Reader of Elder Signs" "Servant of the Old Ones"
-                         "Wanderer in Dreams" "Delver of Secrets" "Mad Prophet"
-                         "Observer of the Void" "Student of Non-Euclidean Geometry"
-                         "Keeper of Forbidden Lore" "Witness to the Unknown")))
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-          (format "* %s\n" (nth (random (length mortal-titles)) mortal-titles)))
-    (setf (alist-get 'org-mode gptel-response-prefix-alist)
-          (format "* %s\n" (nth (random (length eldritch-names)) eldritch-names))))
+  ;; Lovecraftian theme (temporarily disabled)
+  ;; (let ((eldritch-names '("Nyarlathotep" "Yog-Sothoth" "Azathoth" "Shub-Niggurath" "Cthulhu"
+  ;;                         "Hastur" "Dagon" "Yig" "Tsathoggua" "Ithaqua" "Abhoth" "Atlach-Nacha"
+  ;;                         "Cyäegha" "Ghatanothoa" "Mordiggian" "Nug" "Yeb" "Zoth-Ommog"))
+  ;;       (mortal-titles '("Seeker of Forbidden Knowledge" "Disciple of Chaos" "Cultist"
+  ;;                        "Paranormal Investigator" "Occult Scholar" "Keeper of Ancient Tomes"
+  ;;                        "Dweller in Darkness" "Reader of Elder Signs" "Servant of the Old Ones"
+  ;;                        "Wanderer in Dreams" "Delver of Secrets" "Mad Prophet"
+  ;;                        "Observer of the Void" "Student of Non-Euclidean Geometry"
+  ;;                        "Keeper of Forbidden Lore" "Witness to the Unknown")))
+  ;;   (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+  ;;         (format "* %s\n" (nth (random (length mortal-titles)) mortal-titles)))
+  ;;   (setf (alist-get 'org-mode gptel-response-prefix-alist)
+  ;;         (format "* %s\n" (nth (random (length eldritch-names)) eldritch-names))))
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "* Elle\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "* Claude\n")
 
   (setq gptel-org-branching-context nil
         gptel-default-mode 'org-mode  
@@ -1676,9 +1689,11 @@ Version 2022-05-21"
          (file-path (file-relative-name current-path git-root))
          (line-num (unless is-dired (line-number-at-pos)))
          (github-url (replace-regexp-in-string
-                      "\\(.*\\)@\\(.*\\):\\(.*\\)\\.git"
-                      "https://\\2/\\3"
-                      remote-url)))
+                      "\\.git$" ""
+                      (replace-regexp-in-string
+                       "\\(.*\\)@\\(.*\\):\\(.*\\)"
+                       "https://\\2/\\3"
+                       remote-url))))
     (kill-new (if line-num
                   (format "%s/blob/%s/%s#L%d" github-url branch file-path line-num)
                 (format "%s/tree/%s/%s" github-url branch file-path)))
@@ -1845,28 +1860,14 @@ Version 2022-05-21"
               (TeX-command-run-all nil))))
 
 
-(use-package claude-code
-  :config
-  (map! "C-c c" claude-code-command-map)
-  ;; Set sandbox program path
-  (setq claude-code-sandbox-program "/Users/elle/.nix-profile/bin/claudebox")
-  ;; Load and setup auto-revert hook
-  (load! "mcp/claude-code-auto-revert-hook")
-  (setup-claude-auto-revert))
 
-;; (use-package claude-command
-;;   :after claude-code
-;;   :config
-;;   ;; Set up the org notifications listener
-;;   (claude-command-setup)
-
-;;   ;; Optional: Enable auto-advance queue mode
-;;   ;; (setq claude-command-auto-advance-queue t)
-
-;;   ;; Load keybindings
-;;   (require 'claude-command-keybindings))
 
 (map! :map gptel-mode-map "C-c m" #'gptel-menu)
+
+;; Unbind RET in gptel-mode to avoid conflict with normal editing
+(map! :map gptel-mode-map
+      :n "RET" nil
+      :v "RET" nil)
 
 
 (map! :after vterm
@@ -1882,7 +1883,7 @@ Version 2022-05-21"
 ;;   :config
 ;;   (map! :leader "o s" #'mistty))
 
-(setq claude-code-terminal-backend 'vterm)
+
 
 (use-package! eat
   :config
@@ -1895,14 +1896,13 @@ Version 2022-05-21"
 
 
 ;;; MCP Server Configuration
-(use-package! emacs-mcp
-  :config
-  ;; Start the MCP server
-  (emacs-mcp-start-server)
-  )
+;; (use-package! emacs-mcp
+;;   :config
+;;   ;; Start the MCP server
+;;   (emacs-mcp-start-server)
+;;   )
 
 (monet-mode)
-(add-hook 'claude-code-process-environment-functions #'monet-start-server-function)
 
 ;;; agent-shell
 
@@ -1929,9 +1929,15 @@ Version 2022-05-21"
 
 ;; Ensure agent process spawns in project directory (not home)
 ;; This is critical for claudebox to derive the correct container name from pwd
+(defvar my/agent-shell-override-cwd nil
+  "When non-nil, use this directory instead of agent-shell-cwd.")
+
 (defun my/agent-shell-set-project-directory-advice (orig-fn &rest args)
-  "Set default-directory to project directory when creating client."
-  (let ((default-directory (or (agent-shell-cwd) default-directory)))
+  "Set default-directory to project directory when creating client.
+Respects `my/agent-shell-override-cwd' if set."
+  (let ((default-directory (or my/agent-shell-override-cwd
+                               (agent-shell-cwd)
+                               default-directory)))
     (apply orig-fn args)))
 
 (advice-add 'agent-shell-anthropic-make-client :around
@@ -1974,16 +1980,24 @@ my/agent-shell--force-local setting from agent session."
 
 (advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
-(defun my/agent-shell-anthropic-start-claude-code (use-container)
-  "Start Claude Code, optionally in container.
-With prefix arg USE-CONTAINER, run in container with wrapper and bypass permissions mode.
-Container mode uses bypassPermissions, normal mode uses acceptEdits."
+(defun my/agent-shell-anthropic-start-claude-code (arg)
+  "Start Claude Code with various modes based on prefix arg.
+No prefix: normal mode (acceptEdits, git root directory).
+C-u: container mode (bypassPermissions, git root directory).
+C-u C-u: container mode (bypassPermissions, current directory)."
   (interactive "P")
-  (let* ((container-runner (if use-container '("claudebox" "--bash" "-c") nil))
+  (let* ((use-container (consp arg))
+         (use-current-dir (equal arg '(16)))  ; C-u C-u = (16)
+         (container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
          (session-mode-id (if use-container "bypassPermissions" "acceptEdits"))
+         (working-dir (if use-current-dir
+                          default-directory
+                        nil))  ; nil means use agent-shell-cwd (git root)
          (agent-shell-container-command-runner container-runner)
-         (agent-shell-path-resolver-function path-resolver))
+         (agent-shell-path-resolver-function path-resolver)
+         ;; Set override so advice uses our working-dir
+         (my/agent-shell-override-cwd working-dir))
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
       ;; Set the default session mode based on container vs normal
       (map-put! config :default-session-mode-id (lambda () session-mode-id))
@@ -1997,7 +2011,7 @@ Container mode uses bypassPermissions, normal mode uses acceptEdits."
                       (setq-local agent-shell-path-resolver-function path-resolver)))
                   (let ((agent-shell-container-command-runner container-runner)
                         (agent-shell-path-resolver-function path-resolver)
-                        (default-directory (or (agent-shell-cwd) default-directory)))
+                        (my/agent-shell-override-cwd working-dir))
                     (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
