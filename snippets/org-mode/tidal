@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: tidal
+# key: tidal
+# condition: t
+# --
+#+begin_src tidal
+$1
+#+end_src
