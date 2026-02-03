@@ -1,10 +1,40 @@
 **/secret.el
+.env
+/secrets/
 /experimental/*
 keep.el
 *.pdf
 .DS_Store
 *.png
 
-
 custom.el
 .aider*
+.claude/
+.agents/
+.agent-shell/
+
+# Cache files
+.projectile-cache.eld
+__pycache__/
+*.pyc
+
+# Build artifacts
+target/
+.direnv/
+
+# Temp/test files
+*.log
+logs/
+test.org
+testfile.txt
+poem.txt
+primes.txt
+emacs.txt
+transcript.txt
+
+# Generated tex files
+texfrag/
+
+# Misc
+Brewfile
+python/pymockbabel/
