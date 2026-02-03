@@ -137,9 +137,8 @@
 
 
 (package! tidal
-  :recipe (:host github
-           :branch "add_org_mode_support"
-           :repo "ElleNajt/Tidal"))
+  :recipe (:local-repo "/Users/elle/code/Tidal"
+           :files ("tidal.el")))
 
 (package! org-inline-anim
   :recipe (
@@ -170,16 +169,7 @@
 (package! org-collect-code-todos
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
 
-(package! claude-code
-  :recipe (:host github :repo "stevemolitor/claude-code.el"
-           :files ("*.el" "examples/hooks/*.el")))
 
-(package! claude-command
-  :recipe (
-           :host github :repo "ElleNajt/claude-command.el"
-           :files ("claude-command.el"
-                   "claude-command-keybindings.el"
-                   "mcp-tools.el")))
 
 (package! monet
   :recipe (:host github :repo "stevemolitor/monet"))
@@ -207,8 +197,13 @@
 (package! agent-shell :recipe (:host github :repo "xenodium/agent-shell"))
 (package! agent-shell-manager :recipe (:host github :repo "ElleNajt/agent-shell-manager"))
 
-(package! minuet
-  :recipe (:host github :repo "ElleNajt/minuet-ai.el"))
+;; (package! minuet
+;;   :recipe (:host github :repo "ElleNajt/minuet-ai.el"))
 
 (package! obsidian
   :recipe (:host github :repo "licht1stein/obsidian.el"))
+
+(package! spray
+  :recipe (:host github :repo "emacsmirror/spray"))
+
+(package! ement)
