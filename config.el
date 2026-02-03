@@ -1,11 +1,20 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
+;;; Lossage - track more keystrokes (default is 300)
+(setq lossage-size 100000)
 
 ;;; Requirements
 (require 'general)
 (require 'predd)
 (require 'yasnippet)
 (require 'spray)
+
+;;; Parens Tools (for Claude to call via emacsclient)
+(load "~/.claude/containers/emacs/parens-tools.el" t)
+
+;;; Google Slides Export
+(add-to-list 'load-path (expand-file-name "gslides" doom-user-dir))
+(require 'org-google)
 
 ;;; Spray Configuration
 (after! spray
@@ -18,6 +27,17 @@
               (let ((dir (file-name-directory buffer-file-name)))
                 (when (and dir (not (file-exists-p dir)))
                   (make-directory dir t))))))
+
+;;; Override Doom's directory creation to not prompt (for agent-shell compatibility)
+;; Doom's doom-create-missing-directories-h prompts with y-or-n-p which blocks agents
+(advice-add 'doom-create-missing-directories-h :override
+            (lambda ()
+              "Auto-create missing directories without prompting."
+              (unless (file-remote-p buffer-file-name)
+                (let ((parent-directory (file-name-directory buffer-file-name)))
+                  (when (and parent-directory (not (file-directory-p parent-directory)))
+                    (make-directory parent-directory 'parents)
+                    t)))))
 
 
 
@@ -841,26 +861,26 @@ it."
               (setq-local completion-at-point-functions
                           (delq 'ispell-completion-at-point completion-at-point-functions)))))
 
-;;; Minuet AI
+;;; Minuet AI (disabled)
 
-(use-package! minuet
-  :config
-  ;; Load the ACP extension
-  ;; (require 'minuet-acp)
-  
-  ;; Use ACP provider (persistent session via claude-code-acp)
-  ;; (setq minuet-provider 'acp)
-  
-  ;; Keybindings for overlay ghost text UI (like GitHub Copilot)
-  (map! :in "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
-        :in "M-]" #'minuet-next-suggestion          ; Cycle to next suggestion
-        :in "M-[" #'minuet-previous-suggestion      ; Cycle to previous suggestion
-        :in "C-g" #'minuet-dismiss                  ; Dismiss current suggestion
-        :in "C-<return>" #'minuet-accept-suggestion ; Accept and insert full suggestion
-        :in "C-e" #'minuet-accept-suggestion-line)  ; Accept one line of suggestion
-  
-  ;; Alternative: minibuffer-based completion
-  (map! :nvi "C-c C-n" #'minuet-complete-with-minibuffer))
+;; (use-package! minuet
+;;   :config
+;;   ;; Load the ACP extension
+;;   ;; (require 'minuet-acp)
+
+;;   ;; Use ACP provider (persistent session via claude-code-acp)
+;;   ;; (setq minuet-provider 'acp)
+
+;;   ;; Keybindings for overlay ghost text UI (like GitHub Copilot)
+;;   (map! :in "C-c TAB" #'minuet-show-suggestion      ; Show AI completion as ghost text
+;;         :in "M-]" #'minuet-next-suggestion          ; Cycle to next suggestion
+;;         :in "M-[" #'minuet-previous-suggestion      ; Cycle to previous suggestion
+;;         :in "C-g" #'minuet-dismiss                  ; Dismiss current suggestion
+;;         :in "C-<return>" #'minuet-accept-suggestion ; Accept and insert full suggestion
+;;         :in "C-e" #'minuet-accept-suggestion-line)  ; Accept one line of suggestion
+
+;;   ;; Alternative: minibuffer-based completion
+;;   (map! :nvi "C-c C-n" #'minuet-complete-with-minibuffer))
 
 
 ;;   ;; (setq! corfu-preview-current nil
@@ -1908,7 +1928,7 @@ Version 2022-05-21"
 
 ;; Enable ACP logging for debugging
 ;; DISABLED: May cause threading issues with redisplay
-(setq acp-logging-enabled t)
+(setq acp-logging-enabled nil)
 
 ;; Container configuration
 ;; Set to nil to run locally by default - use prefix arg (C-u) to run in container
@@ -2161,6 +2181,25 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (setq agent-shell-transcript-file-path-function
         #'agent-shell--default-transcript-file-path))
 
+;;; agent-shell-to-go - take your agent-shell sessions anywhere
+(defun my/keychain-get (service account)
+  "Get a secret from macOS Keychain."
+  (string-trim (shell-command-to-string
+                (format "security find-generic-password -s '%s' -a '%s' -w" service account))))
+
+(use-package! agent-shell-to-go
+  :load-path "~/code/agent-shell-to-go/"
+  :after agent-shell
+  :config
+  (setq agent-shell-to-go-bot-token (my/keychain-get "agent-shell-to-go" "bot-token"))
+  (setq agent-shell-to-go-channel-id (my/keychain-get "agent-shell-to-go" "channel-id"))
+  (setq agent-shell-to-go-app-token (my/keychain-get "agent-shell-to-go" "app-token"))
+  (setq agent-shell-to-go-user-id (my/keychain-get "agent-shell-to-go" "user-id"))
+  (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
+  (setq agent-shell-to-go-default-folder "~/code")
+  (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
+  (agent-shell-to-go-setup))
+
 ;;; acp claude
 
 (require 'acp)
@@ -2412,46 +2451,76 @@ If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
             (eshell-mode)))
         (pop-to-buffer buf)))))
 
-(defun eshell-cd-to-dired-dir-and-switch ()
-  "CD the eshell popup to the directory of the current dired buffer, then switch to it.
-Similar to `vterm-cd-to-dired-dir-and-switch' but for eshell."
+;;; MisTTY configuration
+(use-package! mistty
+  :commands (mistty mistty-other-window mistty-in-project)
+  :config
+  ;; mistty-buffer-name must be a list, not a string
+  ;; Default is '("mistty" mistty-buffer-name-user mistty-buffer-name-host)
+  (setq mistty-buffer-name '("mistty")))
+
+(defun +mistty/toggle ()
+  "Toggle a mistty popup window."
+  (interactive)
+  (let* ((buffer-name (format "*mistty:%s*"
+                              (if (bound-and-true-p persp-mode)
+                                  (safe-persp-name (get-current-persp))
+                                "main")))
+         (buffer (get-buffer buffer-name))
+         (window (and buffer (get-buffer-window buffer))))
+    (if window
+        (delete-window window)
+      (let ((buf (or buffer
+                     (save-window-excursion
+                       (mistty)
+                       (rename-buffer buffer-name)
+                       (current-buffer)))))
+        (pop-to-buffer buf
+                       '(display-buffer-in-side-window
+                         (side . bottom)
+                         (window-height . 0.3)))))))
+
+(defun +mistty/here (&optional arg)
+  "Open a mistty buffer in the current window at project root.
+If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
+  (interactive "P")
+  (let ((default-directory (if arg
+                               default-directory
+                             (or (doom-project-root) default-directory))))
+    (mistty)))
+
+(defun mistty-cd-to-dired-dir-and-switch ()
+  "CD the mistty popup to the directory of the current dired buffer, then switch to it."
   (interactive)
   (let ((dir (if (eq major-mode 'dired-mode)
                  (dired-current-directory)
                default-directory)))
-    (if-let* ((eshell-buffer-name
-               (format "*doom:eshell-popup:%s*"
+    (if-let* ((mistty-buffer-name
+               (format "*mistty:%s*"
                        (if (bound-and-true-p persp-mode)
                            (safe-persp-name (get-current-persp))
                          "main")))
-              (eshell-buffer (get-buffer eshell-buffer-name)))
+              (mistty-buffer (get-buffer mistty-buffer-name)))
         (progn
-          (pop-to-buffer eshell-buffer)
+          (pop-to-buffer mistty-buffer)
           (goto-char (point-max))
           (insert (format "cd \"%s\"" dir))
-          (eshell-send-input))
-      (message "No currently open eshell (press SPC o t)"))))
+          (comint-send-input))
+      (message "No currently open mistty (press SPC o t)"))))
 
-(defun +eshell/here (&optional arg)
-  "Open an eshell buffer in the current window at project root.
-If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
-  (interactive "P")
-  (let* ((default-directory (if arg
-                                default-directory
-                              (or (doom-project-root) default-directory))))
-    (eshell 'new)))
-
-;; Eshell keybindings (override vterm defaults)
+;; MisTTY keybindings
 (map! :leader
-      :desc "Toggle eshell popup" "o t" #'+eshell/toggle
-      :desc "Open eshell here" "o T" #'+eshell/here
-      ;; Keep vterm available too
+      :desc "Toggle mistty popup" "o t" #'+mistty/toggle
+      :desc "Open mistty here" "o T" #'+mistty/here
+      ;; Keep vterm and eshell available too
       :desc "Toggle vterm popup" "o v" #'+vterm/toggle
-      :desc "Open vterm here" "o V" #'+vterm/here)
+      :desc "Open vterm here" "o V" #'+vterm/here
+      :desc "Toggle eshell popup" "o e" #'+eshell/toggle
+      :desc "Open eshell here" "o E" #'+eshell/here)
 
 (map! :map dired-mode-map
       :leader
-      :desc "CD eshell to dired dir" "d t" #'eshell-cd-to-dired-dir-and-switch)
+      :desc "CD mistty to dired dir" "d t" #'mistty-cd-to-dired-dir-and-switch)
 
 
 
@@ -2465,9 +2534,25 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 ;; ;; Don't refontify the whole block on every change (org-specific variable)
 ;; (setq org-fontify-whole-block-delimiter-line nil)
 
-;; ;; Prevent vc-mode and projectile from scanning Trash directory (causes permission errors)
-;; ;; (add-to-list 'vc-directory-exclusion-list ".Trash")
-;; ;; (add-to-list 'projectile-globally-ignored-directories ".Trash")
+;; Prevent vc-mode and projectile from scanning Trash directory (causes permission errors)
+(add-to-list 'vc-directory-exclusion-list ".Trash")
+(after! `projectile
+  (add-to-list 'projectile-globally-ignored-directories ".Trash"))
+
+;; Fix nerd-icons-dir-is-submodule crashing on permission-denied directories like .Trash
+;; The original function tries to read .gitmodules without error handling
+(after! nerd-icons
+  (defun nerd-icons-dir-is-submodule (dir)
+    "Check if DIR is a git submodule, with error handling for inaccessible directories."
+    (ignore-errors
+      (let* ((gitmodules-dir (locate-dominating-file dir ".gitmodules"))
+             (gitmodules-file (and gitmodules-dir
+                                   (expand-file-name ".gitmodules" gitmodules-dir))))
+        (and gitmodules-file
+             (file-readable-p gitmodules-file)
+             (with-temp-buffer
+               (insert-file-contents gitmodules-file)
+               (re-search-forward (regexp-quote (file-name-nondirectory (directory-file-name dir))) nil t)))))))
 
 ;; ;; Make jit-lock less aggressive in org-mode only
 ;; (defun elle/org-mode-jit-lock-settings ()
@@ -2601,3 +2686,9 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
   (add-to-list 'auto-mode-alist 
                `(,(concat (regexp-quote (expand-file-name obsidian-directory)) "/.*\\.md\\'") . org-mode)))
 
+
+
+
+(map! :leader
+      ;; :desc "Find agent shell" "f c" #'agent-shell-manager-find-buffer
+      :desc "Search agent shells" "s c" #'agent-shell-manager-search)
