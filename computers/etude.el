@@ -10,10 +10,6 @@
 
 (load! (concat "personal_common" ))
 
-
-;;;
-()
-
 ;;; Dirvish settings
 ;; taken from https://github.com/alexluigit/dirvish/blob/main/docs/CUSTOMIZING.org
 
@@ -66,31 +62,6 @@
   (map! :map dired-mode-map
         :n "C-c o" #'dired-chown-elle))
 
-
-;;; email
-
-(setq +mu4e-gmail-accounts '(("lnajt4@gmail.com" . "/lnajt4")))
-
-(setq mu4e-index-cleanup nil
-      mu4e-index-lazy-check t)
-
-(set-email-account! "gmail"
-                    '((user-full-name . "Elle Najt")
-                      (mu4e-drafts-folder     . "/[Gmail].Drafts")
-                      (mu4e-compose-signature . "Elle Najt")
-                      (user-mail-address . "lnajt4@gmail.com")
-                      (smtpmail-servers-requiring-authorization . "smtp\\.gmail\\.com")
-                      (smtpmail-smtp-user . "lnajt4@gmail.com")
-                      (smtpmail-smtp-server   . "smtp.gmail.com"))
-                    t)
-
-(setq mu4e-maildir (expand-file-name "~/Maildir"))
-
-(setq user-email-address "lnajt4@gmail.com")
-(setq smtpmail-smtp-service 587)
-
-
-(setq mu4e-update-interval 60)
 
 ;; I'd liek to get tehse headers for org email?
 ;; (setq  ??
