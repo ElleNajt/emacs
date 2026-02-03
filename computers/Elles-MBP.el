@@ -79,7 +79,6 @@
 ;; turning off tree sitter globally
 ;; (load! "treesitter")
 
-
 ;;; Tidal cycles
 
 ;; (defun org-babel-execute:tidal (body params)
