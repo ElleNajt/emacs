@@ -2010,7 +2010,8 @@ C-u C-u: container mode (bypassPermissions, current directory)."
          (use-current-dir (equal arg '(16)))  ; C-u C-u = (16)
          (container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
-         (session-mode-id (if use-container "bypassPermissions" "acceptEdits"))
+         (session-mode-id "bypassPermissions" )  ;; YOLO
+         ;; (session-mode-id (if use-container "bypassPermissions" "acceptEdits"))
          (working-dir (if use-current-dir
                           default-directory
                         nil))  ; nil means use agent-shell-cwd (git root)
@@ -2198,6 +2199,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
   (setq agent-shell-to-go-default-folder "~/code")
   (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
+  (setq agent-shell-to-go-new-project-function #'new-python-project)
   (agent-shell-to-go-setup))
 
 ;;; acp claude
