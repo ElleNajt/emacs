@@ -90,6 +90,9 @@ Exports to ODT in Emacs, then runs Python upload async."
                           (shell-quote-argument odt-file)
                           format-flag)))
            (org-buf (current-buffer))
+           ;; Capture these for the closure
+           (captured-property property)
+           (captured-odt-file odt-file)
            (proc (start-process-shell-command "org-google-upload" "*org-google*" cmd)))
       
       ;; Add filter to capture stdout
@@ -115,7 +118,7 @@ Exports to ODT in Emacs, then runs Python upload async."
                    ;; Always save ID (updates create new files due to API limitation)
                    (when (buffer-live-p org-buf)
                      (with-current-buffer org-buf
-                       (org-google--set-id property new-id)))
+                       (org-google--set-id captured-property new-id)))
                    ;; Extract and show URL
                    (when (string-match "URL:\\(.+\\)" output)
                      (let ((url (string-trim (match-string 1 output))))
@@ -123,8 +126,8 @@ Exports to ODT in Emacs, then runs Python upload async."
                        (browse-url url))))
                (message "Push failed: %s" output)))
            ;; Clean up ODT file
-           (when (file-exists-p odt-file)
-             (delete-file odt-file))))))))
+           (when (file-exists-p captured-odt-file)
+             (delete-file captured-odt-file))))))))
 
 (defun org-google--pull (format)
   "Pull changes from Google FORMAT (slides or doc) to current org buffer."
@@ -194,15 +197,22 @@ Uses Claude to intelligently merge changes while preserving org syntax."
     (user-error "Not in an org-mode buffer"))
 
   (let* ((org-file (buffer-file-name))
-         (cmd (format "%s %s push %s --slides"
-                      (shell-quote-argument org-google-python-executable)
-                      (shell-quote-argument org-google-python-script)
-                      (shell-quote-argument org-file))))
+         (odt-file (concat (file-name-sans-extension org-file) ".odt")))
 
     (save-buffer)
+    (message "Exporting to ODT...")
+
+    ;; Export to ODT first
+    (let ((org-confirm-babel-evaluate nil))
+      (org-odt-export-to-odt))
+
     (message "Creating new Google Slides presentation...")
 
-    (let ((output (shell-command-to-string cmd)))
+    (let* ((cmd (format "%s %s upload %s --slides"
+                        (shell-quote-argument org-google-python-executable)
+                        (shell-quote-argument org-google-python-script)
+                        (shell-quote-argument odt-file)))
+           (output (shell-command-to-string cmd)))
       (if (string-match "FILE_ID:\\(.+\\)" output)
           (let ((new-id (string-trim (match-string 1 output))))
             (when (y-or-n-p "Save new presentation ID to file? ")
@@ -212,7 +222,11 @@ Uses Claude to intelligently merge changes while preserving org syntax."
               (let ((url (string-trim (match-string 1 output))))
                 (message "Created: %s" url)
                 (browse-url url))))
-        (message "Push failed: %s" output)))))
+        (message "Push failed: %s" output))
+
+      ;; Clean up ODT file
+      (when (file-exists-p odt-file)
+        (delete-file odt-file)))))
 
 ;;;###autoload
 (defun org-google-push-doc-new ()
@@ -222,15 +236,22 @@ Uses Claude to intelligently merge changes while preserving org syntax."
     (user-error "Not in an org-mode buffer"))
 
   (let* ((org-file (buffer-file-name))
-         (cmd (format "%s %s push %s --doc"
-                      (shell-quote-argument org-google-python-executable)
-                      (shell-quote-argument org-google-python-script)
-                      (shell-quote-argument org-file))))
+         (odt-file (concat (file-name-sans-extension org-file) ".odt")))
 
     (save-buffer)
+    (message "Exporting to ODT...")
+
+    ;; Export to ODT first
+    (let ((org-confirm-babel-evaluate nil))
+      (org-odt-export-to-odt))
+
     (message "Creating new Google Doc...")
 
-    (let ((output (shell-command-to-string cmd)))
+    (let* ((cmd (format "%s %s upload %s --doc"
+                        (shell-quote-argument org-google-python-executable)
+                        (shell-quote-argument org-google-python-script)
+                        (shell-quote-argument odt-file)))
+           (output (shell-command-to-string cmd)))
       (if (string-match "FILE_ID:\\(.+\\)" output)
           (let ((new-id (string-trim (match-string 1 output))))
             (when (y-or-n-p "Save new document ID to file? ")
@@ -240,7 +261,11 @@ Uses Claude to intelligently merge changes while preserving org syntax."
               (let ((url (string-trim (match-string 1 output))))
                 (message "Created: %s" url)
                 (browse-url url))))
-        (message "Push failed: %s" output)))))
+        (message "Push failed: %s" output))
+
+      ;; Clean up ODT file
+      (when (file-exists-p odt-file)
+        (delete-file odt-file)))))
 
 (provide 'org-google)
 ;;; org-google.el ends here
