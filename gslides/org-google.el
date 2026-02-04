@@ -53,22 +53,38 @@
 
 (defun org-google--push (format)
   "Push current org buffer to Google FORMAT (slides or doc).
-Exports to ODT in Emacs, then runs Python upload async."
+For slides: converts org -> PPTX directly via pandoc (respects :noexport: tags).
+For docs: exports to ODT in Emacs, then converts via pandoc."
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org-mode buffer"))
 
   (let* ((org-file (buffer-file-name))
+         (base-name (file-name-sans-extension org-file))
          (property (if (eq format 'slides) "GSLIDES_ID" "GDOC_ID"))
          (file-id (org-google--get-id property))
          (format-flag (if (eq format 'slides) "--slides" "--doc"))
-         (odt-file (concat (file-name-sans-extension org-file) ".odt")))
+         ;; For slides: org -> pptx directly; for docs: org -> odt -> docx
+         (upload-file (if (eq format 'slides)
+                          (concat base-name ".pptx")
+                        (concat base-name ".odt"))))
 
     (save-buffer)
-    (message "Exporting to ODT...")
     
-    ;; Export to ODT (this respects #+OPTIONS:)
-    (let ((org-confirm-babel-evaluate nil))
-      (org-odt-export-to-odt))
+    (if (eq format 'slides)
+        ;; Slides: use pandoc directly for org -> pptx
+        (progn
+          (message "Converting to PPTX via pandoc...")
+          (let ((exit-code (call-process "pandoc" nil "*org-google*" nil
+                                         org-file
+                                         "-o" upload-file
+                                         "--slide-level=2")))
+            (unless (zerop exit-code)
+              (user-error "Pandoc conversion failed. Check *org-google* buffer"))))
+      ;; Docs: use org's ODT export
+      (progn
+        (message "Exporting to ODT...")
+        (let ((org-confirm-babel-evaluate nil))
+          (org-odt-export-to-odt))))
     
     ;; Now run Python upload async (doesn't block Emacs)
     (message "Uploading to Google %s (async)..." (if (eq format 'slides) "Slides" "Docs"))
@@ -81,18 +97,18 @@ Exports to ODT in Emacs, then runs Python upload async."
                     (format "%s %s upload %s %s --id %s"
                             (shell-quote-argument org-google-python-executable)
                             (shell-quote-argument org-google-python-script)
-                            (shell-quote-argument odt-file)
+                            (shell-quote-argument upload-file)
                             format-flag
                             (shell-quote-argument file-id))
                   (format "%s %s upload %s %s"
                           (shell-quote-argument org-google-python-executable)
                           (shell-quote-argument org-google-python-script)
-                          (shell-quote-argument odt-file)
+                          (shell-quote-argument upload-file)
                           format-flag)))
            (org-buf (current-buffer))
            ;; Capture these for the closure
            (captured-property property)
-           (captured-odt-file odt-file)
+           (captured-upload-file upload-file)
            (proc (start-process-shell-command "org-google-upload" "*org-google*" cmd)))
       
       ;; Add filter to capture stdout
@@ -125,9 +141,9 @@ Exports to ODT in Emacs, then runs Python upload async."
                        (message "Pushed to: %s" url)
                        (browse-url url))))
                (message "Push failed: %s" output)))
-           ;; Clean up ODT file
-           (when (file-exists-p captured-odt-file)
-             (delete-file captured-odt-file))))))))
+           ;; Clean up intermediate file
+           (when (file-exists-p captured-upload-file)
+             (delete-file captured-upload-file))))))))
 
 (defun org-google--pull (format)
   "Pull changes from Google FORMAT (slides or doc) to current org buffer."

@@ -253,25 +253,35 @@ Output ONLY the updated org file content, nothing else."""
 
 
 def cmd_upload(args):
-    """Upload ODT file to Google (called from Emacs after export).
+    """Upload file to Google (called from Emacs after export).
 
-    Converts ODT -> PPTX/DOCX via pandoc, then uploads to Google.
+    For slides: expects PPTX file (pandoc conversion done in Emacs)
+    For docs: expects ODT file, converts ODT -> DOCX via pandoc
     """
-    if not os.path.exists(args.odt_file):
-        print(f"Error: {args.odt_file} not found", file=sys.stderr)
+    if not os.path.exists(args.input_file):
+        print(f"Error: {args.input_file} not found", file=sys.stderr)
         sys.exit(1)
 
     output_format = "slides" if args.slides else "doc"
     mime_info = MIME_TYPES[output_format]
 
-    # Get title from ODT filename
-    title = Path(args.odt_file).stem
+    # Get title from input filename
+    title = Path(args.input_file).stem
+    input_ext = Path(args.input_file).suffix.lower()
 
-    # Convert ODT to Office format
-    office_path = convert_odt_to_office(args.odt_file, output_format)
-
-    # Clean up ODT now that we have the Office file
-    os.unlink(args.odt_file)
+    # Determine if we need to convert
+    if input_ext == ".pptx":
+        # PPTX ready for upload (slides from pandoc)
+        office_path = args.input_file
+        needs_cleanup = False
+    elif input_ext == ".odt":
+        # ODT needs conversion to DOCX (docs)
+        office_path = convert_odt_to_office(args.input_file, output_format)
+        os.unlink(args.input_file)
+        needs_cleanup = True
+    else:
+        print(f"Error: Unsupported file type {input_ext}", file=sys.stderr)
+        sys.exit(1)
 
     creds = get_credentials()
     drive_service = build("drive", "v3", credentials=creds)
@@ -284,8 +294,8 @@ def cmd_upload(args):
         else:
             file_id = upload_new(drive_service, office_path, title, output_format)
     finally:
-        # Clean up Office file
-        if os.path.exists(office_path):
+        # Clean up Office file if we created it
+        if needs_cleanup and os.path.exists(office_path):
             os.unlink(office_path)
 
     url = f"{mime_info['url_base']}{file_id}/edit"
@@ -330,9 +340,9 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Upload command (takes ODT, called from Emacs after export)
-    upload_parser = subparsers.add_parser("upload", help="Upload ODT to Google")
-    upload_parser.add_argument("odt_file", help="Path to ODT file")
+    # Upload command (takes PPTX for slides, ODT for docs)
+    upload_parser = subparsers.add_parser("upload", help="Upload PPTX/ODT to Google")
+    upload_parser.add_argument("input_file", help="Path to PPTX or ODT file")
     upload_format = upload_parser.add_mutually_exclusive_group(required=True)
     upload_format.add_argument("--slides", "-s", action="store_true")
     upload_format.add_argument("--doc", "-d", action="store_true")
