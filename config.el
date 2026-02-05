@@ -2209,7 +2209,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
                 (format "security find-generic-password -s '%s' -a '%s' -w" service account))))
 
 (use-package! agent-shell-to-go
-  :load-path "~/code/agent-shell-to-go/"
   :after agent-shell
   :config
   (setq agent-shell-to-go-bot-token (my/keychain-get "agent-shell-to-go" "bot-token"))
