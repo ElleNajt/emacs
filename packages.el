@@ -178,19 +178,7 @@
 
 (package! mistty)
 
-(package! emacs-mcp
-  :recipe (:host github :repo "ElleNajt/emacs-mcp"
-           :files ("*.el" "example/*.el" "mcp-proxy.sh" "agents/*.md" "post-build-hook.el")))
 
-;; Post-build hook that loads the actual hook implementation after download
-(add-hook 'straight-use-package-post-build-functions
-          (lambda (package)
-            (when (string= package "emacs-mcp")
-              (let ((hook-file (expand-file-name "post-build-hook.el" 
-                                                 (straight--build-dir package))))
-                (when (file-exists-p hook-file)
-                  (load hook-file nil nil t)
-                  (message "emacs-mcp: Post-build setup completed"))))))
 
 (package! shell-maker)
 (package! acp :recipe (:host github :repo "xenodium/acp.el"))

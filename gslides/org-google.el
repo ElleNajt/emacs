@@ -72,12 +72,23 @@ For docs: exports to ODT in Emacs, then converts via pandoc."
     
     (if (eq format 'slides)
         ;; Slides: use pandoc directly for org -> pptx
+        ;; Run from org file's directory so relative image paths work
+        ;; Strip :results: drawers so images get embedded properly
         (progn
           (message "Converting to PPTX via pandoc...")
-          (let ((exit-code (call-process "pandoc" nil "*org-google*" nil
-                                         org-file
-                                         "-o" upload-file
-                                         "--slide-level=2")))
+          (let* ((org-dir (file-name-directory org-file))
+                 (temp-org (make-temp-file "org-google-" nil ".org"))
+                 ;; Strip drawer markers so pandoc embeds images properly
+                 (sed-exit (call-process "sed" nil `(:file ,temp-org) nil
+                                         "-e" "s/^:results:$//"
+                                         "-e" "s/^:end:$//"
+                                         org-file))
+                 (exit-code (call-process "pandoc" nil "*org-google*" nil
+                                          temp-org
+                                          "-o" upload-file
+                                          "--slide-level=2"
+                                          (concat "--resource-path=" org-dir))))
+            (delete-file temp-org)
             (unless (zerop exit-code)
               (user-error "Pandoc conversion failed. Check *org-google* buffer"))))
       ;; Docs: use org's ODT export

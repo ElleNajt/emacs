@@ -1801,10 +1801,21 @@ Version 2022-05-21"
 
 ;;;  agenda optimization
 
+;; Prevent org-agenda from running startup operations
+(setq org-agenda-inhibit-startup t)
 
-(add-hook 'org-agenda-mode-hook (lambda ()
-                                  (when (eq major-mode 'org-agenda-mode)
-                                    (envrc-mode -1))))
+;; Temporarily disable ALL org-mode hooks during agenda scanning
+(defun my/agenda-with-minimal-hooks (orig-fun &rest args)
+  "Run agenda with org-mode-hook disabled for speed."
+  (let ((org-mode-hook nil)
+        (find-file-hook (cl-remove-if
+                         (lambda (f) (memq f '(envrc-mode undo-fu-session-recover)))
+                         find-file-hook)))
+    (apply orig-fun args)))
+
+(advice-add 'org-agenda-list :around #'my/agenda-with-minimal-hooks)
+(advice-add 'org-todo-list :around #'my/agenda-with-minimal-hooks)
+(advice-add 'org-agenda :around #'my/agenda-with-minimal-hooks)
 
 ;;; Collect todo settings
 
@@ -2004,14 +2015,18 @@ my/agent-shell--force-local setting from agent session."
   "Start Claude Code with various modes based on prefix arg.
 No prefix: normal mode (acceptEdits, git root directory).
 C-u: container mode (bypassPermissions, git root directory).
-C-u C-u: container mode (bypassPermissions, current directory)."
+C-u C-u: container mode (bypassPermissions, current directory).
+
+Special case: ~/code/secretary always uses 'default' mode (always ask)."
   (interactive "P")
   (let* ((use-container (consp arg))
          (use-current-dir (equal arg '(16)))  ; C-u C-u = (16)
          (container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
-         (session-mode-id "bypassPermissions" )  ;; YOLO
-         ;; (session-mode-id (if use-container "bypassPermissions" "acceptEdits"))
+         ;; Secretary project uses "default" (always ask) mode for security
+         (is-secretary (string-prefix-p (expand-file-name "~/code/secretary")
+                                        (expand-file-name default-directory)))
+         (session-mode-id (if is-secretary "default" "bypassPermissions"))
          (working-dir (if use-current-dir
                           default-directory
                         nil))  ; nil means use agent-shell-cwd (git root)
@@ -2063,7 +2078,10 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 (with-eval-after-load 'agent-shell
   ;; Inside agent-shell buffers
   (define-key agent-shell-mode-map (kbd "C-c !") #'my/agent-shell-insert-shell-command-output)
-  (define-key agent-shell-mode-map (kbd "C-c p") #'agent-shell-cycle-session-mode))
+  (define-key agent-shell-mode-map (kbd "C-c p") #'agent-shell-cycle-session-mode)
+
+  ;; Queue request with C-RET
+  (evil-define-key '(normal insert) agent-shell-mode-map (kbd "C-<return>") #'agent-shell-queue-request))
 
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
@@ -2088,9 +2106,11 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 (setq agent-shell-auto-save-transcript nil)
 
 ;; Disable shell-maker's save-on-close prompt for agent-shell buffers
+;; Also mark as "real" buffer so Doom doesn't skip them in buffer switching
 (add-hook 'agent-shell-mode-hook
           (lambda ()
-            (setq-local shell-maker-prompt-before-killing-buffer nil)))
+            (setq-local shell-maker-prompt-before-killing-buffer nil)
+            (setq-local doom-real-buffer-p t)))
 
 ;; Enable comint-mime in agent-shell buffers for rich content display
 ;; (use-package! comint-mime
@@ -2583,11 +2603,7 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
   ;; Start global obsidian mode
   (global-obsidian-mode t)
   
-  ;; Make Obsidian vault files visible to org-agenda
-  ;; Add this after customizing obsidian-directory
-  (after! org-agenda
-    (when (file-exists-p obsidian-directory)
-      (add-to-list 'org-agenda-files obsidian-directory)))
+
   
   ;; Function to convert org subtree to Obsidian note
   (defun org-subtree-to-obsidian ()

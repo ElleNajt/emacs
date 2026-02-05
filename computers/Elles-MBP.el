@@ -1,10 +1,15 @@
 ;;; -*- lexical-binding: t; -*-
 
 ;;; Org file locations
+;; Inbox files + current main project
 (setq
  org-agenda-files (append
-                   (directory-files-recursively "~/Documents/Notes" "\\.org$")
-                   (directory-files-recursively "~/Documents/OrgModeJupyter" "\\.org$"))
+                   '("~/Code/secretary/TODO/inbox.org"
+                     "~/Documents/Notes/inbox.org")
+                   (split-string
+                    (shell-command-to-string
+                     "find ~/Code/AlignmentResearch/AnthropicFellows/Projects/ControlMonitors -name '*.org' -not -path '*/.*' 2>/dev/null")
+                    "\n" t))
  org-directory "~/Documents/Notes")
 
 (after! org-mode
@@ -13,8 +18,7 @@
                  '("f" "Food journal entry" entry
                    (file+olp+datetree  "~/Documents/Notes/foodjournal.org")
                    "* %U %?\n%i" :prepend t))
-
-    (add-to-list 'org-agenda-custom-commands '("pa" "Aspen" tags-todo "aspen"))))
+    ))
 
 ;;; Local only settings
 
