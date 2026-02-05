@@ -198,6 +198,9 @@
   (add-hook 'org-mode-hook 'org-tidal-mode))
 ;;; Frame Settings
 
+;; Disable native fullscreen to avoid macOS animation freezes
+(setq ns-use-native-fullscreen nil)
+
 ;; Use maximized instead of native fullscreen to avoid macOS freeze issues
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 ;; Remap fullscreen toggle to use maximized (avoids macOS animation freezes)
