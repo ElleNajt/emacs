@@ -2211,13 +2211,12 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
         #'agent-shell--default-transcript-file-path))
 
 ;;; agent-shell-to-go - take your agent-shell sessions anywhere
-(defun my/keychain-get (service account)
-  "Get a secret from macOS Keychain. Warns loudly if empty."
-  (let ((result (string-trim (shell-command-to-string
-                              (format "security find-generic-password -s '%s' -a '%s' -w" service account)))))
+(defun my/pass-get (path)
+  "Get a secret from pass (password-store). Warns loudly if empty."
+  (let ((result (string-trim (shell-command-to-string (format "pass %s" path)))))
     (when (string-empty-p result)
       (display-warning 'agent-shell-to-go
-                       (format "KEYCHAIN FAILED: Could not get %s/%s - Slack integration won't work!" service account)
+                       (format "PASS FAILED: Could not get %s - Slack integration won't work!" path)
                        :error))
     result))
 
@@ -2230,10 +2229,10 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (run-with-timer
    0 nil
    (lambda ()
-     (setq agent-shell-to-go-bot-token (my/keychain-get "agent-shell-to-go" "bot-token"))
-     (setq agent-shell-to-go-channel-id (my/keychain-get "agent-shell-to-go" "channel-id"))
-     (setq agent-shell-to-go-app-token (my/keychain-get "agent-shell-to-go" "app-token"))
-     (setq agent-shell-to-go-user-id (my/keychain-get "agent-shell-to-go" "user-id"))
+     (setq agent-shell-to-go-bot-token (my/pass-get "agent-shell-to-go/bot-token"))
+     (setq agent-shell-to-go-channel-id (my/pass-get "agent-shell-to-go/channel-id"))
+     (setq agent-shell-to-go-app-token (my/pass-get "agent-shell-to-go/app-token"))
+     (setq agent-shell-to-go-user-id (my/pass-get "agent-shell-to-go/user-id"))
      (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
      (agent-shell-to-go-setup))))
 
