@@ -4,17 +4,18 @@
 (setq lossage-size 100000)
 
 ;;; Requirements
-(require 'general)
-(require 'predd)
-(require 'yasnippet)
-(require 'spray)
+(require 'general)  ; Needed early for keybinding macros
+;; Defer non-essential packages to idle time
+(run-with-idle-timer 2 nil (lambda () (require 'predd)))
+(run-with-idle-timer 2 nil (lambda () (require 'yasnippet)))
+(run-with-idle-timer 2 nil (lambda () (require 'spray)))
 
 ;;; Parens Tools (for Claude to call via emacsclient)
 (load "~/.claude/containers/emacs/parens-tools.el" t)
 
 ;;; Google Slides Export
 (add-to-list 'load-path (expand-file-name "gslides" doom-user-dir))
-(require 'org-google)
+(run-with-idle-timer 2 nil (lambda () (require 'org-google)))
 
 ;;; Spray Configuration
 (after! spray
@@ -152,13 +153,12 @@
 (setq org-babel-clojure-backend 'cider)
 
 ;;;;; Formatting
-(require 'reformatter)
-
-(reformatter-define zprint-format
-  :program "zprint"
-  :lighter " ZPrint")
-
-(add-hook 'clojure-mode-hook #'zprint-format-on-save-mode)
+(after! clojure-mode
+  (require 'reformatter)
+  (reformatter-define zprint-format
+    :program "zprint"
+    :lighter " ZPrint")
+  (add-hook 'clojure-mode-hook #'zprint-format-on-save-mode))
 
 
 ;; (after! eglot
@@ -337,9 +337,8 @@ it."
       (message "No currently open vterm (press SPC o t)"))))
 
 (map!
- (:map dired-mode-map                   ;; TODO[W6DKx0fHae] Why does this work?
-       ;; SCHEDULED: <2025-05-06 Tue>
-       (:leader "d t" #'vterm-cd-to-dired-dir-and-switch)))
+ (:map dired-mode-map
+       (:leader "d v" #'vterm-cd-to-dired-dir-and-switch)))
 
 
 
@@ -1741,12 +1740,12 @@ Version 2022-05-21"
     (message "Copied permalink to clipboard")))
 
 ;;; haskell
-
-(require 'ob-haskell)
-;; Enable org-babel for Haskell
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((haskell . t)))
+;; Defer ob-haskell loading until org is used
+(with-eval-after-load 'org
+  (require 'ob-haskell)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((haskell . t))))
 
 ;; (setq org-src-fontify-natively t)
 
@@ -1758,15 +1757,7 @@ Version 2022-05-21"
 ;;; animations
 
 
-;;; aider
-(require 'aidermacs)
-(setq aidermacs-backend 'vterm)
 
-(global-set-key (kbd "C-a") 'aidermacs-transient-menu)
-(setq aidermacs-vterm-multiline-newline-key "S-<return>")
-(setq aidermacs-watch-files t)
-(setq aidermacs-show-diff-after-change nil)
-(setq aidermacs-auto-commits nil)
 
 
 
@@ -1923,7 +1914,13 @@ Version 2022-05-21"
 ;;; Emacs Server
 (after! server
   (unless (server-running-p)
-    (server-start)))
+    (server-start))
+  ;; Watchdog: restart server if it dies
+  (run-with-timer 60 60
+                  (lambda ()
+                    (unless (server-running-p)
+                      (message "Server watchdog: restarting server")
+                      (server-start)))))
 
 
 ;;; MCP Server Configuration
@@ -2011,16 +2008,19 @@ my/agent-shell--force-local setting from agent session."
 
 (advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
-(defun my/agent-shell-anthropic-start-claude-code (arg)
+(defun my/agent-shell-anthropic-start-claude-code (arg &optional buffer-name)
   "Start Claude Code with various modes based on prefix arg.
 No prefix: normal mode (acceptEdits, git root directory).
 C-u: container mode (bypassPermissions, git root directory).
 C-u C-u: container mode (bypassPermissions, current directory).
+'use-current-dir: normal mode but use current directory (for programmatic use).
 
-Special case: ~/code/secretary always uses 'default' mode (always ask)."
+Special case: ~/code/secretary always uses 'default' mode (always ask).
+
+Optional BUFFER-NAME sets the buffer name directly."
   (interactive "P")
-  (let* ((use-container (consp arg))
-         (use-current-dir (equal arg '(16)))  ; C-u C-u = (16)
+  (let* ((use-container (and (consp arg) (not (eq arg 'use-current-dir))))
+         (use-current-dir (or (equal arg '(16)) (eq arg 'use-current-dir)))
          (container-runner (if use-container '("claudebox" "--bash" "-c") nil))
          (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
          ;; Secretary project uses "default" (always ask) mode for security
@@ -2037,6 +2037,9 @@ Special case: ~/code/secretary always uses 'default' mode (always ask)."
     (let ((config (agent-shell-anthropic-make-claude-code-config)))
       ;; Set the default session mode based on container vs normal
       (map-put! config :default-session-mode-id (lambda () session-mode-id))
+      ;; Set buffer name if provided
+      (when buffer-name
+        (map-put! config :buffer-name buffer-name))
       ;; Replace the client-maker with our own that uses lexical closure
       (map-put! config :client-maker
                 (lambda (buffer)
@@ -2079,6 +2082,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   ;; Inside agent-shell buffers
   (define-key agent-shell-mode-map (kbd "C-c !") #'my/agent-shell-insert-shell-command-output)
   (define-key agent-shell-mode-map (kbd "C-c p") #'agent-shell-cycle-session-mode)
+  (define-key agent-shell-mode-map (kbd "C-p") #'agent-shell-send-screenshot)
 
   ;; Queue request with C-RET
   (evil-define-key '(normal insert) agent-shell-mode-map (kbd "C-<return>") #'agent-shell-queue-request))
@@ -2086,7 +2090,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
       :desc "Start Gemini Code" "o g m" #'my/agent-shell-google-start-gemini
-      :desc "Start Claude Code" "o c" #'my/agent-shell-anthropic-start-claude-code)
+      :desc "Start Claude Code" "o c" #'meta-agent-shell-start-or-dispatcher)
 
 ;; Display shell command output buffers at bottom in small window
 (defun my/agent-shell-display-buffer-advice (orig-fn buffer)
@@ -2101,6 +2105,10 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 (advice-add 'agent-shell--display-buffer :around
             #'my/agent-shell-display-buffer-advice)
 
+
+;; Don't restore agent-shell buffers on restart - they'll be zombies
+(after! desktop
+  (add-to-list 'desktop-modes-not-to-save 'agent-shell-mode))
 
 ;; Disable auto-save transcript (live saving to .agents/transcripts/)
 (setq agent-shell-auto-save-transcript nil)
@@ -2204,27 +2212,64 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 
 ;;; agent-shell-to-go - take your agent-shell sessions anywhere
 (defun my/keychain-get (service account)
-  "Get a secret from macOS Keychain."
-  (string-trim (shell-command-to-string
-                (format "security find-generic-password -s '%s' -a '%s' -w" service account))))
+  "Get a secret from macOS Keychain. Warns loudly if empty."
+  (let ((result (string-trim (shell-command-to-string
+                              (format "security find-generic-password -s '%s' -a '%s' -w" service account)))))
+    (when (string-empty-p result)
+      (display-warning 'agent-shell-to-go
+                       (format "KEYCHAIN FAILED: Could not get %s/%s - Slack integration won't work!" service account)
+                       :error))
+    result))
 
 (use-package! agent-shell-to-go
   :after agent-shell
   :config
-  (setq agent-shell-to-go-bot-token (my/keychain-get "agent-shell-to-go" "bot-token"))
-  (setq agent-shell-to-go-channel-id (my/keychain-get "agent-shell-to-go" "channel-id"))
-  (setq agent-shell-to-go-app-token (my/keychain-get "agent-shell-to-go" "app-token"))
-  (setq agent-shell-to-go-user-id (my/keychain-get "agent-shell-to-go" "user-id"))
-  (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
   (setq agent-shell-to-go-default-folder "~/code")
   (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
   (setq agent-shell-to-go-new-project-function #'new-python-project)
-  (agent-shell-to-go-setup))
+  (run-with-timer
+   0 nil
+   (lambda ()
+     (setq agent-shell-to-go-bot-token (my/keychain-get "agent-shell-to-go" "bot-token"))
+     (setq agent-shell-to-go-channel-id (my/keychain-get "agent-shell-to-go" "channel-id"))
+     (setq agent-shell-to-go-app-token (my/keychain-get "agent-shell-to-go" "app-token"))
+     (setq agent-shell-to-go-user-id (my/keychain-get "agent-shell-to-go" "user-id"))
+     (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
+     (agent-shell-to-go-setup))))
+
+;;; meta-agent-shell - supervisory agent for monitoring sessions
+(use-package! meta-agent-shell
+  :after agent-shell
+  :config
+  (setq meta-agent-shell-heartbeat-file "~/heartbeat.org")
+  (setq meta-agent-shell-directory "~/.claude-meta/")
+  (setq meta-agent-shell-start-function #'my/agent-shell-anthropic-start-claude-code)
+  (setq meta-agent-shell-start-function-args '(nil))
+  (add-hook 'meta-agent-shell-before-spawn-hook
+            (lambda () (evil-window-split)))
+  
+  ;; Keybindings under SPC o m (open > meta-agent)
+  ;; Unbind mu4e from SPC o m first
+  (define-key doom-leader-map "om" nil)
+  (map! :leader
+        (:prefix ("o m" . "meta-agent")
+         :desc "Meta-agent session" "m" #'meta-agent-shell-start
+         :desc "Project dispatcher" "d" #'meta-agent-shell-jump-to-dispatcher
+         :desc "Start heartbeat" "h" #'meta-agent-shell-heartbeat-start
+         :desc "Stop heartbeat" "H" #'meta-agent-shell-heartbeat-stop
+         :desc "Send heartbeat now" "s" #'meta-agent-shell-heartbeat-send-now
+         :desc "STOP ALL AGENTS" "!" #'meta-agent-shell-big-red-button)))
+;; Don't auto-start heartbeat - call (meta-agent-shell-heartbeat-start) manually
 
 ;;; acp claude
-
-(require 'acp)
-(require 'agent-shell)
+;; Load OAuth token for claude-code-acp
+(setenv "CLAUDE_CODE_OAUTH_TOKEN"
+        (string-trim (with-temp-buffer
+                       (insert-file-contents "~/.ssh/claude-oauth-token")
+                       (buffer-string))))
+;; Load eagerly after Doom init so :after agent-shell hooks fire
+(use-package! acp :demand t)
+(use-package! agent-shell :demand t)
 
 
 ;;; Send org code block to agent shell
@@ -2493,9 +2538,10 @@ If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
         (delete-window window)
       (let ((buf (or buffer
                      (save-window-excursion
-                       (mistty)
-                       (rename-buffer buffer-name)
-                       (current-buffer)))))
+                       (let ((new-buf (mistty)))
+                         (with-current-buffer new-buf
+                           (rename-buffer buffer-name))
+                         new-buf)))))
         (pop-to-buffer buf
                        '(display-buffer-in-side-window
                          (side . bottom)
@@ -2526,22 +2572,39 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
           (pop-to-buffer mistty-buffer)
           (goto-char (point-max))
           (insert (format "cd \"%s\"" dir))
-          (comint-send-input))
+          (mistty-send-command))
       (message "No currently open mistty (press SPC o t)"))))
 
-;; MisTTY keybindings
+(defun eshell-cd-to-dired-dir-and-switch ()
+  "CD the eshell popup to the directory of the current dired buffer, then switch to it."
+  (interactive)
+  (let ((dir (if (eq major-mode 'dired-mode)
+                 (dired-current-directory)
+               default-directory)))
+    (if-let* ((eshell-buffer-name
+               (format "*doom:eshell-popup:%s*"
+                       (if (bound-and-true-p persp-mode)
+                           (safe-persp-name (get-current-persp))
+                         "main")))
+              (eshell-buffer (get-buffer eshell-buffer-name)))
+        (progn
+          (pop-to-buffer eshell-buffer)
+          (goto-char (point-max))
+          (eshell/cd dir)
+          (eshell-reset))
+      (message "No currently open eshell (press SPC o t)"))))
+
+;; Terminal keybindings - using eshell as primary (better evil integration)
 (map! :leader
-      :desc "Toggle mistty popup" "o t" #'+mistty/toggle
-      :desc "Open mistty here" "o T" #'+mistty/here
-      ;; Keep vterm and eshell available too
+      :desc "Toggle eshell popup" "o t" #'+eshell/toggle
+      :desc "Open eshell here" "o T" #'+eshell/here
+      ;; Keep vterm available
       :desc "Toggle vterm popup" "o v" #'+vterm/toggle
-      :desc "Open vterm here" "o V" #'+vterm/here
-      :desc "Toggle eshell popup" "o e" #'+eshell/toggle
-      :desc "Open eshell here" "o E" #'+eshell/here)
+      :desc "Open vterm here" "o V" #'+vterm/here)
 
 (map! :map dired-mode-map
       :leader
-      :desc "CD mistty to dired dir" "d t" #'mistty-cd-to-dired-dir-and-switch)
+      :desc "CD eshell to dired dir" "d t" #'eshell-cd-to-dired-dir-and-switch)
 
 
 

@@ -800,7 +800,8 @@ Select GPU type and optionally customize the Docker image."
 ;; Use Node v20 for claude-code-acp compatibility (v23 has issues)
 (add-to-list 'exec-path "/Users/elle/.nvm/versions/node/v20.19.5/bin")
 ;; Also update PATH environment variable for spawned processes
-(setenv "PATH" (concat "/Users/elle/.nvm/versions/node/v20.19.5/bin:"
+(setenv "PATH" (concat "/Users/elle/code/meta-agent-shell/bin:"
+                       "/Users/elle/.nvm/versions/node/v20.19.5/bin:"
                        "/Users/elle/.nix-profile/bin:"
                        (getenv "PATH")))
 
@@ -812,5 +813,8 @@ Select GPU type and optionally customize the Docker image."
   ;; Set default model to Opus
   ;; It may be opus by default already?
   ;; (setq agent-shell-anthropic-default-model-id "claude-opus-4-20250514")
+
+  ;; NOTE: Auto-dispatcher logic moved to meta-agent-shell-start-or-dispatcher
+  ;; Old my/ensure-project-dispatcher hook removed - it conflicted with the new approach
 
   )
