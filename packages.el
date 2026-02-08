@@ -136,9 +136,7 @@
 
 
 
-(package! tidal
-  :recipe (:local-repo "/Users/elle/code/Tidal"
-           :files ("tidal.el")))
+
 
 (package! org-inline-anim
   :recipe (

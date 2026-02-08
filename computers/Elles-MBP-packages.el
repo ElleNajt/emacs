@@ -2,6 +2,10 @@
 
 (load! "personal_packages")
 
+(package! tidal
+  :recipe (:local-repo "/Users/elle/code/Tidal"
+           :files ("tidal.el")))
+
 ;; Local development versions (override GitHub versions from packages.el)
 (package! agent-shell :recipe (:local-repo "~/code/agent-shell"))
 (package! agent-shell-to-go :recipe (:local-repo "~/code/agent-shell-to-go"))
