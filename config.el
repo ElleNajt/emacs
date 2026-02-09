@@ -2211,14 +2211,14 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
         #'agent-shell--default-transcript-file-path))
 
 ;;; agent-shell-to-go - take your agent-shell sessions anywhere
-(defun my/pass-get (path)
-  "Get a secret from pass (password-store). Warns loudly if empty."
-  (let ((result (string-trim (shell-command-to-string (format "pass %s" path)))))
-    (when (string-empty-p result)
-      (display-warning 'agent-shell-to-go
-                       (format "PASS FAILED: Could not get %s - Slack integration won't work!" path)
-                       :error))
-    result))
+;; (defun my/pass-get (path)
+;;   "Get a secret from pass (password-store). Warns loudly if empty."
+;;   (let ((result (string-trim (shell-command-to-string (format "pass %s" path)))))
+;;     (when (string-empty-p result)
+;;       (display-warning 'agent-shell-to-go
+;;                        (format "PASS FAILED: Could not get %s - Slack integration won't work!" path)
+;;                        :error))
+;;     result))
 
 (use-package! agent-shell-to-go
   :after agent-shell
@@ -2226,15 +2226,21 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (setq agent-shell-to-go-default-folder "~/code")
   (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
   (setq agent-shell-to-go-new-project-function #'new-python-project)
-  (run-with-timer
-   0 nil
-   (lambda ()
-     (setq agent-shell-to-go-bot-token (my/pass-get "agent-shell-to-go/bot-token"))
-     (setq agent-shell-to-go-channel-id (my/pass-get "agent-shell-to-go/channel-id"))
-     (setq agent-shell-to-go-app-token (my/pass-get "agent-shell-to-go/app-token"))
-     (setq agent-shell-to-go-user-id (my/pass-get "agent-shell-to-go/user-id"))
-     (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
-     (agent-shell-to-go-setup))))
+  ;; Slack transport (replaced by mobile app)
+  ;; (run-with-timer
+  ;;  0 nil
+  ;;  (lambda ()
+  ;;    (setq agent-shell-to-go-bot-token (my/pass-get "agent-shell-to-go/bot-token"))
+  ;;    (setq agent-shell-to-go-channel-id (my/pass-get "agent-shell-to-go/channel-id"))
+  ;;    (setq agent-shell-to-go-app-token (my/pass-get "agent-shell-to-go/app-token"))
+  ;;    (setq agent-shell-to-go-user-id (my/pass-get "agent-shell-to-go/user-id"))
+  ;;    (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
+  ;;    (agent-shell-to-go-setup)))
+  (require 'agent-shell-to-go-mobile)
+  (setq agent-shell-to-go-mobile-backend-url
+        (format "http://%s:8080"
+                (string-trim (shell-command-to-string "tailscale ip -4"))))
+  (agent-shell-to-go-mobile-setup))
 
 ;;; meta-agent-shell - supervisory agent for monitoring sessions
 (use-package! meta-agent-shell
