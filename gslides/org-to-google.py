@@ -24,7 +24,6 @@ from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
@@ -33,9 +32,10 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive.readonly",
 ]
 
-SECRETS_DIR = Path.home() / ".doom.d" / "secrets"
-CREDENTIALS_FILE = SECRETS_DIR / "gslides-oauth-credentials.json"
-TOKEN_FILE = SECRETS_DIR / "gslides-oauth-token.json"
+# Keychain service/account names (matches google-auth script)
+KEYCHAIN_SERVICE = "google-oauth"
+KEYCHAIN_ACCOUNT_TOKEN = "token"
+KEYCHAIN_ACCOUNT_CLIENT = "client-secret"
 
 # Google MIME types
 MIME_TYPES = {
@@ -56,35 +56,75 @@ MIME_TYPES = {
 }
 
 
+def keychain_get(account):
+    """Get value from macOS Keychain."""
+    result = subprocess.run(
+        [
+            "security",
+            "find-generic-password",
+            "-s",
+            KEYCHAIN_SERVICE,
+            "-a",
+            account,
+            "-w",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return None
+
+
+def keychain_set(account, value):
+    """Store value in macOS Keychain."""
+    # Delete existing if present
+    subprocess.run(
+        ["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account],
+        capture_output=True,
+    )
+    # Add new
+    result = subprocess.run(
+        [
+            "security",
+            "add-generic-password",
+            "-s",
+            KEYCHAIN_SERVICE,
+            "-a",
+            account,
+            "-w",
+            value,
+        ],
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
 def get_credentials():
-    """Get or refresh Google API credentials."""
-    creds = None
+    """Get or refresh Google API credentials from Keychain."""
+    import json
 
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+    token_json = keychain_get(KEYCHAIN_ACCOUNT_TOKEN)
+    if not token_json:
+        print(
+            "Error: No OAuth token in keychain.\nRun: google-auth refresh",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
+
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            # Save refreshed token back to keychain
+            keychain_set(KEYCHAIN_ACCOUNT_TOKEN, creds.to_json())
         else:
-            if not CREDENTIALS_FILE.exists():
-                print(
-                    f"Error: {CREDENTIALS_FILE} not found.\n"
-                    "Download OAuth credentials from Google Cloud Console:\n"
-                    "1. Go to https://console.cloud.google.com/apis/credentials\n"
-                    "2. Create OAuth 2.0 Client ID (Desktop app)\n"
-                    f"3. Download JSON and save as {CREDENTIALS_FILE}",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(CREDENTIALS_FILE), SCOPES
+            print(
+                "Error: Token expired and can't refresh.\nRun: google-auth refresh",
+                file=sys.stderr,
             )
-            creds = flow.run_local_server(port=0)
-
-        with open(TOKEN_FILE, "w") as token:
-            token.write(creds.to_json())
+            sys.exit(1)
 
     return creds
 

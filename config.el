@@ -2855,4 +2855,6 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 
 (map! :leader
       ;; :desc "Find agent shell" "f c" #'agent-shell-manager-find-buffer
-      :desc "Search agent shells" "s c" #'agent-shell-manager-search)
+      :desc "Search agent shells" "s c" #'agent-shell-manager-search
+      :desc "Copy buffer name" "b n" (cmd! (kill-new (buffer-name))
+                                           (message "Copied: %s" (buffer-name))))
