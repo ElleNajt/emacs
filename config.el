@@ -1944,6 +1944,7 @@ Version 2022-05-21"
 (setq agent-shell-path-resolver-function nil)
 (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 (setq agent-shell-header-style nil)  ; No header - mode shown in modeline
+(setq agent-shell-show-busy-indicator nil)  ; Avoid 10/sec header regeneration
 
 ;; Simple welcome message without ASCII art
 (defun my/agent-shell-simple-welcome (config)
@@ -2118,7 +2119,10 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 (add-hook 'agent-shell-mode-hook
           (lambda ()
             (setq-local shell-maker-prompt-before-killing-buffer nil)
-            (setq-local doom-real-buffer-p t)))
+            (setq-local doom-real-buffer-p t)
+            ;; Disable yasnippet-capf - it runs expensive regex on every completion
+            (setq-local completion-at-point-functions
+                        (remove 'yasnippet-capf completion-at-point-functions))))
 
 ;; Enable comint-mime in agent-shell buffers for rich content display
 ;; (use-package! comint-mime
@@ -2210,6 +2214,56 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (setq agent-shell-transcript-file-path-function
         #'agent-shell--default-transcript-file-path))
 
+;;; Auto-accept plan mode
+;; When an agent enters plan mode, automatically switch to bypass permissions and accept
+(defvar my/agent-shell-auto-accept-plan t
+  "When non-nil, automatically accept plans and switch to bypass permissions mode.")
+
+(defvar-local my/agent-shell--last-mode-id nil
+  "Track the previous mode to detect transitions into plan mode.")
+
+(defun my/agent-shell-on-mode-change (new-mode-id)
+  "Called when session mode changes to NEW-MODE-ID.
+If entering plan mode from bypassPermissions, auto-accept and switch back."
+  (when (and my/agent-shell-auto-accept-plan
+             (equal new-mode-id "plan")
+             (equal my/agent-shell--last-mode-id "bypassPermissions"))
+    ;; Entering plan mode - wait a moment then auto-accept
+    (run-at-time 0.2 nil
+                 (lambda (buf)
+                   (when (buffer-live-p buf)
+                     (with-current-buffer buf
+                       (when-let* ((state (agent-shell--state))
+                                   (client (map-elt state :client))
+                                   (session-id (map-nested-elt state '(:session :id))))
+                         ;; Switch to bypass permissions mode (which also exits plan mode)
+                         (acp-send-request
+                          :client client
+                          :request (acp-make-session-set-mode-request
+                                    :session-id session-id
+                                    :mode-id "bypassPermissions")
+                          :buffer buf
+                          :on-success (lambda (_response)
+                                        (let ((updated-session (map-elt (agent-shell--state) :session)))
+                                          (map-put! updated-session :mode-id "bypassPermissions")
+                                          (map-put! (agent-shell--state) :session updated-session))
+                                        (agent-shell--update-header-and-mode-line)
+                                        ;; Send "proceed" to accept the plan
+                                        (agent-shell-insert :text "proceed" :submit t :no-focus t)
+                                        (message "Plan auto-accepted, bypass permissions enabled")))))))
+                 (current-buffer)))
+  (setq my/agent-shell--last-mode-id new-mode-id))
+
+(define-advice agent-shell--on-notification (:after (shell state notification) my/detect-plan-mode)
+  "Detect when session mode changes to plan mode."
+  ;; Initialize last-mode-id from session state if not set
+  (unless my/agent-shell--last-mode-id
+    (setq my/agent-shell--last-mode-id (map-nested-elt state '(:session :mode-id))))
+  (when-let* ((update (map-elt notification 'update))
+              (is-mode-update (equal (map-elt update 'sessionUpdate) "current_mode_update"))
+              (new-mode-id (map-elt update 'currentModeId)))
+    (my/agent-shell-on-mode-change new-mode-id)))
+
 ;;; agent-shell-to-go - take your agent-shell sessions anywhere
 ;; (defun my/pass-get (path)
 ;;   "Get a secret from pass (password-store). Warns loudly if empty."
@@ -2220,27 +2274,28 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;;                        :error))
 ;;     result))
 
+(defun my/keychain-get (service account)
+  "Get a secret from macOS Keychain. Warns loudly if empty."
+  (let* ((cmd (format "security find-generic-password -s '%s' -a '%s' -w 2>/dev/null" service account))
+         (result (string-trim (shell-command-to-string cmd))))
+    (when (string-empty-p result)
+      (display-warning 'agent-shell-to-go
+                       (format "KEYCHAIN FAILED: Could not get %s/%s - Slack integration won't work!" service account)
+                       :error))
+    result))
+
 (use-package! agent-shell-to-go
   :after agent-shell
   :config
   (setq agent-shell-to-go-default-folder "~/code")
   (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
   (setq agent-shell-to-go-new-project-function #'new-python-project)
-  ;; Slack transport (replaced by mobile app)
-  ;; (run-with-timer
-  ;;  0 nil
-  ;;  (lambda ()
-  ;;    (setq agent-shell-to-go-bot-token (my/pass-get "agent-shell-to-go/bot-token"))
-  ;;    (setq agent-shell-to-go-channel-id (my/pass-get "agent-shell-to-go/channel-id"))
-  ;;    (setq agent-shell-to-go-app-token (my/pass-get "agent-shell-to-go/app-token"))
-  ;;    (setq agent-shell-to-go-user-id (my/pass-get "agent-shell-to-go/user-id"))
-  ;;    (setq agent-shell-to-go-authorized-users (list agent-shell-to-go-user-id))
-  ;;    (agent-shell-to-go-setup)))
   (require 'agent-shell-to-go-mobile)
   (setq agent-shell-to-go-mobile-backend-url
         (format "http://%s:8080"
                 (string-trim (shell-command-to-string "tailscale ip -4"))))
-  (agent-shell-to-go-mobile-setup))
+  (agent-shell-to-go-mobile-setup)
+  (agent-shell-to-go-mobile-setup-meta-agent-shell))
 
 ;;; meta-agent-shell - supervisory agent for monitoring sessions
 (use-package! meta-agent-shell
@@ -2279,6 +2334,23 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 
 ;;; Send org code block to agent shell
 
+(defun send-to-agent-shell--select-buffer (buffers)
+  "Prompt user to select from BUFFERS with numbered menu.
+Returns the selected buffer, or nil if cancelled."
+  (let* ((numbered (cl-loop for buf in buffers
+                            for i from 1
+                            collect (cons i buf)))
+         (prompt (concat "Select agent:\n"
+                         (mapconcat
+                          (lambda (pair)
+                            (format "[%d] %s" (car pair) (buffer-name (cdr pair))))
+                          numbered
+                          "\n")
+                         "\n"))
+         (char (read-char prompt)))
+    (when-let ((pair (assoc (- char ?0) numbered)))
+      (cdr pair))))
+
 (defun send-to-agent-shell (&optional prefix)
   "Send content to visible agent shell in current workspace.
 If visual selection is active, sends the selected region (works in any buffer).
@@ -2287,7 +2359,8 @@ In org-mode without selection:
   - Otherwise, sends the current org subtree.
 In non-org buffers without selection, sends the filename.
 Includes file path and line numbers in the message.
-With prefix argument PREFIX (\\[universal-argument]), prompt for a custom message to send along with the content."
+With prefix argument PREFIX (\\[universal-argument]), prompt for a custom message to send along with the content.
+When multiple agent-shell buffers are visible, prompts with numbered menu."
   (interactive "P")
   
   (let* ((original-buffer (current-buffer))
@@ -2418,17 +2491,23 @@ With prefix argument PREFIX (\\[universal-argument]), prompt for a custom messag
     (unless full-block
       (user-error "Could not capture org content"))
     
-    ;; Find the agent shell buffer (only visible in current frame)
-    (let ((agent-buffer 
-           (seq-find 
-            (lambda (buf)
-              (and (get-buffer-window buf (selected-frame))
-                   (with-current-buffer buf
-                     (derived-mode-p 'agent-shell-mode))))
-            (buffer-list))))
-      
-      (unless agent-buffer
-        (user-error "No agent-shell buffer found. Start Claude Code with SPC o c first"))
+    ;; Find visible agent shell buffers in current frame
+    (let* ((visible-agents
+            (seq-filter
+             (lambda (buf)
+               (and (get-buffer-window buf (selected-frame))
+                    (with-current-buffer buf
+                      (derived-mode-p 'agent-shell-mode))))
+             (buffer-list)))
+           (agent-buffer
+            (cond
+             ((null visible-agents)
+              (user-error "No agent-shell buffer found. Start Claude Code with SPC o c first"))
+             ((= 1 (length visible-agents))
+              (car visible-agents))
+             (t
+              (or (send-to-agent-shell--select-buffer visible-agents)
+                  (user-error "Cancelled"))))))
       
       ;; Copy to clipboard
       (kill-new full-block)
