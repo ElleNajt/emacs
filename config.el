@@ -74,6 +74,9 @@
 ;;; Agent Shell Manager
 ;; Bind s-b to toggle agent-shell-manager
 (map! :n "s-b" #'agent-shell-manager-toggle)
+
+;; macOS voice dictation pastes with Cmd+V
+(global-set-key (kbd "s-v") #'yank)
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
@@ -2022,8 +2025,10 @@ Optional BUFFER-NAME sets the buffer name directly."
   (interactive "P")
   (let* ((use-container (and (consp arg) (not (eq arg 'use-current-dir))))
          (use-current-dir (or (equal arg '(16)) (eq arg 'use-current-dir)))
-         (container-runner (if use-container '("claudebox" "--bash" "-c") nil))
-         (path-resolver (if use-container #'agent-shell--resolve-devcontainer-path nil))
+         ;; Only override container settings when explicitly using container mode
+         ;; Otherwise let global settings (e.g., TRAMP SSH runner) work
+         (container-runner (when use-container '("claudebox" "--bash" "-c")))
+         (path-resolver (when use-container #'agent-shell--resolve-devcontainer-path))
          ;; Secretary project uses "default" (always ask) mode for security
          (is-secretary (string-prefix-p (expand-file-name "~/code/secretary")
                                         (expand-file-name default-directory)))
@@ -2031,28 +2036,30 @@ Optional BUFFER-NAME sets the buffer name directly."
          (working-dir (if use-current-dir
                           default-directory
                         nil))  ; nil means use agent-shell-cwd (git root)
-         (agent-shell-container-command-runner container-runner)
-         (agent-shell-path-resolver-function path-resolver)
+         ;; Only rebind if we have explicit container settings
+         (agent-shell-container-command-runner (or container-runner agent-shell-container-command-runner))
+         (agent-shell-path-resolver-function (or path-resolver agent-shell-path-resolver-function))
          ;; Set override so advice uses our working-dir
          (my/agent-shell-override-cwd working-dir))
-    (let ((config (agent-shell-anthropic-make-claude-code-config)))
+    (let ((config (copy-alist (agent-shell-anthropic-make-claude-code-config))))
       ;; Set the default session mode based on container vs normal
-      (map-put! config :default-session-mode-id (lambda () session-mode-id))
+      (setf (alist-get :default-session-mode-id config) (lambda () session-mode-id))
       ;; Set buffer name if provided
       (when buffer-name
-        (map-put! config :buffer-name buffer-name))
+        (setf (alist-get :buffer-name config) buffer-name))
       ;; Replace the client-maker with our own that uses lexical closure
-      (map-put! config :client-maker
-                (lambda (buffer)
-                  (with-current-buffer buffer
-                    (setq-local my/agent-shell--use-container use-container)
-                    (when use-container
-                      (setq-local agent-shell-container-command-runner container-runner)
-                      (setq-local agent-shell-path-resolver-function path-resolver)))
-                  (let ((agent-shell-container-command-runner container-runner)
-                        (agent-shell-path-resolver-function path-resolver)
-                        (my/agent-shell-override-cwd working-dir))
-                    (agent-shell-anthropic-make-claude-client :buffer buffer))))
+      (setf (alist-get :client-maker config)
+            (lambda (buffer)
+              (with-current-buffer buffer
+                (setq-local my/agent-shell--use-container use-container)
+                (when use-container
+                  (setq-local agent-shell-container-command-runner container-runner)
+                  (setq-local agent-shell-path-resolver-function path-resolver)))
+              ;; Use captured values if set, otherwise let globals work
+              (let ((agent-shell-container-command-runner (or container-runner agent-shell-container-command-runner))
+                    (agent-shell-path-resolver-function (or path-resolver agent-shell-path-resolver-function))
+                    (my/agent-shell-override-cwd working-dir))
+                (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
 (defun my/agent-shell-google-start-gemini (use-container)
@@ -2533,7 +2540,7 @@ When multiple agent-shell buffers are visible, prompts with numbered menu."
         :desc "Send to agent shell" "c s" #'send-to-agent-shell))
 
 
-(setq agent-shell-anthropic-default-model-id "opus")
+(setq agent-shell-anthropic-default-model-id "claude-opus-4-6")
 ;; Custom read-string that starts in evil normal mode for multiline editing
 (defun my/read-string-in-normal-mode (prompt &optional initial-input)
   "Read string with minibuffer starting in evil normal mode for vim editing."
@@ -2858,3 +2865,9 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
       :desc "Search agent shells" "s c" #'agent-shell-manager-search
       :desc "Copy buffer name" "b n" (cmd! (kill-new (buffer-name))
                                            (message "Copied: %s" (buffer-name))))
+
+;; prevent dialogues from making emacs hang remotely
+(setq confirm-kill-processes nil)
+
+(setq kill-buffer-query-functions
+      (delq 'process-kill-buffer-query-function kill-buffer-query-functions))

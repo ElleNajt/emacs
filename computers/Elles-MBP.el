@@ -113,6 +113,7 @@
 
 
 (after! tidal
+  (setq tidal-boot-script-path "/Users/elle/code/Tidal/BootTidal.hs")
   (setq completion-at-point-functions
         (remove 'ispell-completion-at-point completion-at-point-functions))
   (add-hook 'org-mode-hook

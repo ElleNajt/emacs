@@ -259,9 +259,37 @@ Uses SSH config entry 'claude-bot' from ~/.ssh/config"
   (interactive)
   (find-file "/ssh:claude-bot:/home/elle/claude-bot/"))
 
+(defun tramp/fugue ()
+  "Connect to fugue VM via TRAMP over Tailscale."
+  (interactive)
+  (find-file "/ssh:fugue:/home/elle/"))
+
+;; TRAMP support: Using PR 205 + acp.el PR 9 for native TRAMP handling
+;; The path resolver is provided by agent-shell-tramp.el in PR 205
+;; No need for SSH wrapper - acp.el handles it via :file-handler
+
+;; Save transcripts locally for TRAMP sessions to avoid slow remote writes
+(defun my/agent-shell-transcript-path ()
+  "Return transcript path, using local path for TRAMP sessions."
+  (if (and default-directory
+           (string-match "^/ssh:\\([^:]+\\):\\(.*\\)" default-directory))
+      ;; TRAMP: save locally
+      (let* ((host (match-string 1 default-directory))
+             (remote-path (match-string 2 default-directory))
+             (safe-path (replace-regexp-in-string "/" "_" (string-trim remote-path "/" "/")))
+             (dir (expand-file-name (format "agent-shell/transcripts/%s/%s" host safe-path)
+                                    "~/.cache")))
+        (make-directory dir t)
+        (expand-file-name (format-time-string "%F-%H-%M-%S.md") dir))
+    ;; Local: use default behavior
+    (agent-shell--default-transcript-file-path)))
+
+(setq agent-shell-transcript-file-path-function #'my/agent-shell-transcript-path)
+
 (map! :leader
       :desc "TRAMP to AFP RunPod" "f a" #'tramp/afp-runpod
-      :desc "TRAMP to claude-bot" "f c" #'tramp/claude-bot)
+      :desc "TRAMP to claude-bot" "f c" #'tramp/claude-bot
+      :desc "TRAMP to fugue" "f v" #'tramp/fugue)
 
 
 ;;; aider
