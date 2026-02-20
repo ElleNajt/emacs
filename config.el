@@ -1945,7 +1945,24 @@ Version 2022-05-21"
 ;; Set to nil to run locally by default - use prefix arg (C-u) to run in container
 (setq agent-shell-container-command-runner nil)
 (setq agent-shell-path-resolver-function nil)
-(setq agent-shell-anthropic-claude-command '("claude-code-acp"))
+(setq agent-shell-anthropic-claude-command '("acp-multiplex" "claude-code-acp"))
+
+(defun agent-shell-multiplex-socket (&optional buffer)
+  "Return the acp-multiplex socket path for BUFFER (default: current buffer)."
+  (interactive)
+  (let* ((buf (or buffer (current-buffer)))
+         (client (with-current-buffer buf (map-elt agent-shell--state :client)))
+         (proc (and client (map-elt client :process)))
+         (pid (and proc (process-id proc)))
+         (socket (and pid (expand-file-name
+                           (format "%d.sock" pid)
+                           (expand-file-name "acp-multiplex" (temporary-file-directory))))))
+    (when (called-interactively-p 'any)
+      (if socket
+          (progn (kill-new socket) (message "Socket: %s (copied)" socket))
+        (message "No multiplex socket found")))
+    socket))
+
 (setq agent-shell-header-style nil)  ; No header - mode shown in modeline
 (setq agent-shell-show-busy-indicator nil)  ; Avoid 10/sec header regeneration
 
