@@ -2314,7 +2314,6 @@ If entering plan mode from bypassPermissions, auto-accept and switch back."
   (setq agent-shell-to-go-default-folder "~/code")
   (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
   (setq agent-shell-to-go-new-project-function #'new-python-project)
-  (require 'agent-shell-to-go-mobile)
   (setq agent-shell-to-go-mobile-backend-url
         (format "http://%s:8080"
                 (string-trim (shell-command-to-string "tailscale ip -4"))))
