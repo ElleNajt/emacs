@@ -2887,3 +2887,22 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 
 (setq kill-buffer-query-functions
       (delq 'process-kill-buffer-query-function kill-buffer-query-functions))
+
+(defun strudel-to-live ()
+  "Send to live.js. In dired, send file at point. Otherwise send current buffer."
+  (interactive)
+  (let ((content
+         (if (derived-mode-p 'dired-mode)
+             (let ((file (dired-get-file-for-visit)))
+               (with-temp-buffer
+                 (insert-file-contents file)
+                 (buffer-string)))
+           (buffer-string))))
+    (with-current-buffer (find-file-noselect "/Users/elle/code/vibe-duet/live.js")
+      (erase-buffer)
+      (insert content)
+      (save-buffer))
+    (message "Sent to live.js")))
+
+(global-set-key (kbd "C-c l") #'strudel-to-live)
+(global-set-key (kbd "C-c C-l") #'strudel-to-live)
