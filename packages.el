@@ -151,9 +151,9 @@
 ;; (package! emacs-ruff-format
 ;;   :recipe (:host github :repo  "JoshHayes/emacs-ruff-format"))
 
-(package! mcp-el
-  :recipe (:host github
-           :repo "lizqwerscott/mcp.el"))
+;; (package! mcp-el
+;;   :recipe (:host github
+;;            :repo "lizqwerscott/mcp.el"))
 
 (package! ob-typescript
   :recipe (:host github

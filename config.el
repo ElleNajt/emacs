@@ -1945,7 +1945,8 @@ Version 2022-05-21"
 ;; Set to nil to run locally by default - use prefix arg (C-u) to run in container
 (setq agent-shell-container-command-runner nil)
 (setq agent-shell-path-resolver-function nil)
-(setq agent-shell-anthropic-claude-command '("acp-multiplex" "claude-code-acp"))
+(setq agent-shell-anthropic-claude-command nil)
+(setq agent-shell-anthropic-claude-acp-command '("acp-multiplex" "claude-code-acp"))
 
 (defun agent-shell-multiplex-socket (&optional buffer)
   "Return the acp-multiplex socket path for BUFFER (default: current buffer)."
@@ -2891,18 +2892,26 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 (defun strudel-to-live ()
   "Send to live.js. In dired, send file at point. Otherwise send current buffer."
   (interactive)
-  (let ((content
-         (if (derived-mode-p 'dired-mode)
-             (let ((file (dired-get-file-for-visit)))
-               (with-temp-buffer
-                 (insert-file-contents file)
-                 (buffer-string)))
-           (buffer-string))))
-    (with-current-buffer (find-file-noselect "/Users/elle/code/vibe-duet/live.js")
-      (erase-buffer)
-      (insert content)
-      (save-buffer))
-    (message "Sent to live.js")))
+  (let* ((source-path
+          (if (derived-mode-p 'dired-mode)
+              (dired-get-file-for-visit)
+            (buffer-file-name)))
+         (content
+          (if (derived-mode-p 'dired-mode)
+              (with-temp-buffer
+                (insert-file-contents source-path)
+                (buffer-string))
+            (buffer-string))))
+    (let ((strudel-url (concat "https://strudel.cc/#"
+                               (url-hexify-string (base64-encode-string (encode-coding-string content 'utf-8) t)))))
+      (with-current-buffer (find-file-noselect "/Users/elle/code/vibe-duet/live.js")
+        (erase-buffer)
+        (when source-path
+          (insert (format "// %s\n" source-path)))
+        (insert (format "// %s\n" strudel-url))
+        (insert content)
+        (save-buffer))
+      (message "Sent to live.js"))))
 
 (global-set-key (kbd "C-c l") #'strudel-to-live)
 (global-set-key (kbd "C-c C-l") #'strudel-to-live)
