@@ -845,15 +845,17 @@ Select GPU type and optionally customize the Docker image."
   ;; NOTE: Auto-dispatcher logic moved to meta-agent-shell-start-or-dispatcher
   ;; Old my/ensure-project-dispatcher hook removed - it conflicted with the new approach
 
-  ;; Pass buffer name to acp-multiplex so acp-mobile can show it
+  ;; Pass buffer name to acp-multiplex so acp-mobile can show it.
+  ;; Must inject into :environment-variables (not process-environment)
+  ;; because the process is started lazily by acp--start-client.
   (advice-add 'agent-shell--make-acp-client :around
               (lambda (orig-fn &rest args)
                 (let* ((buf (plist-get args :context-buffer))
-                       (process-environment
-                        (if buf
-                            (cons (format "ACP_MULTIPLEX_NAME=%s" (buffer-name buf))
-                                  process-environment)
-                          process-environment)))
+                       (name-var (when buf
+                                   (format "ACP_MULTIPLEX_NAME=%s" (buffer-name buf)))))
+                  (when name-var
+                    (plist-put args :environment-variables
+                               (cons name-var (plist-get args :environment-variables))))
                   (apply orig-fn args))))
 
   )
