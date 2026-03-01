@@ -322,12 +322,13 @@
 ;;   (setq parinfer-rust-auto-download t))
 
 (defun vterm-cd-to-dired-dir-and-switch ()
-  "Change the current directory of the default vterm buffer (as opened with
-`+vterm/toggle') to the directory of the current dired buffer, then switch to
-it."
+  "CD the vterm popup to the current buffer's directory, then switch to it.
+Uses `buffer-file-name' directory if visiting a file, `dired-current-directory'
+in dired, or `default-directory' otherwise."
   (interactive)
-  (let ((dir (if buffer-file-name  (file-name-directory buffer-file-name) ( dired-current-directory  )
-                 )))
+  (let ((dir (cond (buffer-file-name (file-name-directory buffer-file-name))
+                   ((eq major-mode 'dired-mode) (dired-current-directory))
+                   (t default-directory))))
     (if-let* ((projectile-vterm-buffer-name
                (format "*doom:vterm-popup:%s*"
                        (if (bound-and-true-p persp-mode)
@@ -339,9 +340,8 @@ it."
           (vterm-send-string (format "cd \"%s\"\n" dir)))
       (message "No currently open vterm (press SPC o t)"))))
 
-(map!
- (:map dired-mode-map
-       (:leader "d v" #'vterm-cd-to-dired-dir-and-switch)))
+(map! :leader
+      :desc "CD vterm to current dir" "d v" #'vterm-cd-to-dired-dir-and-switch)
 
 
 
@@ -1136,7 +1136,6 @@ it."
         (plist-put org-format-latex-options :scale 1.5))
   (setq org-latex-create-formula-image-program 'dvipng)
 
-
   ;; (add-hook 'org-mode-hook 'org-fragtog-mode)
   (add-hook 'org-mode-hook 'org-toggle-pretty-entities)
   (add-hook 'latex-mode 'prettify-symbols-mode)
@@ -1147,6 +1146,25 @@ it."
    :ni "C-l" #'cdlatex-tab)
 
   (setq org-preview-latex-default-process 'dvipng)
+
+  ;; Custom LaTeX class for exporting org sections as \input{}-able fragments
+  ;; * -> \subsection, ** -> \subsubsection, *** -> \paragraph, **** -> \subparagraph
+  (add-to-list 'org-latex-classes
+               '("paper-section"
+                 ""
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+
+  ;; * -> \section (for appendix fragments)
+  (add-to-list 'org-latex-classes
+               '("paper-appendix"
+                 ""
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")))
 
   ;; Optional: Increase the size of the LaTeX fragment cache to reduce re-rendering
   (setq org-preview-latex-image-cache-max 200)  ; Default is 20
@@ -1946,7 +1964,12 @@ Version 2022-05-21"
 (setq agent-shell-container-command-runner nil)
 (setq agent-shell-path-resolver-function nil)
 (setq agent-shell-anthropic-claude-command nil)
-(setq agent-shell-anthropic-claude-acp-command '("acp-multiplex" "claude-code-acp"))
+(setq agent-shell-anthropic-claude-acp-command '("acp-multiplex" "claude-agent-acp"))
+
+;; Prevent Claude Code's CLAUDECODE env var from leaking into child processes.
+;; When an agent runs emacsclient commands, it can pollute the daemon environment,
+;; causing new acp subprocesses to refuse with "nested sessions" errors.
+(setenv "CLAUDECODE" nil)
 
 (defun agent-shell-multiplex-socket (&optional buffer)
   "Return the acp-multiplex socket path for BUFFER (default: current buffer)."
@@ -2113,10 +2136,23 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   ;; Queue request with C-RET
   (evil-define-key '(normal insert) agent-shell-mode-map (kbd "C-<return>") #'agent-shell-queue-request))
 
+(defun my/agent-shell-resume-claude ()
+  "Start Claude Code with session picker to resume a previous session."
+  (interactive)
+  ;; Dynamic let covers synchronous reads during startup.
+  ;; Buffer-local setq-local covers the async ACP callback.
+  (let* ((agent-shell-session-strategy 'prompt)
+         (shell-buffer (my/agent-shell-anthropic-start-claude-code nil)))
+    (when (buffer-live-p shell-buffer)
+      (with-current-buffer shell-buffer
+        (setq-local agent-shell-session-strategy 'prompt)))))
+
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
       :desc "Start Gemini Code" "o g m" #'my/agent-shell-google-start-gemini
-      :desc "Start Claude Code" "o c" #'meta-agent-shell-start-or-dispatcher)
+      :desc "Start Claude Code" "o c" #'meta-agent-shell-start-or-dispatcher
+      :desc "Resume Claude session" "c r" #'my/agent-shell-resume-claude
+      :desc "Fork Claude session" "c f" #'agent-shell-fork-session)
 
 ;; Display shell command output buffers at bottom in small window
 (defun my/agent-shell-display-buffer-advice (orig-fn buffer)
@@ -2318,8 +2354,9 @@ If entering plan mode from bypassPermissions, auto-accept and switch back."
   (setq agent-shell-to-go-mobile-backend-url
         (format "http://%s:8080"
                 (string-trim (shell-command-to-string "tailscale ip -4"))))
-  (agent-shell-to-go-mobile-setup)
-  (agent-shell-to-go-mobile-setup-meta-agent-shell))
+  ;; (agent-shell-to-go-mobile-setup)
+  ;; (agent-shell-to-go-mobile-setup-meta-agent-shell)
+  )
 
 ;;; meta-agent-shell - supervisory agent for monitoring sessions
 (use-package! meta-agent-shell
@@ -2684,11 +2721,13 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
       (message "No currently open mistty (press SPC o t)"))))
 
 (defun eshell-cd-to-dired-dir-and-switch ()
-  "CD the eshell popup to the directory of the current dired buffer, then switch to it."
+  "CD the eshell popup to the current buffer's directory, then switch to it.
+Uses `buffer-file-name' directory if visiting a file, `dired-current-directory'
+in dired, or `default-directory' otherwise."
   (interactive)
-  (let ((dir (if (eq major-mode 'dired-mode)
-                 (dired-current-directory)
-               default-directory)))
+  (let ((dir (cond (buffer-file-name (file-name-directory buffer-file-name))
+                   ((eq major-mode 'dired-mode) (dired-current-directory))
+                   (t default-directory))))
     (if-let* ((eshell-buffer-name
                (format "*doom:eshell-popup:%s*"
                        (if (bound-and-true-p persp-mode)
@@ -2710,9 +2749,8 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
       :desc "Toggle vterm popup" "o v" #'+vterm/toggle
       :desc "Open vterm here" "o V" #'+vterm/here)
 
-(map! :map dired-mode-map
-      :leader
-      :desc "CD eshell to dired dir" "d t" #'eshell-cd-to-dired-dir-and-switch)
+(map! :leader
+      :desc "CD eshell to current dir" "d t" #'eshell-cd-to-dired-dir-and-switch)
 
 
 
@@ -2915,3 +2953,10 @@ If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
 
 (global-set-key (kbd "C-c l") #'strudel-to-live)
 (global-set-key (kbd "C-c C-l") #'strudel-to-live)
+
+(global-auto-revert-mode 1)
+
+
+(after! agent-shell
+  (define-key agent-shell-mode-map (kbd "TAB") nil)
+  (define-key agent-shell-mode-map (kbd "n") nil))

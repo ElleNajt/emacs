@@ -51,34 +51,81 @@
         (insert (format "#+%s: %s\n" property id))))
     (save-buffer)))
 
-(defun org-google--push (format)
+(defun org-google--upload-async (upload-file format-flag file-id org-buf property)
+  "Upload UPLOAD-FILE to Google asynchronously.
+FORMAT-FLAG is --slides or --doc. FILE-ID is the existing file ID or nil.
+ORG-BUF is the source buffer. PROPERTY is the ID property name."
+  (with-current-buffer (get-buffer-create "*org-google*")
+    (erase-buffer))
+  (let* ((cmd (if file-id
+                  (format "%s %s upload %s %s --id %s"
+                          (shell-quote-argument org-google-python-executable)
+                          (shell-quote-argument org-google-python-script)
+                          (shell-quote-argument upload-file)
+                          format-flag
+                          (shell-quote-argument file-id))
+                (format "%s %s upload %s %s"
+                        (shell-quote-argument org-google-python-executable)
+                        (shell-quote-argument org-google-python-script)
+                        (shell-quote-argument upload-file)
+                        format-flag)))
+         (proc (start-process-shell-command "org-google-upload" "*org-google*" cmd)))
+      
+    (set-process-filter proc
+                        (lambda (p str)
+                          (when (buffer-live-p (process-buffer p))
+                            (with-current-buffer (process-buffer p)
+                              (goto-char (point-max))
+                              (insert str)))))
+    (set-process-sentinel
+     proc
+     (lambda (p event)
+       (when (string-match-p "finished" event)
+         (let ((output (if (buffer-live-p (process-buffer p))
+                           (with-current-buffer (process-buffer p)
+                             (buffer-string))
+                         "")))
+           (message "org-google output: %s" output)
+           (if (string-match "FILE_ID:\\(.+\\)" output)
+               (let ((new-id (string-trim (match-string 1 output))))
+                 (message "org-google: new ID is %s" new-id)
+                 (when (buffer-live-p org-buf)
+                   (with-current-buffer org-buf
+                     (org-google--set-id property new-id)))
+                 (when (string-match "URL:\\(.+\\)" output)
+                   (let ((url (string-trim (match-string 1 output))))
+                     (message "Pushed to: %s" url)
+                     (browse-url url))))
+             (message "Push failed: %s" output)))
+         (when (file-exists-p upload-file)
+           (delete-file upload-file)))))))
+
+(defun org-google--push (format &optional force-new)
   "Push current org buffer to Google FORMAT (slides or doc).
-For slides: converts org -> PPTX directly via pandoc (respects :noexport: tags).
-For docs: exports to ODT in Emacs, then converts via pandoc."
+For slides: converts org -> PPTX via pandoc, then uploads.
+For docs: exports to ODT in background Doom batch, then uploads.
+When FORCE-NEW is non-nil, create a new file even if an ID exists."
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org-mode buffer"))
 
   (let* ((org-file (buffer-file-name))
          (base-name (file-name-sans-extension org-file))
          (property (if (eq format 'slides) "GSLIDES_ID" "GDOC_ID"))
-         (file-id (org-google--get-id property))
+         (file-id (unless force-new (org-google--get-id property)))
          (format-flag (if (eq format 'slides) "--slides" "--doc"))
-         ;; For slides: org -> pptx directly; for docs: org -> odt -> docx
          (upload-file (if (eq format 'slides)
                           (concat base-name ".pptx")
-                        (concat base-name ".odt"))))
+                        (concat base-name ".odt")))
+         (org-buf (current-buffer)))
 
     (save-buffer)
-    
+
     (if (eq format 'slides)
-        ;; Slides: use pandoc directly for org -> pptx
-        ;; Run from org file's directory so relative image paths work
-        ;; Strip :results: drawers so images get embedded properly
+        ;; Slides: pandoc is fast, run synchronously then upload
         (progn
           (message "Converting to PPTX via pandoc...")
           (let* ((org-dir (file-name-directory org-file))
                  (temp-org (make-temp-file "org-google-" nil ".org"))
-                 ;; Strip drawer markers so pandoc embeds images properly
                  (sed-exit (call-process "sed" nil `(:file ,temp-org) nil
                                          "-e" "s/^:results:$//"
                                          "-e" "s/^:end:$//"
@@ -90,71 +137,16 @@ For docs: exports to ODT in Emacs, then converts via pandoc."
                                           (concat "--resource-path=" org-dir))))
             (delete-file temp-org)
             (unless (zerop exit-code)
-              (user-error "Pandoc conversion failed. Check *org-google* buffer"))))
-      ;; Docs: use org's ODT export
-      (progn
-        (message "Exporting to ODT...")
-        (let ((org-confirm-babel-evaluate nil))
-          (org-odt-export-to-odt))))
-    
-    ;; Now run Python upload async (doesn't block Emacs)
-    (message "Uploading to Google %s (async)..." (if (eq format 'slides) "Slides" "Docs"))
-    
-    ;; Clear the output buffer before starting
-    (with-current-buffer (get-buffer-create "*org-google*")
-      (erase-buffer))
-    
-    (let* ((cmd (if file-id
-                    (format "%s %s upload %s %s --id %s"
-                            (shell-quote-argument org-google-python-executable)
-                            (shell-quote-argument org-google-python-script)
-                            (shell-quote-argument upload-file)
-                            format-flag
-                            (shell-quote-argument file-id))
-                  (format "%s %s upload %s %s"
-                          (shell-quote-argument org-google-python-executable)
-                          (shell-quote-argument org-google-python-script)
-                          (shell-quote-argument upload-file)
-                          format-flag)))
-           (org-buf (current-buffer))
-           ;; Capture these for the closure
-           (captured-property property)
-           (captured-upload-file upload-file)
-           (proc (start-process-shell-command "org-google-upload" "*org-google*" cmd)))
-      
-      ;; Add filter to capture stdout
-      (set-process-filter proc
-                          (lambda (p str)
-                            (when (buffer-live-p (process-buffer p))
-                              (with-current-buffer (process-buffer p)
-                                (goto-char (point-max))
-                                (insert str)))))
-      
-      (set-process-sentinel
-       proc
-       (lambda (p event)
-         (when (string-match-p "finished" event)
-           (let ((output (if (buffer-live-p (process-buffer p))
-                             (with-current-buffer (process-buffer p)
-                               (buffer-string))
-                           "")))
-             (message "org-google output: %s" output)
-             (if (string-match "FILE_ID:\\(.+\\)" output)
-                 (let ((new-id (string-trim (match-string 1 output))))
-                   (message "org-google: new ID is %s" new-id)
-                   ;; Always save ID (updates create new files due to API limitation)
-                   (when (buffer-live-p org-buf)
-                     (with-current-buffer org-buf
-                       (org-google--set-id captured-property new-id)))
-                   ;; Extract and show URL
-                   (when (string-match "URL:\\(.+\\)" output)
-                     (let ((url (string-trim (match-string 1 output))))
-                       (message "Pushed to: %s" url)
-                       (browse-url url))))
-               (message "Push failed: %s" output)))
-           ;; Clean up intermediate file
-           (when (file-exists-p captured-upload-file)
-             (delete-file captured-upload-file))))))))
+              (user-error "Pandoc conversion failed. Check *org-google* buffer")))
+          (message "Uploading to Google Slides (async)...")
+          (org-google--upload-async upload-file format-flag file-id org-buf property))
+
+      ;; Docs: export to ODT in-process, then upload async
+      (message "Exporting to ODT...")
+      (let ((org-confirm-babel-evaluate nil))
+        (org-odt-export-to-odt))
+      (message "Uploading to Google Docs (async)...")
+      (org-google--upload-async upload-file format-flag file-id org-buf property))))
 
 (defun org-google--pull (format)
   "Pull changes from Google FORMAT (slides or doc) to current org buffer."
@@ -216,83 +208,21 @@ Uses Claude to intelligently merge changes while preserving org syntax."
   (interactive)
   (org-google--pull 'doc))
 
+(defun org-google--push-new (format)
+  "Push current org buffer to a NEW Google FORMAT (slides or doc), ignoring existing ID."
+  (org-google--push format t))
+
 ;;;###autoload
 (defun org-google-push-slides-new ()
   "Push to a NEW Google Slides presentation, ignoring existing ID."
   (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org-mode buffer"))
-
-  (let* ((org-file (buffer-file-name))
-         (odt-file (concat (file-name-sans-extension org-file) ".odt")))
-
-    (save-buffer)
-    (message "Exporting to ODT...")
-
-    ;; Export to ODT first
-    (let ((org-confirm-babel-evaluate nil))
-      (org-odt-export-to-odt))
-
-    (message "Creating new Google Slides presentation...")
-
-    (let* ((cmd (format "%s %s upload %s --slides"
-                        (shell-quote-argument org-google-python-executable)
-                        (shell-quote-argument org-google-python-script)
-                        (shell-quote-argument odt-file)))
-           (output (shell-command-to-string cmd)))
-      (if (string-match "FILE_ID:\\(.+\\)" output)
-          (let ((new-id (string-trim (match-string 1 output))))
-            (when (y-or-n-p "Save new presentation ID to file? ")
-              (org-google--set-id "GSLIDES_ID" new-id))
-
-            (when (string-match "URL:\\(.+\\)" output)
-              (let ((url (string-trim (match-string 1 output))))
-                (message "Created: %s" url)
-                (browse-url url))))
-        (message "Push failed: %s" output))
-
-      ;; Clean up ODT file
-      (when (file-exists-p odt-file)
-        (delete-file odt-file)))))
+  (org-google--push-new 'slides))
 
 ;;;###autoload
 (defun org-google-push-doc-new ()
   "Push to a NEW Google Doc, ignoring existing ID."
   (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org-mode buffer"))
-
-  (let* ((org-file (buffer-file-name))
-         (odt-file (concat (file-name-sans-extension org-file) ".odt")))
-
-    (save-buffer)
-    (message "Exporting to ODT...")
-
-    ;; Export to ODT first
-    (let ((org-confirm-babel-evaluate nil))
-      (org-odt-export-to-odt))
-
-    (message "Creating new Google Doc...")
-
-    (let* ((cmd (format "%s %s upload %s --doc"
-                        (shell-quote-argument org-google-python-executable)
-                        (shell-quote-argument org-google-python-script)
-                        (shell-quote-argument odt-file)))
-           (output (shell-command-to-string cmd)))
-      (if (string-match "FILE_ID:\\(.+\\)" output)
-          (let ((new-id (string-trim (match-string 1 output))))
-            (when (y-or-n-p "Save new document ID to file? ")
-              (org-google--set-id "GDOC_ID" new-id))
-
-            (when (string-match "URL:\\(.+\\)" output)
-              (let ((url (string-trim (match-string 1 output))))
-                (message "Created: %s" url)
-                (browse-url url))))
-        (message "Push failed: %s" output))
-
-      ;; Clean up ODT file
-      (when (file-exists-p odt-file)
-        (delete-file odt-file)))))
+  (org-google--push-new 'doc))
 
 (provide 'org-google)
 ;;; org-google.el ends here
