@@ -2055,7 +2055,7 @@ my/agent-shell--force-local setting from agent session."
 
 (advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
-(defun my/agent-shell-anthropic-start-claude-code (arg &optional buffer-name auth-override)
+(defun my/agent-shell-anthropic-start-claude-code (arg &optional buffer-name auth-override model-override)
   "Start Claude Code with various modes based on prefix arg.
 No prefix: normal mode (acceptEdits, git root directory).
 C-u: container mode (bypassPermissions, git root directory).
@@ -2065,7 +2065,8 @@ C-u C-u: container mode (bypassPermissions, current directory).
 Special case: ~/code/secretary always uses 'default' mode (always ask).
 
 Optional BUFFER-NAME sets the buffer name directly.
-Optional AUTH-OVERRIDE replaces `agent-shell-anthropic-authentication' for this session."
+Optional AUTH-OVERRIDE replaces `agent-shell-anthropic-authentication' for this session.
+Optional MODEL-OVERRIDE replaces the default model id."
   (interactive "P")
   (let* ((use-container (and (consp arg) (not (eq arg 'use-current-dir))))
          (use-current-dir (or (equal arg '(16)) (eq arg 'use-current-dir)))
@@ -2092,6 +2093,9 @@ Optional AUTH-OVERRIDE replaces `agent-shell-anthropic-authentication' for this 
     (let ((config (copy-alist (agent-shell-anthropic-make-claude-code-config))))
       ;; Set the default session mode based on container vs normal
       (setf (alist-get :default-session-mode-id config) (lambda () session-mode-id))
+      ;; Override model if specified
+      (when model-override
+        (setf (alist-get :default-model-id config) (lambda () model-override)))
       ;; Set buffer name if provided
       (when buffer-name
         (setf (alist-get :buffer-name config) buffer-name))
@@ -2160,7 +2164,7 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   "Start Claude Code using login/OAuth auth instead of API key."
   (interactive "P")
   (my/agent-shell-anthropic-start-claude-code
-   arg nil (agent-shell-anthropic-make-authentication :login t)))
+   arg nil (agent-shell-anthropic-make-authentication :login t) "claude-opus-4-6"))
 
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
