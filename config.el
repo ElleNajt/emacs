@@ -2795,7 +2795,8 @@ in dired, or `default-directory' otherwise."
 
 
 (global-auto-revert-mode 1)
-(setq global-auto-revert-non-file-buffers t)
+(setq global-auto-revert-non-file-buffers t
+      auto-revert-use-notify t)
 
 ;;; Obsidian.el configuration with org-mode integration
 (use-package! obsidian
