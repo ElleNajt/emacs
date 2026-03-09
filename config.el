@@ -1149,22 +1149,24 @@ in dired, or `default-directory' otherwise."
 
   ;; Custom LaTeX class for exporting org sections as \input{}-able fragments
   ;; * -> \subsection, ** -> \subsubsection, *** -> \paragraph, **** -> \subparagraph
-  (add-to-list 'org-latex-classes
-               '("paper-section"
-                 ""
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  ;; #@claude got this 
+  ;; Error caused by user's config or system: .doom.d/config.el, (void-variable org-latex-classes)
+  ;; (add-to-list 'org-latex-classes
+  ;;              '("paper-section"
+  ;;                ""
+  ;;                ("\\subsection{%s}" . "\\subsection*{%s}")
+  ;;                ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+  ;;                ("\\paragraph{%s}" . "\\paragraph*{%s}")
+  ;;                ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
 
-  ;; * -> \section (for appendix fragments)
-  (add-to-list 'org-latex-classes
-               '("paper-appendix"
-                 ""
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}")))
+  ;; ;; * -> \section (for appendix fragments)
+  ;; (add-to-list 'org-latex-classes
+  ;;              '("paper-appendix"
+  ;;                ""
+  ;;                ("\\section{%s}" . "\\section*{%s}")
+  ;;                ("\\subsection{%s}" . "\\subsection*{%s}")
+  ;;                ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+  ;;                ("\\paragraph{%s}" . "\\paragraph*{%s}")))
 
   ;; Optional: Increase the size of the LaTeX fragment cache to reduce re-rendering
   (setq org-preview-latex-image-cache-max 200)  ; Default is 20
@@ -2053,7 +2055,7 @@ my/agent-shell--force-local setting from agent session."
 
 (advice-add 'agent-shell--resolve-path :around #'my/agent-shell--resolve-path-advice)
 
-(defun my/agent-shell-anthropic-start-claude-code (arg &optional buffer-name)
+(defun my/agent-shell-anthropic-start-claude-code (arg &optional buffer-name auth-override)
   "Start Claude Code with various modes based on prefix arg.
 No prefix: normal mode (acceptEdits, git root directory).
 C-u: container mode (bypassPermissions, git root directory).
@@ -2062,13 +2064,17 @@ C-u C-u: container mode (bypassPermissions, current directory).
 
 Special case: ~/code/secretary always uses 'default' mode (always ask).
 
-Optional BUFFER-NAME sets the buffer name directly."
+Optional BUFFER-NAME sets the buffer name directly.
+Optional AUTH-OVERRIDE replaces `agent-shell-anthropic-authentication' for this session."
   (interactive "P")
   (let* ((use-container (and (consp arg) (not (eq arg 'use-current-dir))))
          (use-current-dir (or (equal arg '(16)) (eq arg 'use-current-dir)))
+         (_ (when use-container
+              (unless (zerop (call-process "docker" nil nil nil "info"))
+                (user-error "Docker isn't running — start Docker Desktop first"))))
          ;; Only override container settings when explicitly using container mode
          ;; Otherwise let global settings (e.g., TRAMP SSH runner) work
-         (container-runner (when use-container '("claudebox" "--bash" "-c")))
+         (container-runner (when use-container '("claudebox-simple-exec")))
          (path-resolver (when use-container #'agent-shell--resolve-devcontainer-path))
          ;; Secretary project uses "default" (always ask) mode for security
          (is-secretary (string-prefix-p (expand-file-name "~/code/secretary")
@@ -2078,7 +2084,8 @@ Optional BUFFER-NAME sets the buffer name directly."
                           default-directory
                         nil))  ; nil means use agent-shell-cwd (git root)
          ;; Only rebind if we have explicit container settings
-         (agent-shell-container-command-runner (or container-runner agent-shell-container-command-runner))
+         ;; Must bind agent-shell-command-prefix (not the alias) for let to work
+         (agent-shell-command-prefix (or container-runner agent-shell-command-prefix))
          (agent-shell-path-resolver-function (or path-resolver agent-shell-path-resolver-function))
          ;; Set override so advice uses our working-dir
          (my/agent-shell-override-cwd working-dir))
@@ -2097,9 +2104,11 @@ Optional BUFFER-NAME sets the buffer name directly."
                   (setq-local agent-shell-container-command-runner container-runner)
                   (setq-local agent-shell-path-resolver-function path-resolver)))
               ;; Use captured values if set, otherwise let globals work
-              (let ((agent-shell-container-command-runner (or container-runner agent-shell-container-command-runner))
+              ;; Must bind agent-shell-command-prefix (not the alias) for let to work
+              (let ((agent-shell-command-prefix (or container-runner agent-shell-command-prefix))
                     (agent-shell-path-resolver-function (or path-resolver agent-shell-path-resolver-function))
-                    (my/agent-shell-override-cwd working-dir))
+                    (my/agent-shell-override-cwd working-dir)
+                    (agent-shell-anthropic-authentication (or auth-override agent-shell-anthropic-authentication)))
                 (agent-shell-anthropic-make-claude-client :buffer buffer))))
       (agent-shell-start :config config))))
 
@@ -2147,10 +2156,17 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
       (with-current-buffer shell-buffer
         (setq-local agent-shell-session-strategy 'prompt)))))
 
+(defun my/agent-shell-start-claude-login (arg)
+  "Start Claude Code using login/OAuth auth instead of API key."
+  (interactive "P")
+  (my/agent-shell-anthropic-start-claude-code
+   arg nil (agent-shell-anthropic-make-authentication :login t)))
+
 ;; Global keybinding for starting Claude Code (SPC o c)
 (map! :leader
       :desc "Start Gemini Code" "o g m" #'my/agent-shell-google-start-gemini
       :desc "Start Claude Code" "o c" #'meta-agent-shell-start-or-dispatcher
+      :desc "Claude Code (login)" "o l c" #'my/agent-shell-start-claude-login
       :desc "Resume Claude session" "c r" #'my/agent-shell-resume-claude
       :desc "Fork Claude session" "c f" #'agent-shell-fork-session)
 
@@ -2594,7 +2610,7 @@ When multiple agent-shell buffers are visible, prompts with numbered menu."
         :desc "Send to agent shell" "c s" #'send-to-agent-shell))
 
 
-(setq agent-shell-anthropic-default-model-id "claude-opus-4-6")
+(setq agent-shell-anthropic-default-model-id "claude-opus-4-6-fast")
 ;; Custom read-string that starts in evil normal mode for multiline editing
 (defun my/read-string-in-normal-mode (prompt &optional initial-input)
   "Read string with minibuffer starting in evil normal mode for vim editing."
@@ -2960,4 +2976,9 @@ in dired, or `default-directory' otherwise."
 
 (after! agent-shell
   (define-key agent-shell-mode-map (kbd "TAB") nil)
-  (define-key agent-shell-mode-map (kbd "n") nil))
+  (define-key agent-shell-mode-map (kbd "n") nil)
+  (advice-add 'agent-shell--on-notification :around
+              (lambda (orig-fn &rest args)
+                (cl-letf (((symbol-function 'shell-maker-busy) (lambda () t)))
+                  (apply orig-fn args)))
+              '((name . suppress-stale-notifications))))

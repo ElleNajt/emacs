@@ -1,18 +1,18 @@
 #!/Users/elle/.doom.d/gslides/.venv/bin/python3
 """
-Sync org-mode files with Google Slides or Google Docs via pandoc.
+Sync org-mode files with Google Slides/Docs.
 
 Usage:
-    org-to-google.py push <org-file> [--slides | --doc] [--id ID]
+    org-to-google.py upload <file> [--slides | --doc] [--id ID]
     org-to-google.py pull <org-file> --id ID [--slides | --doc]
 
-Push: Upload org file to Google Slides/Docs
-Pull: Download Google Slides/Docs, convert to markdown, use Claude to update org file
+Upload: PPTX (slides) or ODT (docs) to Google Drive.
+Pull: Download from Google, use Claude to update org file.
 
 Examples:
-    org-to-google.py push notes.org --slides              # Create new presentation
-    org-to-google.py push notes.org --slides --id ABC123  # Update existing
-    org-to-google.py pull notes.org --slides --id ABC123  # Pull changes back to org
+    org-to-google.py upload slides.pptx --slides              # Create new presentation
+    org-to-google.py upload doc.odt --doc --id ABC123         # Update existing doc
+    org-to-google.py pull notes.org --doc --id ABC123         # Pull changes back to org
 """
 
 import argparse
@@ -48,8 +48,8 @@ MIME_TYPES = {
     },
     "doc": {
         "google": "application/vnd.google-apps.document",
-        "office": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "extension": ".docx",
+        "office": "application/vnd.oasis.opendocument.text",
+        "extension": ".odt",
         "export_text": "text/markdown",
         "url_base": "https://docs.google.com/document/d/",
     },
@@ -129,24 +129,6 @@ def get_credentials():
     return creds
 
 
-def convert_odt_to_office(odt_path, output_format):
-    """Convert ODT to Office format (PPTX/DOCX) using pandoc."""
-    mime_info = MIME_TYPES[output_format]
-    office_path = odt_path.rsplit(".", 1)[0] + mime_info["extension"]
-
-    try:
-        subprocess.run(
-            ["pandoc", odt_path, "-o", office_path],
-            check=True,
-            capture_output=True,
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Pandoc conversion failed: {e.stderr}", file=sys.stderr)
-        raise
-
-    return office_path
-
-
 def upload_new(drive_service, office_path, title, output_format):
     """Upload Office file as new Google Slides/Docs."""
     mime_info = MIME_TYPES[output_format]
@@ -176,27 +158,8 @@ def upload_new(drive_service, office_path, title, output_format):
 
 
 def update_existing(drive_service, file_id, office_path, title, output_format):
-    """Update existing Google Slides/Docs by replacing it.
-
-    Google doesn't support converting uploads to update existing files,
-    so we delete the old file and create a new one.
-    """
+    """Update existing Google Slides/Docs by replacing its content in-place."""
     mime_info = MIME_TYPES[output_format]
-
-    # Get the old file's parent folder(s) to preserve location
-    old_file = drive_service.files().get(fileId=file_id, fields="parents").execute()
-    parents = old_file.get("parents", [])
-
-    # Delete the old file
-    drive_service.files().delete(fileId=file_id).execute()
-
-    # Create new file with same parent(s)
-    file_metadata = {
-        "name": title,
-        "mimeType": mime_info["google"],
-    }
-    if parents:
-        file_metadata["parents"] = parents
 
     media = MediaFileUpload(
         office_path,
@@ -204,17 +167,12 @@ def update_existing(drive_service, file_id, office_path, title, output_format):
         resumable=True,
     )
 
-    file = (
-        drive_service.files()
-        .create(
-            body=file_metadata,
-            media_body=media,
-            fields="id",
-        )
-        .execute()
-    )
+    drive_service.files().update(
+        fileId=file_id,
+        media_body=media,
+    ).execute()
 
-    return file["id"]
+    return file_id
 
 
 def download_as_text(drive_service, file_id, output_format):
@@ -295,48 +253,31 @@ Output ONLY the updated org file content, nothing else."""
 def cmd_upload(args):
     """Upload file to Google (called from Emacs after export).
 
-    For slides: expects PPTX file (pandoc conversion done in Emacs)
-    For docs: expects ODT file, converts ODT -> DOCX via pandoc
+    For slides: expects PPTX (pandoc conversion done in Emacs).
+    For docs: expects ODT (uploaded directly, preserves embedded images).
     """
     if not os.path.exists(args.input_file):
         print(f"Error: {args.input_file} not found", file=sys.stderr)
         sys.exit(1)
 
-    output_format = "slides" if args.slides else "doc"
-    mime_info = MIME_TYPES[output_format]
-
-    # Get title from input filename
-    title = Path(args.input_file).stem
     input_ext = Path(args.input_file).suffix.lower()
-
-    # Determine if we need to convert
-    if input_ext == ".pptx":
-        # PPTX ready for upload (slides from pandoc)
-        office_path = args.input_file
-        needs_cleanup = False
-    elif input_ext == ".odt":
-        # ODT needs conversion to DOCX (docs)
-        office_path = convert_odt_to_office(args.input_file, output_format)
-        os.unlink(args.input_file)
-        needs_cleanup = True
-    else:
+    if input_ext not in (".pptx", ".odt"):
         print(f"Error: Unsupported file type {input_ext}", file=sys.stderr)
         sys.exit(1)
+
+    output_format = "slides" if args.slides else "doc"
+    mime_info = MIME_TYPES[output_format]
+    title = Path(args.input_file).stem
 
     creds = get_credentials()
     drive_service = build("drive", "v3", credentials=creds)
 
-    try:
-        if args.file_id:
-            file_id = update_existing(
-                drive_service, args.file_id, office_path, title, output_format
-            )
-        else:
-            file_id = upload_new(drive_service, office_path, title, output_format)
-    finally:
-        # Clean up Office file if we created it
-        if needs_cleanup and os.path.exists(office_path):
-            os.unlink(office_path)
+    if args.file_id:
+        file_id = update_existing(
+            drive_service, args.file_id, args.input_file, title, output_format
+        )
+    else:
+        file_id = upload_new(drive_service, args.input_file, title, output_format)
 
     url = f"{mime_info['url_base']}{file_id}/edit"
     print(f"FILE_ID:{file_id}")

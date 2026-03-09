@@ -7,6 +7,7 @@
            :files ("tidal.el")))
 
 ;; Local development versions (override GitHub versions from packages.el)
+(package! acp :recipe (:local-repo "~/code/acp.el"))
 (package! agent-shell :recipe (:local-repo "~/code/agent-shell"))
 (package! agent-shell-to-go :recipe (:local-repo "~/code/agent-shell-to-go"))
 (package! meta-agent-shell :recipe (:local-repo "~/code/meta-agent-shell"))

@@ -143,7 +143,8 @@ When FORCE-NEW is non-nil, create a new file even if an ID exists."
 
       ;; Docs: export to ODT in-process, then upload async
       (message "Exporting to ODT...")
-      (let ((org-confirm-babel-evaluate nil))
+      (let ((org-confirm-babel-evaluate nil)
+            (process-environment (append '("MPLBACKEND=Agg") process-environment)))
         (org-odt-export-to-odt))
       (message "Uploading to Google Docs (async)...")
       (org-google--upload-async upload-file format-flag file-id org-buf property))))
