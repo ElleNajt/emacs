@@ -836,7 +836,12 @@ Select GPU type and optionally customize the Docker image."
 (after! agent-shell 
 
   (setq agent-shell-anthropic-authentication
-        (agent-shell-anthropic-make-authentication :login t))
+        (agent-shell-anthropic-make-authentication
+         :api-key (lambda ()
+                    (string-trim
+                     (with-temp-buffer
+                       (insert-file-contents "~/.anthropic/api_key")
+                       (buffer-string))))))
   
   ;; Set default model to Opus
   ;; It may be opus by default already?
