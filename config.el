@@ -2389,21 +2389,57 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;;; Send org code block to agent shell
 
 (defun send-to-agent-shell--select-buffer (buffers)
-  "Prompt user to select from BUFFERS with numbered menu.
-Returns the selected buffer, or nil if cancelled."
+  "Select from BUFFERS by showing number overlays on their windows.
+Falls back to minibuffer prompt for non-visible buffers."
   (let* ((numbered (cl-loop for buf in buffers
                             for i from 1
                             collect (cons i buf)))
-         (prompt (concat "Select agent:\n"
-                         (mapconcat
-                          (lambda (pair)
-                            (format "[%d] %s" (car pair) (buffer-name (cdr pair))))
-                          numbered
-                          "\n")
-                         "\n"))
-         (char (read-char prompt)))
-    (when-let ((pair (assoc (- char ?0) numbered)))
-      (cdr pair))))
+         ;; Find which buffers are visible in windows
+         (window-overlays nil)
+         (saved-positions nil)
+         (visible-pairs
+          (cl-loop for pair in numbered
+                   for win = (get-buffer-window (cdr pair))
+                   when win collect (cons (car pair) win))))
+    (if (null visible-pairs)
+        ;; No visible windows, fall back to minibuffer
+        (let* ((prompt (concat "Select agent:\n"
+                               (mapconcat
+                                (lambda (pair)
+                                  (format "[%d] %s" (car pair) (buffer-name (cdr pair))))
+                                numbered "\n")
+                               "\n"))
+               (char (read-char prompt)))
+          (when-let ((pair (assoc (- char ?0) numbered)))
+            (cdr pair)))
+      ;; Show number overlays on visible windows
+      (unwind-protect
+          (progn
+            (dolist (pair visible-pairs)
+              (let* ((num (car pair))
+                     (win (cdr pair))
+                     (buf (window-buffer win))
+                     (pos (with-current-buffer buf (max (point-min) (1- (point-max)))))
+                     (ov (make-overlay pos pos buf))
+                     (str (propertize (format "\n %d " num)
+                                      'face '(:foreground "#282c34"
+                                              :background "#61afef"
+                                              :weight bold
+                                              :height 3.0))))
+                (overlay-put ov 'after-string str)
+                (overlay-put ov 'window win)
+                (push (cons win (window-start win)) saved-positions)
+                ;; Scroll window to show the overlay at the end
+                (with-selected-window win
+                  (goto-char (point-max))
+                  (recenter -2))
+                (push ov window-overlays)))
+            (let ((char (read-char "Select agent: ")))
+              (when-let ((pair (assoc (- char ?0) numbered)))
+                (cdr pair))))
+        (mapc #'delete-overlay window-overlays)
+        (dolist (sp saved-positions)
+          (set-window-start (car sp) (cdr sp)))))))
 
 (defun send-to-agent-shell (&optional prefix)
   "Send content to visible agent shell in current workspace.
