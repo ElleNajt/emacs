@@ -225,6 +225,9 @@
 ;;;;; Paxedit
 (load! "vendored/paxedit")
 
+;;;;; Transcript Viewer
+(load! "transcript-viewer")
+
 ;;;; Rust
 
 ;;;; Python
@@ -1968,6 +1971,15 @@ Version 2022-05-21"
 (setq agent-shell-anthropic-claude-command nil)
 (setq agent-shell-anthropic-claude-acp-command '("acp-multiplex" "claude-agent-acp"))
 
+;; envrc can overwrite exec-path in the agent-shell buffer (via change-major-mode-after-body-hook),
+;; stripping ~/.local/bin and breaking the acp-multiplex executable check in agent-shell--start.
+;; Ensure ~/.local/bin is always present.
+(add-hook 'agent-shell-mode-hook
+          (lambda ()
+            (let ((local-bin (expand-file-name "~/.local/bin/")))
+              (unless (member local-bin exec-path)
+                (setq-local exec-path (cons local-bin exec-path))))))
+
 ;; Prevent Claude Code's CLAUDECODE env var from leaking into child processes.
 ;; When an agent runs emacsclient commands, it can pollute the daemon environment,
 ;; causing new acp subprocesses to refuse with "nested sessions" errors.
@@ -2147,7 +2159,15 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
   (define-key agent-shell-mode-map (kbd "C-p") #'agent-shell-send-screenshot)
 
   ;; Queue request with C-RET
-  (evil-define-key '(normal insert) agent-shell-mode-map (kbd "C-<return>") #'agent-shell-queue-request))
+  (evil-define-key '(normal insert) agent-shell-mode-map (kbd "C-<return>") #'agent-shell-queue-request)
+
+  ;; Quick status check
+  (evil-define-key 'normal agent-shell-mode-map
+    (kbd "SPC c h") (lambda ()
+                      (interactive)
+                      (agent-shell--insert-to-shell-buffer
+                       :text "How's it going? What's the status?"
+                       :submit t))))
 
 (defun my/agent-shell-resume-claude ()
   "Start Claude Code with session picker to resume a previous session."
@@ -2297,53 +2317,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 
 ;;; Auto-accept plan mode
 ;; When an agent enters plan mode, automatically switch to bypass permissions and accept
-(defvar my/agent-shell-auto-accept-plan t
-  "When non-nil, automatically accept plans and switch to bypass permissions mode.")
-
-(defvar-local my/agent-shell--last-mode-id nil
-  "Track the previous mode to detect transitions into plan mode.")
-
-(defun my/agent-shell-on-mode-change (new-mode-id)
-  "Called when session mode changes to NEW-MODE-ID.
-If entering plan mode from bypassPermissions, auto-accept and switch back."
-  (when (and my/agent-shell-auto-accept-plan
-             (equal new-mode-id "plan")
-             (equal my/agent-shell--last-mode-id "bypassPermissions"))
-    ;; Entering plan mode - wait a moment then auto-accept
-    (run-at-time 0.2 nil
-                 (lambda (buf)
-                   (when (buffer-live-p buf)
-                     (with-current-buffer buf
-                       (when-let* ((state (agent-shell--state))
-                                   (client (map-elt state :client))
-                                   (session-id (map-nested-elt state '(:session :id))))
-                         ;; Switch to bypass permissions mode (which also exits plan mode)
-                         (acp-send-request
-                          :client client
-                          :request (acp-make-session-set-mode-request
-                                    :session-id session-id
-                                    :mode-id "bypassPermissions")
-                          :buffer buf
-                          :on-success (lambda (_response)
-                                        (let ((updated-session (map-elt (agent-shell--state) :session)))
-                                          (map-put! updated-session :mode-id "bypassPermissions")
-                                          (map-put! (agent-shell--state) :session updated-session))
-                                        (agent-shell--update-header-and-mode-line)
-                                        ;; Send "proceed" to accept the plan
-                                        (agent-shell-insert :text "proceed" :submit t :no-focus t)
-                                        (message "Plan auto-accepted, bypass permissions enabled")))))))
-                 (current-buffer)))
-  (setq my/agent-shell--last-mode-id new-mode-id))
-
-(define-advice agent-shell--on-notification (:after (shell state notification) my/detect-plan-mode)
-  "Detect when session mode changes to plan mode."
-  ;; Initialize last-mode-id from session state if not set
-  (unless my/agent-shell--last-mode-id
-    (setq my/agent-shell--last-mode-id (map-nested-elt state '(:session :mode-id))))
-  (when-let* ((update (map-elt notification 'update))
-              (is-mode-update (equal (map-elt update 'sessionUpdate) "current_mode_update"))
-              (new-mode-id (map-elt update 'currentModeId)))
-    (my/agent-shell-on-mode-change new-mode-id)))
 
 ;;; agent-shell-to-go - take your agent-shell sessions anywhere
 ;; (defun my/pass-get (path)
@@ -2983,6 +2956,6 @@ in dired, or `default-directory' otherwise."
   (define-key agent-shell-mode-map (kbd "n") nil)
   (advice-add 'agent-shell--on-notification :around
               (lambda (orig-fn &rest args)
-                (cl-letf (((symbol-function 'shell-maker-busy) (lambda () t)))
+                (cl-letf (((symbol-function 'agent-shell--active-requests-p) (lambda (_state) t)))
                   (apply orig-fn args)))
               '((name . suppress-stale-notifications))))
