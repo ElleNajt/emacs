@@ -16,6 +16,7 @@
 ;;; Google Slides Export
 (add-to-list 'load-path (expand-file-name "gslides" doom-user-dir))
 (run-with-idle-timer 2 nil (lambda () (require 'org-google)))
+(setq org-odt-pixels-per-inch 300.0)
 
 ;;; Spray Configuration
 (after! spray
@@ -1209,6 +1210,10 @@ in dired, or `default-directory' otherwise."
 
 
 ;;; org clocking
+(custom-set-faces!
+  '(org-mode-line-clock :foreground "#ff79c6" :background "#2a1028" :weight bold))
+
+
 ;; make sure to define org-clocking-p before clocking, to avoid issues with
 ;; batch jobs / doom scripts
 (defun org-clocking-p ()
