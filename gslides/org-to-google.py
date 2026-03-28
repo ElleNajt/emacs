@@ -279,7 +279,10 @@ def update_org_with_claude(org_path, google_content, base_org_content=None):
 
     If base_org_content is provided, does a three-way merge:
       base (org at push time) → google changes → applied to current org.
-    Otherwise falls back to two-way merge (old behavior)."""
+    Otherwise falls back to two-way merge (old behavior).
+
+    Uses a two-pass approach: first enumerate all changes, then apply
+    them one by one to the org file."""
     with open(org_path, "r") as f:
         current_org = f.read()
 
@@ -303,13 +306,17 @@ CURRENT org file (may have diverged from base):
 ```
 
 Your task:
-1. Identify what changed between BASE and the Google Doc (these are the human edits in Google)
-2. Apply those same changes to the CURRENT org file
+1. First, diff the BASE against the Google Doc to enumerate every change made in Google.
+   List each change as a numbered item with:
+   - What was changed (quote the original text and the new text)
+   - Where it is (section/context)
+2. Then, go through your list one by one and apply each change to the CURRENT org file.
+   After each change, confirm it was applied.
 3. Preserve ALL org-mode syntax: #+PROPERTY headers, src blocks, :PROPERTIES: drawers, etc.
-4. Do NOT modify src blocks, results drawers, or org metadata — only update prose and headings
-5. If the same section was edited in both Google and the current org, prefer the Google version
+4. Do NOT modify src blocks, results drawers, or org metadata — only update prose and headings.
+5. If the same section was edited in both Google and the current org, prefer the Google version.
 
-Output ONLY the updated org file content, nothing else. No markdown fences."""
+Output ONLY the final updated org file content, nothing else. No markdown fences."""
     else:
         prompt = f"""I have an org-mode file that was exported to Google Docs/Slides, edited there, and now I need to sync the changes back.
 
@@ -323,12 +330,18 @@ Here is the CURRENT content from Google (as markdown/text):
 {google_content}
 ```
 
-Please update the org file to reflect changes made in Google while:
-1. Preserving org-mode syntax and structure (#+title:, #+GSLIDES_ID:, #+GDOC_ID:, etc.)
-2. Keeping any org-specific features (properties, TODO states, etc.)
-3. Updating the actual content (text, headings, bullet points) to match Google
+Your task:
+1. First, enumerate every difference between the org file and the Google Doc.
+   List each change as a numbered item with:
+   - What was changed (quote the original text and the new text)
+   - Where it is (section/context)
+   Skip differences that are just formatting (org vs markdown syntax).
+2. Then, go through your list one by one and apply each content change to the org file.
+   After each change, confirm it was applied.
+3. Preserve org-mode syntax and structure (#+PROPERTY headers, src blocks, etc.)
+4. Only update prose content — do not touch src blocks, results drawers, or metadata.
 
-Output ONLY the updated org file content, nothing else."""
+Output ONLY the final updated org file content, nothing else. No markdown fences."""
 
     result = subprocess.run(
         ["claude", "-p", prompt],
