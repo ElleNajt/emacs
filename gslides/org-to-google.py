@@ -18,6 +18,7 @@ Examples:
 import argparse
 import io
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,7 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 SCOPES = [
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/documents",
 ]
 
 # Keychain service/account names (matches google-auth script)
@@ -101,8 +103,10 @@ def keychain_set(account, value):
 
 
 def get_credentials():
-    """Get or refresh Google API credentials from Keychain."""
+    """Get or refresh Google API credentials from Keychain.
+    Auto-reauthenticates via browser if refresh fails."""
     import json
+    from google.auth.exceptions import RefreshError
 
     token_json = keychain_get(KEYCHAIN_ACCOUNT_TOKEN)
     if not token_json:
@@ -116,17 +120,42 @@ def get_credentials():
 
     if not creds.valid:
         if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            # Save refreshed token back to keychain
-            keychain_set(KEYCHAIN_ACCOUNT_TOKEN, creds.to_json())
+            try:
+                creds.refresh(Request())
+                keychain_set(KEYCHAIN_ACCOUNT_TOKEN, creds.to_json())
+            except RefreshError:
+                print("Token expired, re-authenticating via browser...", file=sys.stderr)
+                creds = _reauth()
         else:
-            print(
-                "Error: Token expired and can't refresh.\nRun: google-auth refresh",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+            print("Token invalid, re-authenticating via browser...", file=sys.stderr)
+            creds = _reauth()
 
     return creds
+
+
+def _reauth():
+    """Run browser-based OAuth flow and store new token."""
+    import json
+    import tempfile
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    client_json = keychain_get(KEYCHAIN_ACCOUNT_CLIENT)
+    if not client_json:
+        print("No client secret in keychain. Run: google-auth import", file=sys.stderr)
+        sys.exit(1)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write(client_json)
+        client_file = f.name
+
+    try:
+        flow = InstalledAppFlow.from_client_secrets_file(client_file, SCOPES)
+        creds = flow.run_local_server(port=0)
+        keychain_set(KEYCHAIN_ACCOUNT_TOKEN, creds.to_json())
+        print("Re-authenticated successfully", file=sys.stderr)
+        return creds
+    finally:
+        Path(client_file).unlink()
 
 
 def upload_new(drive_service, office_path, title, output_format):
@@ -194,16 +223,99 @@ def download_as_text(drive_service, file_id, output_format):
     return content.getvalue().decode("utf-8")
 
 
-def update_org_with_claude(org_path, google_content):
-    """Use Claude to update org file based on Google content."""
-    with open(org_path, "r") as f:
-        org_content = f.read()
+def extract_push_hash(google_content):
+    """Extract the commit hash embedded during push from Google Doc content.
 
-    prompt = f"""I have an org-mode file that was exported to Google Docs/Slides, edited there, and now I need to sync the changes back.
+    Looks for patterns like 'Generated from post.org (abc1234)' or
+    'Generated from commit: abc1234' in the doc footer/header."""
+    # Match "Generated from ... (HASH)" — the header format
+    m = re.search(r"Generated from.*?\(([0-9a-f]{7,40})\)", google_content)
+    if m:
+        return m.group(1)
+
+    # Match "Generated from commit: HASH" — the footer format
+    m = re.search(r"Generated from commit:.*?([0-9a-f]{7,40})", google_content)
+    if m:
+        return m.group(1)
+
+    return None
+
+
+def get_org_at_commit(org_path, commit_hash):
+    """Get the org file content at a specific git commit."""
+    org_dir = os.path.dirname(os.path.abspath(org_path))
+
+    # Get repo-relative path
+    rel_path = subprocess.run(
+        ["git", "ls-files", "--full-name", os.path.abspath(org_path)],
+        capture_output=True, text=True, cwd=org_dir,
+    )
+    if rel_path.returncode != 0 or not rel_path.stdout.strip():
+        return None
+
+    git_path = rel_path.stdout.strip()
+
+    result = subprocess.run(
+        ["git", "show", f"{commit_hash}:{git_path}"],
+        capture_output=True, text=True, cwd=org_dir,
+    )
+    if result.returncode != 0:
+        return None
+
+    return result.stdout
+
+
+def strip_generated_markers(content):
+    """Remove 'Generated from ...' header/footer lines added during push."""
+    # Remove header: italic line with "Generated from"
+    content = re.sub(r"^.*Generated from \[.*?\n\n?", "", content)
+    # Remove footer: horizontal rule + Generated from commit line
+    content = re.sub(r"\n?-----\n.*Generated from commit:.*$", "", content, flags=re.DOTALL)
+    return content
+
+
+def update_org_with_claude(org_path, google_content, base_org_content=None):
+    """Use Claude to update org file based on Google content.
+
+    If base_org_content is provided, does a three-way merge:
+      base (org at push time) → google changes → applied to current org.
+    Otherwise falls back to two-way merge (old behavior)."""
+    with open(org_path, "r") as f:
+        current_org = f.read()
+
+    if base_org_content:
+        prompt = f"""Three-way merge: an org file was pushed to Google Docs, edited there, and now
+needs changes pulled back. The org file may also have changed since the push.
+
+BASE org file (at time of push):
+```org
+{base_org_content}
+```
+
+CURRENT Google Doc content (markdown export — includes all edits made in Google):
+```markdown
+{strip_generated_markers(google_content)}
+```
+
+CURRENT org file (may have diverged from base):
+```org
+{current_org}
+```
+
+Your task:
+1. Identify what changed between BASE and the Google Doc (these are the human edits in Google)
+2. Apply those same changes to the CURRENT org file
+3. Preserve ALL org-mode syntax: #+PROPERTY headers, src blocks, :PROPERTIES: drawers, etc.
+4. Do NOT modify src blocks, results drawers, or org metadata — only update prose and headings
+5. If the same section was edited in both Google and the current org, prefer the Google version
+
+Output ONLY the updated org file content, nothing else. No markdown fences."""
+    else:
+        prompt = f"""I have an org-mode file that was exported to Google Docs/Slides, edited there, and now I need to sync the changes back.
 
 Here is the ORIGINAL org file:
 ```org
-{org_content}
+{current_org}
 ```
 
 Here is the CURRENT content from Google (as markdown/text):
@@ -218,36 +330,40 @@ Please update the org file to reflect changes made in Google while:
 
 Output ONLY the updated org file content, nothing else."""
 
-    # Write prompt to temp file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as tmp:
-        tmp.write(prompt)
-        prompt_path = tmp.name
+    result = subprocess.run(
+        ["claude", "-p", prompt],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
 
-    try:
-        # Call claude with the prompt
-        result = subprocess.run(
-            ["claude", "-p", prompt],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+    updated_content = result.stdout.strip()
 
-        updated_content = result.stdout.strip()
+    # Write back to org file
+    with open(org_path, "w") as f:
+        f.write(updated_content)
 
-        # Write back to org file
-        with open(org_path, "w") as f:
-            f.write(updated_content)
+    return True
 
-        return True
 
-    except subprocess.CalledProcessError as e:
-        print(f"Claude error: {e.stderr}", file=sys.stderr)
-        return False
-    except FileNotFoundError:
-        print("Error: claude CLI not found", file=sys.stderr)
-        return False
-    finally:
-        os.unlink(prompt_path)
+def set_pageless(creds, file_id):
+    """Set a Google Doc to pageless format."""
+    docs_service = build("docs", "v1", credentials=creds)
+    docs_service.documents().batchUpdate(
+        documentId=file_id,
+        body={
+            "requests": [
+                {
+                    "updateDocumentStyle": {
+                        "documentStyle": {
+                            "documentFormat": {"documentMode": "PAGELESS"}
+                        },
+                        "fields": "documentFormat",
+                    }
+                }
+            ]
+        },
+    ).execute()
 
 
 def cmd_upload(args):
@@ -279,13 +395,27 @@ def cmd_upload(args):
     else:
         file_id = upload_new(drive_service, args.input_file, title, output_format)
 
+    # Set pageless format for docs
+    if output_format == "doc":
+        try:
+            set_pageless(creds, file_id)
+        except Exception as e:
+            print(f"Warning: could not set pageless format: {e}", file=sys.stderr)
+
     url = f"{mime_info['url_base']}{file_id}/edit"
     print(f"FILE_ID:{file_id}")
     print(f"URL:{url}")
 
 
 def cmd_pull(args):
-    """Handle pull command."""
+    """Pull changes from Google Doc back to org file.
+
+    Uses three-way merge when possible:
+    1. Downloads current Google Doc as markdown
+    2. Extracts the commit hash embedded during push
+    3. Gets the org file at that commit (common ancestor)
+    4. Three-way merges: base org + Google edits → current org
+    Falls back to two-way merge if no commit hash found."""
     if not args.file_id:
         print("Error: --id required for pull", file=sys.stderr)
         sys.exit(1)
@@ -304,9 +434,22 @@ def cmd_pull(args):
     print("Downloading from Google...", file=sys.stderr)
     google_content = download_as_text(drive_service, args.file_id, output_format)
 
+    # Try three-way merge using embedded commit hash
+    base_org = None
+    push_hash = extract_push_hash(google_content)
+    if push_hash:
+        print(f"Found push commit: {push_hash}", file=sys.stderr)
+        base_org = get_org_at_commit(args.org_file, push_hash)
+        if base_org:
+            print("Using three-way merge (base org at push time + Google edits + current org)", file=sys.stderr)
+        else:
+            print(f"Warning: could not retrieve org at commit {push_hash}, falling back to two-way merge", file=sys.stderr)
+    else:
+        print("No push commit hash found in Google Doc, using two-way merge", file=sys.stderr)
+
     # Update org file with Claude
     print("Updating org file with Claude...", file=sys.stderr)
-    if update_org_with_claude(args.org_file, google_content):
+    if update_org_with_claude(args.org_file, google_content, base_org_content=base_org):
         print("PULL:SUCCESS")
         print(f"Updated: {args.org_file}")
     else:
