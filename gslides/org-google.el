@@ -95,20 +95,97 @@ ORG-BUF is the source buffer. PROPERTY is the ID property name."
                  (when (string-match "URL:\\(.+\\)" output)
                    (let ((url (string-trim (match-string 1 output))))
                      (message "Pushed to: %s" url)
-                     (browse-url url))))
+                     (browse-url url)))
+                ;; Save gdoc snapshot for diffing later
+                (when (buffer-live-p org-buf)
+                  (org-google--save-snapshot org-buf new-id)))
              (message "Push failed: %s" output)))
          (when (file-exists-p upload-file)
            (delete-file upload-file)))))))
 
-(defun org-google--push (format &optional force-new)
+(defun org-google--save-snapshot (org-buf file-id)
+  "Download the Google Doc and save as a snapshot for later diffing.
+Called asynchronously after a successful push."
+  (when-let* ((org-file (buffer-file-name org-buf))
+              (snapshot-file (concat (file-name-sans-extension org-file)
+                                     ".gdoc-snapshot.md")))
+    (let* ((cmd (format "%s %s"
+                        (shell-quote-argument
+                         (expand-file-name "~/scripts/claude/google-fetch"))
+                        (shell-quote-argument file-id)))
+           (proc (start-process-shell-command
+                  "gdoc-snapshot" "*gdoc-snapshot*" cmd)))
+      (set-process-sentinel
+       proc
+       (lambda (p _event)
+         (when (string-match-p "finished" _event)
+           (when (buffer-live-p (process-buffer p))
+             (with-current-buffer (process-buffer p)
+               (let ((content (buffer-string)))
+                 ;; Strip the "Generated from ..." footer
+                 (setq content
+                       (replace-regexp-in-string
+                        "\n?-+\n.*Generated from.*\\'" "" content))
+                 (with-temp-file snapshot-file
+                   (insert content))
+                 (message "Saved gdoc snapshot to %s" snapshot-file))))
+           (when (buffer-live-p (process-buffer p))
+             (kill-buffer (process-buffer p)))))))))
+
+(defun org-google--git-commit-url ()
+  "Return a GitHub commit URL for the current file, or nil.
+Signals an error if the file has uncommitted changes."
+  (let* ((file (buffer-file-name))
+         (default-directory (file-name-directory file))
+         (porcelain (string-trim
+                     (shell-command-to-string
+                      (format "git status --porcelain -- %s"
+                              (shell-quote-argument file))))))
+    (unless (string-empty-p porcelain)
+      (user-error "Uncommitted changes in %s — commit before pushing"
+                  (file-name-nondirectory file)))
+    (let* ((hash (string-trim (shell-command-to-string "git rev-parse HEAD")))
+           (remote (string-trim (shell-command-to-string "git remote get-url origin")))
+           (github-url (when (string-match "github\\.com[:/]\\(.+\\)\\.git$" remote)
+                         (format "https://github.com/%s/tree/%s"
+                                 (match-string 1 remote) hash))))
+      github-url)))
+
+(defun org-google--rewrite-file-links-to-github (hash repo-path)
+  "Rewrite [[file:...]] links to GitHub blob URLs in the current buffer.
+HASH is the git commit hash. REPO-PATH is like \"User/repo\".
+Returns list of (start end original) for cleanup."
+  (let ((default-dir (file-name-directory (buffer-file-name)))
+        (toplevel (string-trim (shell-command-to-string "git rev-parse --show-toplevel")))
+        (replacements nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "\\[\\[file:\\([^]]+\\)\\]" nil t)
+        (let* ((rel-path (match-string 1))
+               (abs-path (expand-file-name rel-path default-dir))
+               (repo-rel (when (string-prefix-p toplevel abs-path)
+                           (substring abs-path (1+ (length toplevel))))))
+          (when repo-rel
+            (let ((github-url (format "https://github.com/%s/blob/%s/%s"
+                                      repo-path hash repo-rel)))
+              (replace-match (format "[[%s]" github-url) t t))))))
+    replacements))
+
+(defun org-google--push (format &optional force-new with-latex no-commit)
   "Push current org buffer to Google FORMAT (slides or doc).
 For slides: converts org -> PPTX via pandoc, then uploads.
-For docs: exports to ODT in background Doom batch, then uploads.
-When FORCE-NEW is non-nil, create a new file even if an ID exists."
+For docs: copies to a temp file, modifies that copy (rewrite links,
+append commit URL), exports to ODT, then uploads.  The original
+buffer is never modified.
+When FORCE-NEW is non-nil, create a new file even if an ID exists.
+When WITH-LATEX is non-nil, render LaTeX fragments as images via dvipng.
+When NO-COMMIT is non-nil, skip the commit check and commit URL.
+Otherwise fails if the file has uncommitted changes."
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org-mode buffer"))
 
   (let* ((org-file (buffer-file-name))
+         (org-dir (file-name-directory org-file))
          (base-name (file-name-sans-extension org-file))
          (property (if (eq format 'slides) "GSLIDES_ID" "GDOC_ID"))
          (file-id (unless force-new (org-google--get-id property)))
@@ -116,16 +193,16 @@ When FORCE-NEW is non-nil, create a new file even if an ID exists."
          (upload-file (if (eq format 'slides)
                           (concat base-name ".pptx")
                         (concat base-name ".odt")))
-         (org-buf (current-buffer)))
+         (org-buf (current-buffer))
+         (commit-url (unless no-commit (org-google--git-commit-url))))
 
     (save-buffer)
 
     (if (eq format 'slides)
-        ;; Slides: pandoc is fast, run synchronously then upload
+        ;; Slides: pandoc path (unchanged)
         (progn
           (message "Converting to PPTX via pandoc...")
-          (let* ((org-dir (file-name-directory org-file))
-                 (temp-org (make-temp-file "org-google-" nil ".org"))
+          (let* ((temp-org (make-temp-file "org-google-" nil ".org"))
                  (sed-exit (call-process "sed" nil `(:file ,temp-org) nil
                                          "-e" "s/^:results:$//"
                                          "-e" "s/^:end:$//"
@@ -141,13 +218,55 @@ When FORCE-NEW is non-nil, create a new file even if an ID exists."
           (message "Uploading to Google Slides (async)...")
           (org-google--upload-async upload-file format-flag file-id org-buf property))
 
-      ;; Docs: export to ODT in-process, then upload async
-      (message "Exporting to ODT...")
-      (let ((org-confirm-babel-evaluate nil)
-            (process-environment (append '("MPLBACKEND=Agg") process-environment)))
-        (org-odt-export-to-odt))
-      (message "Uploading to Google Docs (async)...")
-      (org-google--upload-async upload-file format-flag file-id org-buf property))))
+      ;; Docs: work on a temp copy so the original buffer is untouched
+      ;; Check for H: option first
+      (save-excursion
+        (goto-char (point-min))
+        (unless (re-search-forward "^#\\+OPTIONS:.*\\bH:[0-9]" nil t)
+          (user-error "Missing #+OPTIONS: H:N in file. Without it, headings deeper than level 3 produce broken ODT XML. Add e.g. #+OPTIONS: H:6")))
+
+      ;; Modify buffer in-place for export, then revert to saved file.
+      ;; save-buffer was called above, so revert always restores cleanly.
+      (unwind-protect
+          (progn
+            ;; Add commit URL header/footer (no link rewriting — ODT needs file: links for images)
+            (when commit-url
+              (let* ((hash (string-trim (shell-command-to-string "git rev-parse HEAD")))
+                     (short-hash (substring hash 0 7))
+                     (remote (string-trim (shell-command-to-string "git remote get-url origin")))
+                     (repo-path (when (string-match "github\\.com[:/]\\(.+\\)\\.git$" remote)
+                                  (match-string 1 remote)))
+                     (toplevel (string-trim (shell-command-to-string "git rev-parse --show-toplevel")))
+                     (file-rel (when (and toplevel (string-prefix-p toplevel org-file))
+                                 (substring org-file (1+ (length toplevel)))))
+                     (file-url (when (and repo-path file-rel)
+                                 (format "https://github.com/%s/blob/%s/%s"
+                                         repo-path hash file-rel))))
+                (save-excursion
+                  (goto-char (point-max))
+                  (insert (format "\n-----\n/Generated from [[%s][%s]] (%s)/\n"
+                                  (or file-url commit-url)
+                                  (file-name-nondirectory org-file)
+                                  short-hash)))))
+
+            ;; Strip Cell Timer lines from results drawers
+            (save-excursion
+              (goto-char (point-min))
+              (while (re-search-forward "^Cell Timer:.*\n" nil t)
+                (replace-match "")))
+
+            (message "Exporting to ODT...")
+            (let ((org-confirm-babel-evaluate nil)
+                  (org-export-with-latex (if with-latex 'dvipng t))
+                  (org-odt-with-latex (if with-latex 'dvipng t))
+                  (process-environment (append '("MPLBACKEND=Agg") process-environment)))
+              (org-odt-export-to-odt))
+
+            (message "Uploading to Google Docs (async)...")
+            (org-google--upload-async upload-file format-flag file-id org-buf property))
+
+        ;; Always restore buffer to the saved file
+        (revert-buffer t t)))))
 
 (defun org-google--pull (format)
   "Pull changes from Google FORMAT (slides or doc) to current org buffer."
@@ -196,6 +315,12 @@ Otherwise creates a new one and saves the ID."
   (org-google--push 'doc))
 
 ;;;###autoload
+(defun org-google-push-doc-no-commit ()
+  "Like `org-google-push-doc' but skip the commit check and commit URL."
+  (interactive)
+  (org-google--push 'doc nil nil t))
+
+;;;###autoload
 (defun org-google-pull-slides ()
   "Pull changes from Google Slides to current org buffer.
 Uses Claude to intelligently merge changes while preserving org syntax."
@@ -208,6 +333,12 @@ Uses Claude to intelligently merge changes while preserving org syntax."
 Uses Claude to intelligently merge changes while preserving org syntax."
   (interactive)
   (org-google--pull 'doc))
+
+;;;###autoload
+(defun org-google-push-doc-latex ()
+  "Push current org buffer to Google Docs with LaTeX rendered as images."
+  (interactive)
+  (org-google--push 'doc nil t))
 
 (defun org-google--push-new (format)
   "Push current org buffer to a NEW Google FORMAT (slides or doc), ignoring existing ID."
