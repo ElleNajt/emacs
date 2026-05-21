@@ -80,6 +80,17 @@
       "t c" #'my-toggle-auto-compile-latex)
 
 (load! (concat "personal_common" ))
+
+;;; Keychain helper
+(defun my/keychain-get (service account)
+  "Get a secret from macOS Keychain. Warns loudly if empty."
+  (let* ((cmd (format "security find-generic-password -s '%s' -a '%s' -w 2>/dev/null" service account))
+         (result (string-trim (shell-command-to-string cmd))))
+    (when (string-empty-p result)
+      (display-warning 'keychain
+                       (format "KEYCHAIN FAILED: Could not get %s/%s" service account)
+                       :error))
+    result))
 ;; turning off tree sitter globally
 ;; (load! "treesitter")
 
@@ -198,6 +209,67 @@
 
   ;; (add-hook 'org-mode-hook 'org-tidal-mode)
   )
+;;; macOS keybindings
+;; macOS voice dictation pastes with Cmd+V
+(global-set-key (kbd "s-v") #'yank)
+
+;;; Open audio/video files in VLC
+(defun open-in-vlc (file)
+  "Open FILE in VLC without stealing focus."
+  (interactive "fFile: ")
+  (start-process "vlc" nil "open" "-g" "-a" "VLC" (expand-file-name file)))
+
+;; Auto-open media files in VLC
+(dolist (ext '("\\.wav\\'" "\\.mp3\\'" "\\.m3u\\'" "\\.flac\\'" "\\.ogg\\'"
+               "\\.m4a\\'" "\\.mp4\\'" "\\.mkv\\'" "\\.avi\\'"))
+  (add-to-list 'auto-mode-alist (cons ext 'open-in-vlc)))
+
+;; Configure dired default programs
+(after! dired
+  (setq dired-guess-shell-alist-user
+        '(("\\.html?\\'" "open -a Firefox")
+          ("\\.pdf\\'" "open -a Preview")
+          ("\\.\\(?:mp3\\|m4a\\|flac\\|wav\\|ogg\\)\\'" "open -g -a VLC")
+          ("\\.\\(?:mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
+
+(after! dired-aux
+  (setq dired-guess-shell-alist-user
+        '(("\\.\\(wav\\|mp3\\|flac\\|m3u\\|ogg\\|m4a\\|mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
+
+;;; OAuth token for claude-code-acp
+(setenv "CLAUDE_CODE_OAUTH_TOKEN"
+        (string-trim (with-temp-buffer
+                       (insert-file-contents "~/.ssh/claude-oauth-token")
+                       (buffer-string))))
+
+;;; Strudel live coding
+(defun strudel-to-live ()
+  "Send to live.js. In dired, send file at point. Otherwise send current buffer."
+  (interactive)
+  (let* ((source-path
+          (if (derived-mode-p 'dired-mode)
+              (dired-get-file-for-visit)
+            (buffer-file-name)))
+         (content
+          (if (derived-mode-p 'dired-mode)
+              (with-temp-buffer
+                (insert-file-contents source-path)
+                (buffer-string))
+            (buffer-string))))
+    (let ((strudel-url (concat "https://strudel.cc/#"
+                               (url-hexify-string (base64-encode-string (encode-coding-string content 'utf-8) t)))))
+      (with-current-buffer (find-file-noselect "/Users/elle/code/vibe-duet/live.js")
+        (erase-buffer)
+        (when source-path
+          (insert (format "// %s\n" source-path)))
+        (insert (format "// %s\n" strudel-url))
+        (insert content)
+        (save-buffer))
+      (message "Sent to live.js"))))
+
+(global-set-key (kbd "C-c l") #'strudel-to-live)
+(global-set-key (kbd "C-c C-l") #'strudel-to-live)
+
 ;;; Frame Settings
 
 ;; Disable native fullscreen to avoid macOS animation freezes

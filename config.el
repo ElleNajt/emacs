@@ -84,8 +84,6 @@
 ;; Bind s-b to toggle agent-shell-manager
 (map! :n "s-b" #'agent-shell-manager-toggle)
 
-;; macOS voice dictation pastes with Cmd+V
-(global-set-key (kbd "s-v") #'yank)
 ;;; Evil
 (general-evil-setup t)
 (remove-hook 'doom-first-input-hook #'evil-snipe-mode)
@@ -313,14 +311,6 @@
           (f-dirname)
           (dired)))))
 
-;; Configure default programs for file types in Dired
-(after! dired
-  ;; Set default programs for shell commands (!)
-  (setq dired-guess-shell-alist-user
-        '(("\\.html?\\'" "open -a Firefox")
-          ("\\.pdf\\'" "open -a Preview")
-          ("\\.\\(?:mp3\\|m4a\\|flac\\|wav\\|ogg\\)\\'" "open -g -a VLC")
-          ("\\.\\(?:mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
 
 ;; (use-package parinfer-rust-mode
 ;;   :hook emacs-lisp-mode
@@ -1124,10 +1114,7 @@ in dired, or `default-directory' otherwise."
         LaTeX-fill-break-at-separators nil)
   (setq-default TeX-master nil)
 
-  ;; Enable nice osx pdf viewer
-  (when (eq system-type 'darwin)
-    (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
-    (setq TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view)))))
+  )
 
 (use-package! pdf-tools
   :config
@@ -1641,12 +1628,6 @@ Version 2022-05-21"
 ;; make magit bearable in nixpkgs
 ;; (setq magit-refresh-verbose t)
 
-;;; Open audio/video files in VLC
-(defun open-in-vlc (file)
-  "Open FILE in VLC without stealing focus."
-  (interactive "fFile: ")
-  (start-process "vlc" nil "open" "-g" "-a" "VLC" (expand-file-name file)))
-
 ;; Auto-render .parquet files as org tables
 (defun parquet-view-mode ()
   "Render a parquet file as a table using pandas."
@@ -1662,22 +1643,6 @@ Version 2022-05-21"
     (special-mode)))
 
 (add-to-list 'auto-mode-alist '("\\.parquet\\'" . parquet-view-mode))
-
-;; Auto-open .wav and other media files in VLC when opening in Emacs
-(add-to-list 'auto-mode-alist '("\\.wav\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.m3u\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.flac\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.ogg\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.m4a\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.mp4\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.mkv\\'" . open-in-vlc))
-(add-to-list 'auto-mode-alist '("\\.avi\\'" . open-in-vlc))
-
-;; Configure dired ! command to use VLC for media files
-(after! dired-aux
-  (setq dired-guess-shell-alist-user
-        '(("\\.\\(wav\\|mp3\\|flac\\|m3u\\|ogg\\|m4a\\|mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
 
 (with-eval-after-load 'magit
   (defvar my/big-repos '("nixpkgs" )
@@ -2322,39 +2287,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;;; Auto-accept plan mode
 ;; When an agent enters plan mode, automatically switch to bypass permissions and accept
 
-;;; agent-shell-to-go - take your agent-shell sessions anywhere
-;; (defun my/pass-get (path)
-;;   "Get a secret from pass (password-store). Warns loudly if empty."
-;;   (let ((result (string-trim (shell-command-to-string (format "pass %s" path)))))
-;;     (when (string-empty-p result)
-;;       (display-warning 'agent-shell-to-go
-;;                        (format "PASS FAILED: Could not get %s - Slack integration won't work!" path)
-;;                        :error))
-;;     result))
-
-(defun my/keychain-get (service account)
-  "Get a secret from macOS Keychain. Warns loudly if empty."
-  (let* ((cmd (format "security find-generic-password -s '%s' -a '%s' -w 2>/dev/null" service account))
-         (result (string-trim (shell-command-to-string cmd))))
-    (when (string-empty-p result)
-      (display-warning 'agent-shell-to-go
-                       (format "KEYCHAIN FAILED: Could not get %s/%s - Slack integration won't work!" service account)
-                       :error))
-    result))
-
-(use-package! agent-shell-to-go
-  :after agent-shell
-  :config
-  (setq agent-shell-to-go-default-folder "~/code")
-  (setq agent-shell-to-go-start-agent-function #'my/agent-shell-anthropic-start-claude-code)
-  (setq agent-shell-to-go-new-project-function #'new-python-project)
-  (setq agent-shell-to-go-mobile-backend-url
-        (format "http://%s:8080"
-                (string-trim (shell-command-to-string "tailscale ip -4"))))
-  ;; (agent-shell-to-go-mobile-setup)
-  ;; (agent-shell-to-go-mobile-setup-meta-agent-shell)
-  )
-
 ;;; meta-agent-shell - supervisory agent for monitoring sessions
 (use-package! meta-agent-shell
   :after agent-shell
@@ -2380,11 +2312,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;; Don't auto-start heartbeat - call (meta-agent-shell-heartbeat-start) manually
 
 ;;; acp claude
-;; Load OAuth token for claude-code-acp
-(setenv "CLAUDE_CODE_OAUTH_TOKEN"
-        (string-trim (with-temp-buffer
-                       (insert-file-contents "~/.ssh/claude-oauth-token")
-                       (buffer-string))))
 ;; Load eagerly after Doom init so :after agent-shell hooks fire
 (use-package! acp :demand t)
 (use-package! agent-shell :demand t)
@@ -2960,33 +2887,6 @@ in dired, or `default-directory' otherwise."
 
 (setq kill-buffer-query-functions
       (delq 'process-kill-buffer-query-function kill-buffer-query-functions))
-
-(defun strudel-to-live ()
-  "Send to live.js. In dired, send file at point. Otherwise send current buffer."
-  (interactive)
-  (let* ((source-path
-          (if (derived-mode-p 'dired-mode)
-              (dired-get-file-for-visit)
-            (buffer-file-name)))
-         (content
-          (if (derived-mode-p 'dired-mode)
-              (with-temp-buffer
-                (insert-file-contents source-path)
-                (buffer-string))
-            (buffer-string))))
-    (let ((strudel-url (concat "https://strudel.cc/#"
-                               (url-hexify-string (base64-encode-string (encode-coding-string content 'utf-8) t)))))
-      (with-current-buffer (find-file-noselect "/Users/elle/code/vibe-duet/live.js")
-        (erase-buffer)
-        (when source-path
-          (insert (format "// %s\n" source-path)))
-        (insert (format "// %s\n" strudel-url))
-        (insert content)
-        (save-buffer))
-      (message "Sent to live.js"))))
-
-(global-set-key (kbd "C-c l") #'strudel-to-live)
-(global-set-key (kbd "C-c C-l") #'strudel-to-live)
 
 (global-auto-revert-mode 1)
 
