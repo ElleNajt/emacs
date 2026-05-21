@@ -212,16 +212,6 @@ ON-COMPLETE is an optional callback called with PROJECT-DIR when setup finishes.
     (exec-path-from-shell-copy-env "PASSWORD_STORE_DIR")
     (exec-path-from-shell-copy-env "HOME")))
 
-;;; python formatting
-
-;; (use-package! python-black
-;;   :after python
-;;   :hook (python-mode . python-black-on-save-mode))
-
-;; (use-package! python-isort
-;;   :after python
-;;   :hook (python-mode . python-isort-on-save-mode))
-
 ;;;  envrc stuff
 
 (after! envrc

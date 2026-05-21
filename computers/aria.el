@@ -196,7 +196,8 @@
   ;;       "(" #'tidal-stop-d9
   ;;       ")" #'tidal-stop-d10)
 
-  (add-hook 'org-mode-hook 'org-tidal-mode))
+  ;; (add-hook 'org-mode-hook 'org-tidal-mode)
+  )
 ;;; Frame Settings
 
 ;; Disable native fullscreen to avoid macOS animation freezes

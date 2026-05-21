@@ -4,24 +4,10 @@
 ;; Keywords: tools, ai
 
 ;;; Commentary:
-;; Auto-revert hook with intelligent conflict resolution and auto-save.
+;; Claude Code hook: auto-revert with three-way git merge.
 ;;
-;; FEATURES:
-;; - Auto-saves modified buffers before Claude edits them (prevents conflicts)
-;; - Captures file state before Claude's changes for proper three-way merging
-;; - Two revert strategies:
-;;   - :git-merge - Use git merge to preserve both user and Claude changes
-;;   - :revert - Simple revert (lose user changes, preserve cursor position)
-;;
-;; USAGE:
-;; (load-file "/path/to/claude-code-auto-revert-hook.el")
-;; (setup-claude-auto-revert :git-merge t)  ; git-merge strategy, auto-save enabled
-;;
-;; The git-merge strategy performs a true three-way merge:
-;; 1. Original file content (captured before any edits)
-;; 2. User's changes (from Emacs buffer)
-;; 3. Claude's changes (written to file)
-;; This allows preserving both sets of changes when possible.
+;; Pre-hook: auto-saves modified buffers, captures file state before edits.
+;; Post-hook: three-way merges user buffer changes with Claude's disk changes.
 
 ;;; Code:
 
@@ -30,22 +16,6 @@
 (defvar claude-code--file-bases (make-hash-table :test 'equal)
   "Hash table storing original file contents before Claude edits.
 Keys are file paths, values are the original contents.")
-
-(defvar claude-code-revert-strategy :git-merge
-  "Strategy for handling auto-revert.
-Options:
-  :git-merge - Use git merge to combine changes (may create conflicts)
-  :revert    - Simple revert, preserve cursor, lose user changes")
-
-(defvar claude-code-auto-save-before-edit t
-  "Whether to automatically save modified buffers before Claude edits them.
-When non-nil, any modified buffer for a file that Claude is about to edit
-will be saved automatically. This prevents three-way merge conflicts by
-ensuring the file on disk matches what's in the buffer before Claude's edit.
-
-Set to nil if you prefer to handle saving manually or want to allow
-three-way merges between user changes, file state, and Claude's changes.")
-
 
 
 (defun claude-code-auto-revert-pre-tool-listener (message)
@@ -64,7 +34,7 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
                (tool-name (when parsed-data (alist-get 'tool_name parsed-data)))
                (tool-input (when parsed-data (alist-get 'tool_input parsed-data))))
 
-          (when (and tool-name (member tool-name '("Edit" "Write" "MultiEdit" "NotebookEdit" "Read" "Update")))
+          (when (and tool-name (member tool-name '("Edit" "Write" "MultiEdit" "NotebookEdit" "Update")))
             (let ((file-path (or (alist-get 'file_path tool-input)
                                  (alist-get 'notebook_path tool-input))))
 
@@ -72,13 +42,11 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
               (when (and file-path
                          (not (string-match-p "hook" file-path)))
 
-                ;; AUTO-SAVE: Save any open buffers for this file before Claude edits
-                (when claude-code-auto-save-before-edit
-                  (let ((target-buffer (find-buffer-visiting file-path)))
-                    (when (and target-buffer (buffer-modified-p target-buffer))
-                      (with-current-buffer target-buffer
-                        (save-buffer)
-                        (message "[Claude Auto-Save] Saved %s before Claude edit" file-path)))))
+                ;; Auto-save open buffers before Claude edits
+                (let ((target-buffer (find-buffer-visiting file-path)))
+                  (when (and target-buffer (buffer-modified-p target-buffer))
+                    (with-current-buffer target-buffer
+                      (save-buffer))))
 
                 ;; Store the base content (current file state after auto-save)
                 (let ((base-content (if (file-exists-p file-path)
@@ -95,13 +63,11 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
   "Auto-revert hook with git-merge or simple revert.
 MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
   (when (eq (plist-get message :type) 'post-tool-use)
-    (message "[Claude Post-Hook] Starting post-tool-use hook")
     (condition-case err
         (let* ((json-object (json-read-from-string (plist-get message :json-data)))
                (tool-name (cdr (assoc 'tool_name json-object)))
                (params (cdr (assoc 'tool_input json-object))))
 
-          (message "[Claude Post-Hook] Tool: %s" tool-name)
           (when (member tool-name '("Edit" "Write" "MultiEdit" "NotebookEdit"))
             (let ((file-path (or (cdr (assoc 'file_path params))
                                  (cdr (assoc 'notebook_path params)))))
@@ -111,23 +77,10 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
 
                 (let ((target-buffer (find-buffer-visiting file-path)))
                   (when target-buffer
-                    (message "[Claude Post-Hook] Found buffer for %s" file-path)
                     (with-current-buffer target-buffer
-                      (let ((has-changes (buffer-modified-p)))
-                        (message "[Claude Post-Hook] Buffer modified: %s" has-changes)
-
-                        (cond
-                         ;; Use git-merge strategy when configured
-                         ((equal claude-code-revert-strategy :git-merge)
-                          (message "[Claude Post-Hook] Using git-merge strategy for %s" file-path)
+                      (if (buffer-modified-p)
                           (claude-code--auto-revert-git-merge file-path)
-                          (message "[Claude Post-Hook] Git-merge completed and saved"))
-
-                         ;; Fall back to simple revert for :revert strategy
-                         (t
-                          (revert-buffer t t t)
-                          (save-buffer)
-                          (message "[Claude Revert] Simple revert and saved")))))))))))
+                        (revert-buffer t t t)))))))))
       (error
        (message "[Claude Revert] Error: %s" err)))))
 
@@ -157,47 +110,47 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
          (temp-result-file (make-temp-file "claude-result" nil ".tmp")))
 
 
-    (unwind-protect
+    ;; Write all three versions to temp files
+    (with-temp-file temp-user-file
+      (insert buffer-content))
+
+    (with-temp-file temp-claude-file
+      (insert-file-contents file-path))
+
+    (if base-content
         (progn
-          ;; Write all three versions to temp files
-          (with-temp-file temp-user-file
-            (insert buffer-content))
+          ;; We have the base! Do a proper three-way merge
+          (with-temp-file temp-base-file
+            (insert base-content))
 
-          (with-temp-file temp-claude-file
-            (insert-file-contents file-path))
+          ;; Copy user's file as starting point
+          (copy-file temp-user-file temp-result-file t)
 
-          (if base-content
-              (progn
-                ;; We have the base! Do a proper three-way merge
-                (with-temp-file temp-base-file
-                  (insert base-content))
+          (let ((temp-files (list temp-base-file temp-user-file
+                                  temp-claude-file temp-result-file)))
+            (make-process
+             :name "claude-merge"
+             :command (list "git" "merge-file"
+                            temp-result-file temp-base-file temp-claude-file)
+             :sentinel
+             (lambda (proc _event)
+               (when (memq (process-status proc) '(exit signal))
+                 (unwind-protect
+                     (process-merge-result
+                      temp-result-file file-path (process-exit-status proc))
+                   ;; Cleanup temp files
+                   (dolist (f temp-files)
+                     (when (file-exists-p f)
+                       (delete-file f)))
+                   (remhash file-path claude-code--file-bases)))))))
 
-                ;; Copy user's file as starting point
-                (copy-file temp-user-file temp-result-file t)
-
-                (let ((exit-code (call-process "git" nil nil nil
-                                               "merge-file"
-                                               temp-result-file  ; Current (user's version)
-                                               temp-base-file     ; Base (ORIGINAL!)
-                                               temp-claude-file))) ; Other (Claude's version)
-
-                  (process-merge-result temp-result-file file-path exit-code)))
-
-            ;; No base content - fallback to simple revert
-            (revert-buffer t t t)
-            (save-buffer)
-            (message "[Claude Revert] Simple revert (no base) and saved")))
-
+      ;; No base content - fallback to simple revert
+      (revert-buffer t t t)
       ;; Cleanup temp files
-      (when (file-exists-p temp-base-file)
-        (delete-file temp-base-file))
-      (when (file-exists-p temp-user-file)
-        (delete-file temp-user-file))
-      (when (file-exists-p temp-claude-file)
-        (delete-file temp-claude-file))
-      (when (file-exists-p temp-result-file)
-        (delete-file temp-result-file))
-      ;; Clean up base after use
+      (dolist (f (list temp-base-file temp-user-file
+                       temp-claude-file temp-result-file))
+        (when (file-exists-p f)
+          (delete-file f)))
       (remhash file-path claude-code--file-bases))))
 
 (defun process-merge-result (result-file file-path exit-code)
@@ -211,50 +164,18 @@ MESSAGE is a plist with :type, :buffer-name, :json-data, and :args keys."
             (insert-file-contents result-file))
           ;; Replace file buffer contents with temp buffer contents
           (with-current-buffer (find-buffer-visiting file-path)
-            (message "[Claude Merge] About to replace-buffer-contents")
-            ;; Update file modification time to prevent "changed on disc" warning
             (set-visited-file-modtime)
-            (replace-buffer-contents temp-buffer)
-            (message "[Claude Merge] Buffer contents replaced")
-            ;; Mark as unmodified since we just synced with disk
-            (save-buffer)
-            (message "[Claude Merge] Buffer saved")))
+            (erase-buffer)
+            (insert-buffer-substring temp-buffer)
+            ;; Write directly to skip save hooks (formatters, linters)
+            (write-region nil nil file-path nil 'quiet)
+            (set-visited-file-modtime)
+            (set-buffer-modified-p nil)))
       (kill-buffer temp-buffer)))
 
 
-  ;; Report result
-  (if (= exit-code 0)
-      (message "[Claude Revert] Git merge successful and saved")
-    (message "[Claude Revert] Git merge with conflicts and saved - exit code %d" exit-code)))
-
-(defun setup-claude-auto-revert (&optional strategy auto-save)
-  "Set up auto-revert hook with pre and post listeners.
-STRATEGY can be :git-merge (default) or :revert.
-AUTO-SAVE controls whether to auto-save buffers before Claude edits (default t).
-
-Features:
-- Auto-save modified buffers before Claude edits them (prevents conflicts)
-- Store file state before Claude's changes for proper three-way merging
-- Git merge user changes with Claude's changes using the original as base
-- Preserve cursor position after reverting files"
-  (interactive)
-  (when strategy
-    (setq claude-code-revert-strategy strategy))
-  (when (not (eq auto-save 'unspecified))
-    (setq claude-code-auto-save-before-edit (if auto-save auto-save t)))
-  ;; Add both pre and post hooks
-  (add-hook 'claude-code-event-hook 'claude-code-auto-revert-pre-tool-listener)
-  (add-hook 'claude-code-event-hook 'claude-code-auto-revert-post-tool-listener)
-  (message "Claude auto-revert configured: strategy=%s, auto-save=%s"
-           claude-code-revert-strategy claude-code-auto-save-before-edit))
-
-(defun remove-claude-auto-revert ()
-  "Remove both pre and post auto-revert hooks."
-  (interactive)
-  (remove-hook 'claude-code-event-hook 'claude-code-auto-revert-pre-tool-listener)
-  (remove-hook 'claude-code-event-hook 'claude-code-auto-revert-post-tool-listener)
-  (clrhash claude-code--file-bases)
-  (message "Claude auto-revert hooks removed"))
+  (when (/= exit-code 0)
+    (message "[Claude Revert] Merge conflicts - exit code %d" exit-code)))
 
 (provide 'claude-code-auto-revert-hook)
 

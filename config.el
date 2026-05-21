@@ -3,6 +3,10 @@
 ;;; Lossage - track more keystrokes (default is 300)
 (setq lossage-size 100000)
 
+;;; Yasnippet - only use custom snippets, skip bundled collection
+(after! yasnippet
+  (setq yas-snippet-dirs (list (expand-file-name "snippets" doom-user-dir))))
+
 ;;; Requirements
 (require 'general)  ; Needed early for keybinding macros
 ;; Defer non-essential packages to idle time
@@ -17,6 +21,10 @@
 (add-to-list 'load-path (expand-file-name "gslides" doom-user-dir))
 (run-with-idle-timer 2 nil (lambda () (require 'org-google)))
 (setq org-odt-pixels-per-inch 300.0)
+
+;;; LessWrong Export
+(add-to-list 'load-path (expand-file-name "lesswrong" doom-user-dir))
+(run-with-idle-timer 2 nil (lambda () (require 'org-lesswrong)))
 
 ;;; Spray Configuration
 (after! spray
@@ -143,10 +151,6 @@
                        (forward-sexp)))
 
 
-;; (setq  evil-cleverparens-use-s-and-S nil)
-
-;; (add-hook 'clojure-mode-hook #'evil-cleverparens-mode)
-;; (require 'evil-cleverparens-text-objects)
 
 
 ;;;;; org babel
@@ -220,7 +224,6 @@
               "c" 'eval-last-sexp
               "d" 'eval-defun)))
 
-;; (add-hook 'emacs-lisp-mode-hook #'evil-cleverparens-mode)
 
 
 ;;;;; Paxedit
@@ -228,12 +231,11 @@
 
 ;;;;; Transcript Viewer
 (load! "transcript-viewer")
+(load! "petri-audit-viewer")
 
 ;;;; Rust
 
 ;;;; Python
-;; (elpy-enable)
-
 (add-hook 'python-mode-hook #'flymake-mode)
 (add-hook 'python-ts-mode-hook #'flymake-mode)
 
@@ -1209,6 +1211,15 @@ in dired, or `default-directory' otherwise."
 
 
 
+;;; Image viewing - enlarge window and fit image, restore on quit
+(setq image-auto-resize 'fit-window)
+(add-hook 'image-mode-hook #'doom/window-enlargen)
+(defadvice! elle/image-quit-winner-undo (orig-fn &rest args)
+  :around #'quit-window
+  (let ((was-image (derived-mode-p 'image-mode)))
+    (apply orig-fn args)
+    (when was-image (winner-undo))))
+
 ;;; org clocking
 (custom-set-faces!
   '(org-mode-line-clock :foreground "#ff79c6" :background "#2a1028" :weight bold))
@@ -1407,10 +1418,6 @@ Special format specifiers:
 
   (global-org-modern-mode))
 
-;; (after! org
-;;   (use-package! org-sliced-images
-;;     :config
-;;     (org-sliced-images-mode 1)))
 
 (use-package! realgud
   :commands realgud:pdb)
@@ -1471,8 +1478,6 @@ Special format specifiers:
 ;;;
 
 
-;; (use-package! org-src-context)
-;; (setq  org-src-context-mode t)
 
 ;;; docview
 
@@ -1491,7 +1496,6 @@ Special format specifiers:
 
 
 (require 'cl-lib)
-;; (use-package! 'emacs-zmq)
 
 
 (setq async-shell-command-buffer 'new-buffer)
@@ -1642,6 +1646,22 @@ Version 2022-05-21"
   "Open FILE in VLC without stealing focus."
   (interactive "fFile: ")
   (start-process "vlc" nil "open" "-g" "-a" "VLC" (expand-file-name file)))
+
+;; Auto-render .parquet files as org tables
+(defun parquet-view-mode ()
+  "Render a parquet file as a table using pandas."
+  (interactive)
+  (let ((file buffer-file-name))
+    (setq buffer-read-only nil)
+    (erase-buffer)
+    (call-process "python3" nil t nil "-c"
+                  (format "import pandas as pd; df = pd.read_parquet('%s'); print(df.to_string())" file))
+    (goto-char (point-min))
+    (setq buffer-read-only t)
+    (set-buffer-modified-p nil)
+    (special-mode)))
+
+(add-to-list 'auto-mode-alist '("\\.parquet\\'" . parquet-view-mode))
 
 ;; Auto-open .wav and other media files in VLC when opening in Emacs
 (add-to-list 'auto-mode-alist '("\\.wav\\'" . open-in-vlc))
@@ -2172,6 +2192,14 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
                       (interactive)
                       (agent-shell--insert-to-shell-buffer
                        :text "How's it going? What's the status?"
+                       :submit t)))
+
+  ;; Commit, pull, rebase
+  (evil-define-key 'normal agent-shell-mode-map
+    (kbd "SPC c p") (lambda ()
+                      (interactive)
+                      (agent-shell--insert-to-shell-buffer
+                       :text "Commit and push, then pull and rebase from master."
                        :submit t))))
 
 (defun my/agent-shell-resume-claude ()
@@ -2220,6 +2248,9 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
 ;; Disable auto-save transcript (live saving to .agents/transcripts/)
 (setq agent-shell-auto-save-transcript nil)
 
+;; Use session/load (not resume) so resumed sessions show conversation history
+(setq agent-shell-prefer-session-resume t)
+
 ;; Disable shell-maker's save-on-close prompt for agent-shell buffers
 ;; Also mark as "real" buffer so Doom doesn't skip them in buffer switching
 (add-hook 'agent-shell-mode-hook
@@ -2230,38 +2261,6 @@ With prefix arg USE-CONTAINER, run in container with wrapper."
             (setq-local completion-at-point-functions
                         (remove 'yasnippet-capf completion-at-point-functions))))
 
-;; Enable comint-mime in agent-shell buffers for rich content display
-;; (use-package! comint-mime
-;;   :after agent-shell
-;;   :config
-;;   (add-hook 'agent-shell-mode-hook #'comint-mime-setup))
-
-;;; LaTeX preview in agent-shell
-;; (use-package! texfrag
-;;   :after agent-shell
-;;   :config
-;;   ;; Define texfrag setup function for agent-shell-mode
-;;   (defun texfrag-agent-shell ()
-;;     "Texfrag setup for agent-shell-mode."
-;;     (setq-local texfrag-comments-only nil)  ; Enable LaTeX preview everywhere
-;;     (setq-local texfrag-preview-buffer-at-start nil)
-;;     (setq-local texfrag-frag-alist
-;;                 '(;; Display-style equations $$...$$
-;;                   ("\\$\\$" "\\$\\$" nil nil :display t)
-;;                   ;; Inline equations $...$
-;;                   ("\\$" "\\$" nil nil)
-;;                   ;; LaTeX bracket style \[...\]
-;;                   ("\\\\\\[" "\\\\\\]" nil nil :display t)
-;;                   ;; LaTeX paren style \(...\)
-;;                   ("\\\\(" "\\\\)" nil nil))))
-
-;; Register agent-shell-mode in texfrag-setup-alist
-;; (add-to-list 'texfrag-setup-alist '(texfrag-agent-shell agent-shell-mode))
-
-;; Enable texfrag-mode in agent-shell buffers
-;; (add-hook 'agent-shell-mode-hook #'texfrag-mode)
-;; This breaks stuff
-;; )
 
 ;; Keep-going mode: automatically send "continue" when agent finishes
 ;; (defvar-local my/agent-shell-keep-going-mode nil

@@ -22,34 +22,28 @@
   :type 'string
   :group 'org-lesswrong)
 
-;;;###autoload
-(defun org-lesswrong-export ()
-  "Export current org buffer to LessWrong-ready markdown.
-Requires the file to be committed. Exports via ox-md, then
-post-processes to rewrite image URLs, clean up artifacts,
-and append a git commit link."
-  (interactive)
+(defun org-lesswrong--do-export (require-commit)
+  "Internal: export current org buffer to LessWrong-ready markdown.
+When REQUIRE-COMMIT is non-nil, error if the file has uncommitted changes."
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org-mode buffer"))
   (save-buffer)
   (let* ((org-file (buffer-file-name))
          (org-dir (file-name-directory org-file))
          (md-file (concat (file-name-sans-extension org-file) ".md"))
-         (default-directory org-dir)
-         ;; Check for uncommitted changes
-         (porcelain (string-trim
-                     (shell-command-to-string
-                      (format "git status --porcelain -- %s"
-                              (shell-quote-argument org-file))))))
-    (unless (string-empty-p porcelain)
-      (user-error "Uncommitted changes in %s — commit before exporting"
-                  (file-name-nondirectory org-file)))
-    ;; Export to markdown
+         (default-directory org-dir))
+    (when require-commit
+      (let ((porcelain (string-trim
+                        (shell-command-to-string
+                         (format "git status --porcelain -- %s"
+                                 (shell-quote-argument org-file))))))
+        (unless (string-empty-p porcelain)
+          (user-error "Uncommitted changes in %s — commit before exporting"
+                      (file-name-nondirectory org-file)))))
     (message "Exporting to markdown via ox-md...")
     (org-export-to-file 'md md-file
       nil nil nil nil nil
       (lambda (outfile)
-        ;; Post-process (appends git link too)
         (message "Post-processing for LessWrong...")
         (let ((exit-code (call-process "python3" nil "*org-lesswrong*" nil
                                        org-lesswrong-postprocess-script
@@ -62,6 +56,20 @@ and append a git commit link."
                 (message "LessWrong export complete (copied to clipboard): %s" outfile))
             (pop-to-buffer "*org-lesswrong*")
             (user-error "Post-processing failed")))))))
+
+;;;###autoload
+(defun org-lesswrong-export ()
+  "Export current org buffer to LessWrong-ready markdown.
+Requires the file to be committed."
+  (interactive)
+  (org-lesswrong--do-export t))
+
+;;;###autoload
+(defun org-lesswrong-export-draft ()
+  "Export current org buffer to LessWrong-ready markdown (draft).
+Skips the uncommitted changes check."
+  (interactive)
+  (org-lesswrong--do-export nil))
 
 (provide 'org-lesswrong)
 ;;; org-lesswrong.el ends here

@@ -7,6 +7,8 @@ rewrites org internal links to LessWrong-style heading anchors.
 Usage: python postprocess-md.py <input.md> <input.org>
 Modifies the md file in-place.
 """
+import base64
+import json
 import os
 import re
 import sys
@@ -103,9 +105,76 @@ def get_repo_info():
     m = re.search(r"github\.com[:/](.+?)(?:\.git)?$", remote)
     if m:
         repo_path = m.group(1)
-        raw_url = f"https://raw.githubusercontent.com/{repo_path}/main"
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True
+        ).strip()
+        raw_url = f"https://raw.githubusercontent.com/{repo_path}/{head}"
         return repo_path, raw_url
     return None, None
+
+
+def is_repo_private(repo_path):
+    """Check if a GitHub repo is private."""
+    result = subprocess.check_output(
+        ["gh", "repo", "view", repo_path, "--json", "isPrivate"], text=True
+    ).strip()
+    return json.loads(result)["isPrivate"]
+
+
+def get_github_username():
+    """Get the authenticated GitHub username."""
+    return subprocess.check_output(
+        ["gh", "api", "user", "--jq", ".login"], text=True
+    ).strip()
+
+
+def ensure_blog_images_repo(username):
+    """Create the public blog-images repo if it doesn't exist."""
+    repo = f"{username}/blog-images"
+    result = subprocess.run(
+        ["gh", "repo", "view", repo, "--json", "name"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"Creating public repo {repo}...", file=sys.stderr)
+        subprocess.check_call([
+            "gh", "repo", "create", repo, "--public",
+        ])
+        # Initialize with a README so main branch exists
+        subprocess.check_call([
+            "gh", "api", f"repos/{repo}/contents/README.md",
+            "--method", "PUT",
+            "--field", "message=Initial commit",
+            "--field", f"content={base64.b64encode(b'# blog-images\n').decode()}",
+        ])
+    return repo
+
+
+def upload_image_to_blog_images(local_path, remote_path, images_repo):
+    """Upload an image to the blog-images repo via GitHub API.
+
+    Returns the raw URL. Skips upload if file already exists.
+    """
+    with open(local_path, "rb") as f:
+        content_b64 = base64.b64encode(f.read()).decode()
+
+    existing = subprocess.run(
+        ["gh", "api", f"repos/{images_repo}/contents/{remote_path}",
+         "--jq", ".sha"],
+        capture_output=True, text=True
+    )
+    if existing.returncode == 0 and existing.stdout.strip():
+        print(f"  {remote_path} already exists, skipping", file=sys.stderr)
+    else:
+        print(f"  Uploading {remote_path}...", file=sys.stderr)
+        subprocess.check_call([
+            "gh", "api", f"repos/{images_repo}/contents/{remote_path}",
+            "--method", "PUT",
+            "--field", f"message=Add {remote_path}",
+            "--field", f"content={content_b64}",
+        ])
+
+    return f"https://raw.githubusercontent.com/{images_repo}/main/{remote_path}"
 
 
 def get_git_commit_link(repo_path, md_path):
@@ -203,16 +272,30 @@ def rewrite_org_anchors(text, org_path):
     return re.sub(r'\[([^\]]+)\]\(#org[a-f0-9]+\)', replace_link, text)
 
 
-def postprocess(md_path, repo_raw, repo_path=None, org_path=None):
+def postprocess(md_path, repo_raw, repo_path=None, org_path=None,
+                private=False, images_repo=None):
     with open(md_path) as f:
         text = f.read()
 
-    # Replace local image paths with GitHub raw URLs
+    md_dir = os.path.dirname(os.path.abspath(md_path))
+    toplevel = subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], text=True
+    ).strip()
+    rel_dir = os.path.relpath(md_dir, toplevel)
+
+    # Replace local image paths with public URLs
     def rewrite_img(m):
         path = m.group(1)
         if path.startswith("http"):
             return m.group(0)
-        return f"![img]({repo_raw}/{path})"
+        # Resolve relative path from md file, then make relative to repo root
+        local = os.path.normpath(os.path.join(md_dir, path))
+        repo_rel = os.path.relpath(local, toplevel)
+        if private and images_repo:
+            repo_name = repo_path.split("/")[-1] if repo_path else "unknown"
+            remote = f"{repo_name}/{repo_rel}"
+            return f"![img]({upload_image_to_blog_images(local, remote, images_repo)})"
+        return f"![img]({repo_raw}/{repo_rel})"
 
     text = re.sub(r"!\[img\]\(([^)]+)\)", rewrite_img, text)
 
@@ -259,4 +342,14 @@ if __name__ == "__main__":
     if not repo_raw:
         print("Could not determine GitHub raw URL from git remote.", file=sys.stderr)
         sys.exit(1)
-    postprocess(md_path, repo_raw, repo_path, org_path)
+
+    private = is_repo_private(repo_path)
+    images_repo = None
+    if private:
+        username = get_github_username()
+        images_repo = ensure_blog_images_repo(username)
+        print(f"Private repo detected, images will go to {images_repo}",
+              file=sys.stderr)
+
+    postprocess(md_path, repo_raw, repo_path, org_path,
+                private=private, images_repo=images_repo)
