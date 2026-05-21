@@ -12,8 +12,6 @@
 ;; Defer non-essential packages to idle time
 (run-with-idle-timer 2 nil (lambda () (require 'predd)))
 (run-with-idle-timer 2 nil (lambda () (require 'yasnippet)))
-(run-with-idle-timer 2 nil (lambda () (require 'spray)))
-
 ;;; Parens Tools (for Claude to call via emacsclient)
 (load "~/.claude/containers/emacs/parens-tools.el" t)
 
@@ -25,10 +23,6 @@
 ;;; LessWrong Export
 (add-to-list 'load-path (expand-file-name "lesswrong" doom-user-dir))
 (run-with-idle-timer 2 nil (lambda () (require 'org-lesswrong)))
-
-;;; Spray Configuration
-(after! spray
-  (setq spray-wpm 900))
 
 ;;; Automatically create parent directories when saving files
 (add-hook 'before-save-hook
@@ -1294,32 +1288,6 @@ in dired, or `default-directory' otherwise."
         "s-s" nil))
 
 
-;;; use org-babel-alerts
-
-(use-package! org-babel-alerts)
-
-(after! 'org-babel-alerts
-
-  (setq ob-babel-alerts/notification-command "notify-send -i emacs \"Org Block Finished\" \"Block in %b completed with result: %r\""
-        "Command to run when a code block finishes.
-Special format specifiers:
-%b - buffer name
-%f - buffer file name (or empty if no file)
-%r - result content (or empty if no result)
-%l - line number"))
-
-;;; use gpt-babel
-
-(use-package! gpt-babel)
-
-(after! (evil org gpt-babel)
-
-  (gpt-babel-load-keybindings)
-  (gpt-babel/map-suggested-keyindings))
-
-(setq gpt-babel/error-action nil)
-
-
 ;;; Useful for making packages:
 ;;;
 (defun rename-module-functions ()
@@ -1486,10 +1454,6 @@ Special format specifiers:
 
 
 (setq async-shell-command-buffer 'new-buffer)
-;;; oneko
-
-(use-package! oneko-macs)
-
 ;;; ob-python
 
 ;;; Bionic reading
@@ -1620,8 +1584,6 @@ Version 2022-05-21"
         :nv "SPC o g q" 'gptel-lookup
         :nv "SPC o g a" 'gptel-add 
         :nv "SPC o g r" 'gptel-rewrite))
-
-(use-package! gptel-quick)
 
 ;;; magit
 
@@ -1912,17 +1874,6 @@ Version 2022-05-21"
       :map vterm-mode-map
       "C-c C-k" #'vterm-send-escape)
 
-;;; MisTTY configuration
-;; (use-package! mistty
-;;   :bind (("C-c s" . mistty)
-;;          :map mistty-prompt-map
-;;          ("M-<up>" . mistty-send-key)
-;;          ("M-<down>" . mistty-send-key))
-;;   :config
-;;   (map! :leader "o s" #'mistty))
-
-
-
 (use-package! eat
   :config
   (setq eat-term-name "xterm-256color"))
@@ -1945,8 +1896,6 @@ Version 2022-05-21"
 ;;   ;; Start the MCP server
 ;;   (emacs-mcp-start-server)
 ;;   )
-
-(monet-mode)
 
 ;;; agent-shell
 
@@ -2622,64 +2571,6 @@ If prefix ARG is non-nil, recreate eshell buffer in the current project's root."
             (eshell-mode)))
         (pop-to-buffer buf)))))
 
-;;; MisTTY configuration
-(use-package! mistty
-  :commands (mistty mistty-other-window mistty-in-project)
-  :config
-  ;; mistty-buffer-name must be a list, not a string
-  ;; Default is '("mistty" mistty-buffer-name-user mistty-buffer-name-host)
-  (setq mistty-buffer-name '("mistty")))
-
-(defun +mistty/toggle ()
-  "Toggle a mistty popup window."
-  (interactive)
-  (let* ((buffer-name (format "*mistty:%s*"
-                              (if (bound-and-true-p persp-mode)
-                                  (safe-persp-name (get-current-persp))
-                                "main")))
-         (buffer (get-buffer buffer-name))
-         (window (and buffer (get-buffer-window buffer))))
-    (if window
-        (delete-window window)
-      (let ((buf (or buffer
-                     (save-window-excursion
-                       (let ((new-buf (mistty)))
-                         (with-current-buffer new-buf
-                           (rename-buffer buffer-name))
-                         new-buf)))))
-        (pop-to-buffer buf
-                       '(display-buffer-in-side-window
-                         (side . bottom)
-                         (window-height . 0.3)))))))
-
-(defun +mistty/here (&optional arg)
-  "Open a mistty buffer in the current window at project root.
-If prefix ARG is non-nil, cd into 'default-directory' instead of project root."
-  (interactive "P")
-  (let ((default-directory (if arg
-                               default-directory
-                             (or (doom-project-root) default-directory))))
-    (mistty)))
-
-(defun mistty-cd-to-dired-dir-and-switch ()
-  "CD the mistty popup to the directory of the current dired buffer, then switch to it."
-  (interactive)
-  (let ((dir (if (eq major-mode 'dired-mode)
-                 (dired-current-directory)
-               default-directory)))
-    (if-let* ((mistty-buffer-name
-               (format "*mistty:%s*"
-                       (if (bound-and-true-p persp-mode)
-                           (safe-persp-name (get-current-persp))
-                         "main")))
-              (mistty-buffer (get-buffer mistty-buffer-name)))
-        (progn
-          (pop-to-buffer mistty-buffer)
-          (goto-char (point-max))
-          (insert (format "cd \"%s\"" dir))
-          (mistty-send-command))
-      (message "No currently open mistty (press SPC o t)"))))
-
 (defun eshell-cd-to-dired-dir-and-switch ()
   "CD the eshell popup to the current buffer's directory, then switch to it.
 Uses `buffer-file-name' directory if visiting a file, `dired-current-directory'
@@ -2757,121 +2648,6 @@ in dired, or `default-directory' otherwise."
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t
       auto-revert-use-notify t)
-
-;;; Obsidian.el configuration with org-mode integration
-(use-package! obsidian
-  :config
-  ;; Set your vault path - customize this to your actual vault location
-  (setq obsidian-directory "~/obsidian"
-        ;; Optional: set a default directory for new notes (inbox pattern)
-        obsidian-inbox-directory "~/obsidian/inbox")
-  
-  ;; Enable wiki-style links in markdown
-  (setq markdown-enable-wiki-links t)
-  
-  ;; Start global obsidian mode
-  (global-obsidian-mode t)
-  
-
-  
-  ;; Function to convert org subtree to Obsidian note
-  (defun org-subtree-to-obsidian ()
-    "Export current org subtree as an Obsidian markdown note."
-    (interactive)
-    (let* ((heading (org-get-heading t t t t))
-           (filename (concat obsidian-directory "/" 
-                             (replace-regexp-in-string "[^[:alnum:] ]" "" heading)
-                             ".md"))
-           (content (save-excursion
-                      (org-back-to-heading t)
-                      (let ((begin (point))
-                            (end (progn (org-end-of-subtree t t) (point))))
-                        (buffer-substring-no-properties begin end)))))
-      ;; Convert org to markdown (basic conversion)
-      (with-temp-buffer
-        (insert content)
-        (org-mode)
-        (org-md-export-as-markdown)
-        (write-file filename))
-      (message "Exported to %s" filename)
-      (find-file filename)))
-  
-  ;; Function to create org link to Obsidian note
-  (defun org-insert-obsidian-link ()
-    "Insert an org-mode link to an Obsidian note."
-    (interactive)
-    (let* ((note-files (directory-files obsidian-directory nil "\\.md$"))
-           (note (completing-read "Link to note: " note-files))
-           (note-path (concat obsidian-directory "/" note))
-           (title (file-name-sans-extension note)))
-      (insert (format "[[file:%s][%s]]" note-path title))))
-  
-  ;; Function to open Obsidian notes in org-mode if they contain org syntax
-  (defun obsidian-open-in-org-mode ()
-    "Open current Obsidian markdown file in org-mode."
-    (interactive)
-    (when (and buffer-file-name
-               (string-prefix-p (expand-file-name obsidian-directory) 
-                                (expand-file-name buffer-file-name)))
-      (org-mode)))
-  
-  ;; Sync org TODO items to Obsidian vault
-  (defun org-sync-todos-to-obsidian ()
-    "Create/update an Obsidian note with all TODO items from org-agenda."
-    (interactive)
-    (let ((todo-file (concat obsidian-directory "/TODOs.md"))
-          (todos '()))
-      (org-map-entries
-       (lambda ()
-         (let ((heading (org-get-heading t t t t))
-               (state (org-get-todo-state))
-               (tags (org-get-tags))
-               (file (buffer-file-name)))
-           (when state
-             (push (format "- [%s] %s %s `%s`\n"
-                           (if (string= state "DONE") "x" " ")
-                           heading
-                           (if tags (concat "(" (string-join tags ", ") ")") "")
-                           (file-name-nondirectory file))
-                   todos))))
-       "TODO|DONE|ACTIVE|NEXT|WAITING"
-       'agenda)
-      (with-temp-file todo-file
-        (insert "# All TODOs from Org-Mode\n\n")
-        (insert "Last synced: " (format-time-string "%Y-%m-%d %H:%M:%S") "\n\n")
-        (dolist (todo (nreverse todos))
-          (insert todo)))
-      (message "Synced %d todos to %s" (length todos) todo-file)))
-  
-  ;; Function to reference Obsidian notes from org-roam style
-  (defun obsidian-insert-wikilink-as-org ()
-    "Insert Obsidian-style [[wikilink]] that works in org-mode."
-    (interactive)
-    (let* ((note-files (directory-files obsidian-directory nil "\\.md$"))
-           (note (completing-read "Link to note: " note-files))
-           (title (file-name-sans-extension note)))
-      (insert (format "[[%s]]" title))))
-  
-  ;; Keybindings under SPC n o (notes > obsidian)
-  ;; (map! :leader
-  ;;       (:prefix ("n o" . "obsidian")
-  ;;        :desc "Capture new note" "c" #'obsidian-capture
-  ;;        :desc "Insert link to note" "l" #'obsidian-insert-link
-  ;;        :desc "Jump to note" "j" #'obsidian-jump
-  ;;        :desc "Search notes" "s" #'obsidian-search
-  ;;        :desc "Find by tag" "t" #'obsidian-tag-find
-  ;;        :desc "Follow link at point" "f" #'obsidian-follow-link-at-point
-  ;;        :desc "Backlinks panel" "b" #'obsidian-backlinks-mode
-  ;;        ;; Org integration commands
-  ;;        :desc "Export org subtree to Obsidian" "e" #'org-subtree-to-obsidian
-  ;;        :desc "Insert org link to note" "i" #'org-insert-obsidian-link
-  ;;        :desc "Sync TODOs to Obsidian" "S" #'org-sync-todos-to-obsidian
-  ;;        :desc "Open note in org-mode" "o" #'obsidian-open-in-org-mode))
-  
-  ;; Optional: Use org-mode for .md files in Obsidian vault
-  ;; Comment out if you prefer markdown-mode
-  (add-to-list 'auto-mode-alist 
-               `(,(concat (regexp-quote (expand-file-name obsidian-directory)) "/.*\\.md\\'") . org-mode)))
 
 
 
