@@ -107,14 +107,14 @@
 
 (package! eat :pin "c8d54d649872bfe7b2b9f49ae5c2addbf12d3b99")
 
-(package! shell-maker :pin "661e8e0d1078dcdce015ea506fce53640af4cd72")
+(package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
 
 (package! acp
-  :pin "f7e20ce831ce342c457bb6860ca3d41eb183152c"
+  :pin "661af51569acef7384a2801f07a582da5142a6d9"
   :recipe (:host github :repo "xenodium/acp.el"))
 (package! agent-shell
-  :pin "62737278bbc3b7ff756f9a3d493afa07690f6b9e"
-  :recipe (:host github :repo "xenodium/agent-shell"))
+  :pin "b189d4220f2a0e0b7550645d6a6f3a92cd160b0f"
+  :recipe (:host github :repo "ElleNajt/agent-shell"))
 
 (package! agent-shell-manager
   :pin "6d8c741999f30a755fd442cb73adde1fa506eeac"
