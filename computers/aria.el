@@ -236,11 +236,11 @@
   (setq dired-guess-shell-alist-user
         '(("\\.\\(wav\\|mp3\\|flac\\|m3u\\|ogg\\|m4a\\|mp4\\|mkv\\|avi\\|mov\\|webm\\)\\'" "open -g -a VLC"))))
 
-;;; OAuth token for claude-code-acp
-(setenv "CLAUDE_CODE_OAUTH_TOKEN"
-        (string-trim (with-temp-buffer
-                       (insert-file-contents "~/.ssh/claude-oauth-token")
-                       (buffer-string))))
+;; OAuth token for claude-code-acp (disabled - using API key instead)
+;; (setenv "CLAUDE_CODE_OAUTH_TOKEN"
+;;         (string-trim (with-temp-buffer
+;;                        (insert-file-contents "~/.ssh/claude-oauth-token")
+;;                        (buffer-string))))
 
 ;;; Strudel live coding
 (defun strudel-to-live ()

@@ -15,6 +15,8 @@
 ;;      directory (for easy access to its source code).
 
 ;;(setq magic-mode-alist nil)
+(defvar is-personal (member (string-trim (shell-command-to-string "hostname")) '("aria" "fugue")))
+
 (doom! :input
        ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
        ;;chinese
@@ -109,8 +111,8 @@
        (lsp +eglot +docsets)      ; M-x vscode
        magit             ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
-       ( pass +auth)              ; password manager for nerds
-       pdf               ; pdf enhancements
+       (:if is-personal ( pass +auth))
+       (:if is-personal pdf)
        ;;prodigy           ; FIXME managing external services & code builders
        ;;rgb               ; creating color strings
        ;;taskrunner        ; taskrunner for all your projects
@@ -148,12 +150,12 @@
        ;;gdscript          ; the language you waited for
        ;;(go +lsp)         ; the hipster dialect
        ;;(graphql +lsp)    ; Give queries a REST
-       (haskell +lsp)    ; a language that's lazier than I am
+       (:if is-personal (haskell +lsp))
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
        json              ; At least it ain't XML
        ;;(java +lsp)       ; the poster child for carpal tunnel syndrome
-       javascript        ; all(hope(abandon(ye(who(enter(here))))))
+       (:if is-personal javascript)
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex +latexmk +cdlatex +fold +lsp) ; writing papers in Emacs has never been so fun
@@ -162,9 +164,7 @@
        ;;lua               ; one-based indices? one-based indices
        markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
-       ( nix
-         ;; +tree-sitter
-         )               ; I hereby declare "nix geht mehr!"
+       (:if is-personal nix)
        ;;ocaml             ; an objective camel
        (org
         +pandoc
@@ -187,7 +187,7 @@
        ;;rest              ; Emacs as a REST client
        ;;rst               ; ReST in peace
        ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       (rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+       (:if is-personal (rust +lsp))
        ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        sh                ; she sells {ba,z,fi}sh shells on the C xor
@@ -200,7 +200,7 @@
        ;;zig               ; C, but simpler
 
        :email
-       (mu4e +org +gmail +mbsync)
+       (:if is-personal (mu4e +org +gmail +mbsync))
 
        ;;notmuch
        ;;(wanderlust +gmail)
@@ -208,7 +208,7 @@
        :app
        ;;calendar
        ;;emms
-       everywhere        ; *leave* Emacs!? You must be joking
+       (:if is-personal everywhere)
        ;;irc               ; how neckbeards socialize
        ;;(rss +org)        ; emacs as an RSS reader
        ;;twitter           ; twitter client https://twitter.com/vnought

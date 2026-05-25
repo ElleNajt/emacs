@@ -3,16 +3,17 @@
 (package! predd
   :pin "695517712f0972cdb69b2765d13b45441ec4be57"
   :recipe (:host github :repo "skeeto/predd"))
+
 (package! general
   :pin "a48768f85a655fe77b5f45c2880b420da1b1b9c3"
   :recipe (:host github :repo "noctuid/general.el"))
+
 (package! ob-async :pin "9aac486073f5c356ada20e716571be33a350a982")
-(package! pyvenv :pin "31ea715f2164dd611e7fc77b26390ef3ca93509b")
+;; (package! pyvenv :pin "31ea715f2164dd611e7fc77b26390ef3ca93509b")
 ;; (package! python-black)
 
-(package! paxedit :pin "09f3d5aeb108937a801e77ef413e29eaa4ecc4be")
-(package! w3m :pin "ec18c21418bf7c1be159bd3cf7e79a370d4be1f3")
-(package! oauth2 :pin "0045bf310666dba6535e33b7cb274d175c610ddc")
+;; (package! paxedit :pin "09f3d5aeb108937a801e77ef413e29eaa4ecc4be")
+;; (package! w3m :pin "ec18c21418bf7c1be159bd3cf7e79a370d4be1f3")
 ;; (package! combobulate
 ;;   :recipe (:host github :repo "mickeynp/combobulate"))
 
@@ -31,10 +32,10 @@
 
 (load! (concat "computers/" (string-trim (shell-command-to-string "hostname")) "-packages"))
 
-(package! org-nix-shell
-  :pin "f359d9e1053fadee86dd668f4789ae2e700d8e8a"
-  :recipe (:host github
-           :repo "AntonHakansson/org-nix-shell"))
+;; (package! org-nix-shell
+;;   :pin "f359d9e1053fadee86dd668f4789ae2e700d8e8a"
+;;   :recipe (:host github
+;;            :repo "AntonHakansson/org-nix-shell"))
 
 ;; (package! ts-fold
 ;;   :recipe (:host github :repo "ts-fold/ts-fold"))
@@ -107,10 +108,9 @@
 
 (package! eat :pin "c8d54d649872bfe7b2b9f49ae5c2addbf12d3b99")
 
-(package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
+(package! shell-maker :pin "11f4a99")
 
 (package! acp
-  :pin "661af51569acef7384a2801f07a582da5142a6d9"
   :recipe (:host github :repo "xenodium/acp.el"))
 (package! agent-shell
   :pin "b189d4220f2a0e0b7550645d6a6f3a92cd160b0f"

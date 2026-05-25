@@ -1908,7 +1908,7 @@ Version 2022-05-21"
 (setq agent-shell-container-command-runner nil)
 (setq agent-shell-path-resolver-function nil)
 (setq agent-shell-anthropic-claude-command nil)
-(setq agent-shell-anthropic-claude-acp-command '("acp-multiplex" "claude-agent-acp"))
+(setq agent-shell-anthropic-claude-acp-command '("claude-agent-acp"))
 
 ;; envrc can overwrite exec-path in the agent-shell buffer (via change-major-mode-after-body-hook),
 ;; stripping ~/.local/bin and breaking the acp-multiplex executable check in agent-shell--start.
@@ -2503,6 +2503,7 @@ When multiple agent-shell buffers are visible, prompts with numbered menu."
         :desc "Send to agent shell" "c s" #'send-to-agent-shell))
 
 
+(setenv "CLAUDE_CODE_OAUTH_TOKEN" nil) ;; use API key, not login
 (setq agent-shell-anthropic-default-model-id "claude-opus-4-6-fast")
 ;; Custom read-string that starts in evil normal mode for multiline editing
 (defun my/read-string-in-normal-mode (prompt &optional initial-input)
