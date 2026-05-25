@@ -113,30 +113,15 @@ with zipfile.ZipFile(log_path) as z:
 
 ;;; Core functions
 
-(defvar petri-audit--project-root nil
-  "Project root for finding .venv. Set automatically on first use.")
-
-(defun petri-audit--find-project-root (eval-file)
-  "Find the project root (directory containing .venv) from EVAL-FILE."
-  (let ((dir (file-name-directory eval-file)))
-    (while (and dir (not (file-directory-p (expand-file-name ".venv" dir))))
-      (let ((parent (file-name-directory (directory-file-name dir))))
-        (setq dir (if (equal parent dir) nil parent))))
-    (or dir (file-name-directory eval-file))))
-
 (defun petri-audit--run-python (eval-file &optional sample-name)
   "Run extraction script on EVAL-FILE, optionally for SAMPLE-NAME."
-  (let* ((project-root (petri-audit--find-project-root eval-file))
-         (python (expand-file-name ".venv/bin/python3" project-root))
-         (args (if sample-name
+  (let* ((args (if sample-name
                    (format "%s %s" (shell-quote-argument eval-file)
                            (shell-quote-argument sample-name))
                  (shell-quote-argument eval-file)))
-         (cmd (format "%s -c %s %s"
-                      (shell-quote-argument python)
+         (cmd (format "python3 -c %s %s"
                       (shell-quote-argument petri-audit--extract-script)
                       args))
-         (default-directory project-root)
          (output (shell-command-to-string cmd)))
     (when (string-empty-p (string-trim output))
       (error "Python extraction returned empty output for %s" eval-file))

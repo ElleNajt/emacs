@@ -156,8 +156,8 @@
 (after! clojure-mode
   (require 'reformatter)
   (reformatter-define zprint-format
-    :program "zprint"
-    :lighter " ZPrint")
+                      :program "zprint"
+                      :lighter " ZPrint")
   (add-hook 'clojure-mode-hook #'zprint-format-on-save-mode))
 
 
@@ -327,7 +327,7 @@ in dired, or `default-directory' otherwise."
               (vterm-buffer (get-buffer projectile-vterm-buffer-name)))
         (progn
           (pop-to-buffer vterm-buffer)
-          (vterm-send-string (format "cd \"%s\"\n" dir)))
+          (vterm-send-string (format "cd %s\n" (shell-quote-argument dir))))
       (message "No currently open vterm (press SPC o t)"))))
 
 (map! :leader
@@ -1508,36 +1508,36 @@ Version 2022-05-21"
   (interactive (list (read-string "Ask ChatGPT: " nil gptel-lookup--history)))
   (when (string= prompt "") (user-error "A prompt is required."))
   (gptel-request
-      prompt
-    :callback
-    (lambda (response info)
-      (cond
-       ((not response)
-        (message "gptel-lookup failed with message: %s"
-                 (plist-get info :status)))
+   prompt
+   :callback
+   (lambda (response info)
+     (cond
+      ((not response)
+       (message "gptel-lookup failed with message: %s"
+                (plist-get info :status)))
 
-       ((and (consp response)
-             (eq (car response) 'reasoning))
-        (with-current-buffer (get-buffer-create "*gptel-reasoning*")
-          (let ((inhibit-read-only t))
-            (erase-buffer)
-            (insert (format "Reasoning:\n%s" (cdr response))))
-          (special-mode)
-          (display-buffer (current-buffer)
-                          `((display-buffer-in-side-window)
-                            (side . bottom)
-                            (window-height . ,#'fit-window-to-buffer)))))
+      ((and (consp response)
+            (eq (car response) 'reasoning))
+       (with-current-buffer (get-buffer-create "*gptel-reasoning*")
+         (let ((inhibit-read-only t))
+           (erase-buffer)
+           (insert (format "Reasoning:\n%s" (cdr response))))
+         (special-mode)
+         (display-buffer (current-buffer)
+                         `((display-buffer-in-side-window)
+                           (side . bottom)
+                           (window-height . ,#'fit-window-to-buffer)))))
 
-       ((stringp response)
-        (with-current-buffer (get-buffer-create "*gptel-lookup*")
-          (let ((inhibit-read-only t))
-            (erase-buffer)
-            (insert response))
-          (special-mode)
-          (display-buffer (current-buffer)
-                          `((display-buffer-in-side-window)
-                            (side . bottom)
-                            (window-height . ,#'fit-window-to-buffer)))))))))
+      ((stringp response)
+       (with-current-buffer (get-buffer-create "*gptel-lookup*")
+         (let ((inhibit-read-only t))
+           (erase-buffer)
+           (insert response))
+         (special-mode)
+         (display-buffer (current-buffer)
+                         `((display-buffer-in-side-window)
+                           (side . bottom)
+                           (window-height . ,#'fit-window-to-buffer)))))))))
 
 (defun close-gptel-lookup-buffer ()
   "Close the gptel lookup buffer from anywhere."
@@ -1598,7 +1598,8 @@ Version 2022-05-21"
     (setq buffer-read-only nil)
     (erase-buffer)
     (call-process "python3" nil t nil "-c"
-                  (format "import pandas as pd; df = pd.read_parquet('%s'); print(df.to_string())" file))
+                  "import pandas as pd, sys; df = pd.read_parquet(sys.argv[1]); print(df.to_string())"
+                  "--" file)
     (goto-char (point-min))
     (setq buffer-read-only t)
     (set-buffer-modified-p nil)

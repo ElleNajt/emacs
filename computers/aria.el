@@ -41,7 +41,7 @@
 (after! tex
   (setq TeX-auto-save t)
   (setq TeX-parse-self t)
-  (setq TeX-command-extra-options "-shell-escape")
+  (setq TeX-command-extra-options "")
   (setq TeX-command-default "LatexMk")
   (setq TeX-save-query nil)
   (setq TeX-show-compilation t)
