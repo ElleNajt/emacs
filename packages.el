@@ -108,7 +108,7 @@
 
 (package! eat :pin "c8d54d649872bfe7b2b9f49ae5c2addbf12d3b99")
 
-(package! shell-maker :pin "11f4a99")
+(package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
 
 (package! acp
   :pin "661af51569acef7384a2801f07a582da5142a6d9"
