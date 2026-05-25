@@ -56,7 +56,7 @@
            :repo "abo-abo/org-download"))
 
 (package! ob-python-extras
-  :pin "8d81098e8fde68c5df856478580a9b8bb5408016"
+  :pin "faf7e568a03f8033fd20dc4cfd2ccaa750aae414"
   ;; :recipe (:local-repo "home/code/ob-python-extras"
   ;;          :files ("*.el" "bashscripts" "python")))
 
@@ -80,11 +80,11 @@
 ;;            :branch "fix-source-block-formatting"
 ;;            :repo "ElleNajt/gptel"))
 
-(package! gptel
-  :pin "63795dee75db49a04fd87842a1dcdef29c855f93"
-  :recipe (:host github
-           ;; :branch "curl_noproxy_variable"
-           :repo "karthink/gptel"))
+;; (package! gptel
+;;   :pin "63795dee75db49a04fd87842a1dcdef29c855f93"
+;;   :recipe (:host github
+;;            ;; :branch "curl_noproxy_variable"
+;;            :repo "karthink/gptel"))
 
 ;; (package! realgud)
 ;; (package! realgud-ipdb)
@@ -111,6 +111,7 @@
 (package! shell-maker :pin "11f4a99")
 
 (package! acp
+  :pin "661af51569acef7384a2801f07a582da5142a6d9"
   :recipe (:host github :repo "xenodium/acp.el"))
 (package! agent-shell
   :pin "b189d4220f2a0e0b7550645d6a6f3a92cd160b0f"
