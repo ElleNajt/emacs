@@ -106,7 +106,6 @@
   :pin "5754679d0c44eae484aab7a024c40906d755c83b"
   :recipe (:host github :repo "ElleNajt/org-collect-code-todos"))
 
-(package! eat :pin "c8d54d649872bfe7b2b9f49ae5c2addbf12d3b99")
 
 (when (member (string-trim (shell-command-to-string "hostname")) '("aria" "fugue"))
   (package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
