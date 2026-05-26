@@ -179,7 +179,7 @@
         +lsp
         +pyright
         ;; +isort
-        +tree-sitter
+        ;; +tree-sitter
         )            ; beautiful is better than ugly
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
