@@ -108,20 +108,21 @@
 
 (package! eat :pin "c8d54d649872bfe7b2b9f49ae5c2addbf12d3b99")
 
-(package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
+(when (member (string-trim (shell-command-to-string "hostname")) '("aria" "fugue"))
+  (package! shell-maker :pin "11f4a9913e7625f122625dd89d668ad5c93cf151")
 
-(package! acp
-  :pin "661af51569acef7384a2801f07a582da5142a6d9"
-  :recipe (:host github :repo "xenodium/acp.el"))
-(package! agent-shell
-  :pin "89bd6e136a08e1527dd630e4573639c838fd7e22"
-  :recipe (:host github :repo "xenodium/agent-shell"))
+  (package! acp
+    :pin "661af51569acef7384a2801f07a582da5142a6d9"
+    :recipe (:host github :repo "xenodium/acp.el"))
+  (package! agent-shell
+    :pin "89bd6e136a08e1527dd630e4573639c838fd7e22"
+    :recipe (:host github :repo "xenodium/agent-shell"))
 
-(package! agent-shell-manager
-  :pin "6d8c741999f30a755fd442cb73adde1fa506eeac"
-  :recipe (:host github :repo "ElleNajt/agent-shell-manager"))
-(package! meta-agent-shell
-  :pin "d1f4622b0f99105d7be2dd38a714fe7b9b5f49f5"
-  :recipe (:host github :repo "ElleNajt/meta-agent-shell"))
+  (package! agent-shell-manager
+    :pin "6d8c741999f30a755fd442cb73adde1fa506eeac"
+    :recipe (:host github :repo "ElleNajt/agent-shell-manager"))
+  (package! meta-agent-shell
+    :pin "d1f4622b0f99105d7be2dd38a714fe7b9b5f49f5"
+    :recipe (:host github :repo "ElleNajt/meta-agent-shell")))
 
 
