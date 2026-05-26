@@ -1597,9 +1597,9 @@ Version 2022-05-21"
   (let ((file buffer-file-name))
     (setq buffer-read-only nil)
     (erase-buffer)
-    (call-process "python3" nil t nil "-c"
+    (call-process "python3" nil t nil "-I" "-c"
                   "import pandas as pd, sys; df = pd.read_parquet(sys.argv[1]); print(df.to_string())"
-                  "--" file)
+                  (expand-file-name file))
     (goto-char (point-min))
     (setq buffer-read-only t)
     (set-buffer-modified-p nil)

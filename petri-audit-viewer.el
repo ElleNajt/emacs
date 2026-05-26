@@ -115,11 +115,12 @@ with zipfile.ZipFile(log_path) as z:
 
 (defun petri-audit--run-python (eval-file &optional sample-name)
   "Run extraction script on EVAL-FILE, optionally for SAMPLE-NAME."
-  (let* ((args (if sample-name
-                   (format "%s %s" (shell-quote-argument eval-file)
+  (let* ((abs-file (expand-file-name eval-file))
+         (args (if sample-name
+                   (format "%s %s" (shell-quote-argument abs-file)
                            (shell-quote-argument sample-name))
-                 (shell-quote-argument eval-file)))
-         (cmd (format "python3 -c %s %s"
+                 (shell-quote-argument abs-file)))
+         (cmd (format "python3 -I -c %s %s"
                       (shell-quote-argument petri-audit--extract-script)
                       args))
          (output (shell-command-to-string cmd)))
