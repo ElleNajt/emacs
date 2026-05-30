@@ -129,7 +129,7 @@
        ;;agda              ; types of types of types of types...
        ;;beancount         ; mind the GAAP
        ;;(cc +lsp)         ; C > C++ == 1
-       ( clojure +lsp)           ; java with a lisp
+       ;; ( clojure +lsp)           ; java with a lisp
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
        ;;coq               ; proofs-as-programs
        ;;crystal           ; ruby at the speed of c
@@ -158,7 +158,8 @@
        (:if is-personal javascript)
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
-       (latex +latexmk +cdlatex +fold +lsp) ; writing papers in Emacs has never been so fun
+       (:if is-personal 
+           (latex +latexmk +cdlatex +fold +lsp)) ; writing papers in Emacs has never been so fun
        ;;lean              ; for folks with too much to prove
        ;;ledger            ; be audit you can be
        ;;lua               ; one-based indices? one-based indices
