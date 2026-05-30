@@ -13,7 +13,8 @@
 (run-with-idle-timer 2 nil (lambda () (require 'predd)))
 (run-with-idle-timer 2 nil (lambda () (require 'yasnippet)))
 ;;; Parens Tools (for Claude to call via emacsclient)
-(load "~/.claude/containers/emacs/parens-tools.el" t)
+(when is-personal
+  (load "~/.claude/containers/emacs/parens-tools.el" t))
 
 ;;; Google Slides Export
 (add-to-list 'load-path (expand-file-name "gslides" doom-user-dir))
